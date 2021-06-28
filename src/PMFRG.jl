@@ -9,9 +9,9 @@ module PMFRG
     include("Propagators.jl")
     include("Flowequations_Dense.jl")
     include("Solver.jl")
-    #Precompilation
-    include("precompile.jl")
     
-    precompile(Testrun(),())
+    #Precompilation
+    # include("precompile.jl")
+    
 end # module
 ##

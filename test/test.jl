@@ -1,4 +1,4 @@
-using .PMFRG,Profile,SpinFRGLattices
+using PMFRG,Profile,SpinFRGLattices,OrdinaryDiffEq
 ##
 println("Start program")
 flush(stdout)

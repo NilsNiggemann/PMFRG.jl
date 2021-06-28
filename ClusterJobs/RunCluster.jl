@@ -1,6 +1,6 @@
 include("ClusterUtils.jl")
-include("../src/PMFRG.jl")
-@everywhere using .PMFRG
+# include("../src/PMFRG.jl")
+@time @everywhere using PMFRG
 using SpinFRGLattices
 # include("../TwoLoopPMFRG.jl")
 # using .SimpleCubic

@@ -2,9 +2,9 @@ function getDFint!(Workspace::Workspace_Struct,Lam::double,Par::Params)
     @unpack Df_int,gamma = Workspace 
     @unpack T,lenIntw_acc,NUnique = Par 
 	
-	gamma_(x,nw) = PMFRG.gamma_(gamma,x,nw,Par)
-	iG(x,nw) = PMFRG.iG(gamma,x,Lam,nw,Par)
-	iS(x,nw) = PMFRG.iS(gamma,x,Lam,nw,Par)
+	γ(x,nw) = gamma_(gamma,x,nw,Par)
+	iG(x,nw) = iG_(gamma,x,Lam,nw,Par)
+	iS(x,nw) = iS_(gamma,x,Lam,nw,Par)
 
 	Theta(Lam,w) = w^2/(w^2+Lam^2)
 	
@@ -12,7 +12,7 @@ function getDFint!(Workspace::Workspace_Struct,Lam::double,Par::Params)
 		sumres = 0.
 		for nw in -lenIntw_acc:lenIntw_acc-1
 			w = get_w(nw,T)
-			sumres += iS(x,nw)/iG(x,nw)*Theta(Lam,w) *gamma_(x,nw)/w
+			sumres += iS(x,nw)/iG(x,nw)*Theta(Lam,w) *γ(x,nw)/w
 		end
 		Df_int[x] = -3/2*T*sumres
 	end
@@ -23,7 +23,7 @@ function get_Self_Energy!(Workspace::Workspace_Struct,Lam::double,Par::Params)
     @unpack Dgamma,gamma,Va,Vb = Workspace 
     @unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma,siteSum,invpairs,Nsum,OnsitePairs = Par 
 	
-	iS(x,nw) = PMFRG.iS(gamma,x,Lam,nw,Par)
+	iS(x,nw) = iS_(gamma,x,Lam,nw,Par)
 	Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij])
 	Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij])
 
@@ -49,9 +49,9 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 	@unpack gamma,Dgamma,DVa,DVb,DVc,Xa,Xb,Xc,XTa,XTb,XTc,XTd = Workspace 
     @unpack T,N,Npairs,lenIntw,np_vec,usesymmetry,NUnique = Par 
 	
-	iS(x,nw) = PMFRG.iS(gamma,x,Lam,nw,Par)
-	iG(x,nw) = PMFRG.iG(gamma,x,Lam,nw,Par)
-	iSKat(x,nw) = PMFRG.iSKat(gamma,Dgamma,x,Lam,nw,Par)
+	iS(x,nw) = iS_(gamma,x,Lam,nw,Par)
+	iG(x,nw) = iG_(gamma,x,Lam,nw,Par)
+	iSKat(x,nw) = iSKat_(gamma,Dgamma,x,Lam,nw,Par)
 
 	Props = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
 	function getKataninProp!(BubbleProp,nw1,nw2)
@@ -281,7 +281,7 @@ function getChi(State, Lam::double,Par::Params,Numax = 1)
 	gamma = State.x[2]
 	Vc = State.x[5]
 
-	iG(x,w) = PMFRG.iG(gamma,x, Lam,w,Par)
+	iG(x,w) = iG_(gamma,x, Lam,w,Par)
 	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
 
 	Chi = zeros(Npairs,N)

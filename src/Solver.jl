@@ -55,7 +55,7 @@ function SolveFRG(Par::Params;method=DP5(),save_everystep = false,saveat = [1.,P
     cb = SavingCallback(save_func, saved_values,save_everystep =true,tdir=-1)
 
     problem = ODEProblem(getDeriv!,State,(Lam_max,Lam_min),setup)
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = save_everystep,saveat = saveat,callback=cb,dt = -0.2*Par.Lam_max)
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = save_everystep,saveat = saveat,callback=cb,dtmin = 0.005*Lam_min)
     if !MinimalOutput
         println(sol.destats)
     end

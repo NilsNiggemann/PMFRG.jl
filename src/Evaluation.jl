@@ -1,15 +1,14 @@
-using StaticArrays,HDF5,Plots,Parameters,LaTeXStrings,SmoothingSplines,DelimitedFiles,Dierckx, NoiseRobustDifferentiation
+module Evaluation
+
+export deriv,get_e,get_c,get_e,get_c,getNumberFromName,ReadPMResults,Energy,GetThermo,reverseTOrder,GetBetaThermo,PMResults,Thermoplots,plotgamma_T,plotgamma,getHTSE,cutData,cutDataAndRecompute
+
+using HDF5,Plots,Parameters,LaTeXStrings,SmoothingSplines,DelimitedFiles,Dierckx
 function deriv(y::AbstractArray,x,order=1) 
     func = Spline1D(x, y, k=3,bc="extrapolate") 
     # func = Spline1D(x, y; w=ones(length(x)), k=3, bc="nearest", s=0.0)
     derivative(func,x,nu=order)
 end
-function TVderiv(y::AbstractArray,x::AbstractArray,alpha = 5E-1;kwargs...)
-    diffs = diff(x)
-    dx = diffs[1]
-    @assert maximum(diffs) ≈ minimum(diffs) "TVRegDiff only works on uniformly spaced input!"
-    TVRegDiff(y,150,alpha,dx = dx,diff_kernel = "square",cg_tol = 1E-10,cg_maxiter = 1000,scale = "small",ε = 1E-14,precond = "simple";kwargs...)
-end
+
 function get_e(f,T)
     return(f(T)-T*derivative(f,T))
 end
@@ -94,7 +93,7 @@ function Energy(Chi_R, Lattice)
     return E
 end
 
-function GetThermo(PMData::Dict;skipvals = 1,smoothen = true,smoothParam = 0.001)
+function GetThermo(PMData::Dict;skipvals = 1,smoothen = false,smoothParam = 0.001)
 
     T,fint_T,Chi_TR,gamma_TxN,N,NLen,NUnique = getindex.(Ref(PMData),(:T,:fint_T,:Chi_TR,:gamma_TxN,:N,:NLen,:NUnique))
 
@@ -130,49 +129,13 @@ function reverseTOrder(T,Arrays...)
     return reorder.((T,Arrays...))
 end
 
-function GetBetaThermo(PMData::Dict;smoothParam = 0.005,kwargs...)
-
-    T,fint_T,Chi_TR,gamma_TxN,N,NLen,NUnique = getindex.(Ref(PMData),(:T,:fint_T,:Chi_TR,:gamma_TxN,:N,:NLen,:NUnique))
-
-    T,fint_T,Chi_TR,gamma_TxN = reverseTOrder(T,fint_T,Chi_TR,gamma_TxN)
-    β = 1 ./T
-
-    f_T = -T*log(2) +fint_T
-
-    # firstder = TVderiv(fint_T, β,smoothParam;kwargs...)
-    e_T = TVderiv(fint_T .* β, β,smoothParam;kwargs...)
-    # e_T = fint_T .+ β .* TVderiv(fint_T, β,smoothParam;kwargs...)
-    c_T = - β .^2 .* TVderiv(e_T,β,smoothParam,kwargs...)
-    s_T = β .* (e_T-f_T)
-
-
-    # spl = fit(SmoothingSpline, β, fint_T, smoothParam) # smoothing parameter low means less smoothing
-    # fint_T = SmoothingSplines.predict(spl,β) # fitted vector
-    # f_T = -T*log(2) +fint_T
-    # # f_intPol = intpol(fint_T,T)
-    # f_intPol = Spline1D(β, fint_T, k=3,bc="extrapolate") 
-    # # e_T = fint_T .+ β .* derivative(f_intPol, β)
-    # e_T = derivative(f_intPol, β)
-    # # c_T = - β .^2 .* derivative(f_intPol,β,2)
-    # c_T = - β .^2 .* (2*derivative(f_intPol,β)+ β .* derivative(f_intPol,β,2))
-    # # c_T = derivative(f_intPol,β,2)
-    # s_T = β .* (e_T-f_T)
-
-    return PMResults(T=T,N = N, NLen = NLen, NUnique = NUnique, Chi_TR=Chi_TR,gamma_TxN=gamma_TxN,fint=fint_T,f=f_T,e=e_T,c=c_T,s=s_T)
-end
-
 function PMResults(Filename;kwargs...)
     res = ReadPMResults(Filename)
-    diffs = diff(res[:T])
-    betadiffs = diff(1 ./res[:T])
-    if maximum(diffs) ≈ minimum(diffs)
-        return GetThermo(res;kwargs...)
-    elseif maximum(betadiffs) ≈ minimum(betadiffs)
-        return GetBetaThermo(res;kwargs...)
-    end
+    return GetThermo(res;kwargs...)
+
 end
 
-function Thermoplots(Results,pl =plot(layout = (4,1));method = scatter!,shape = :circle,kwargs...)
+function Thermoplots(Results,pl =plot(layout = (4,1));method = plot!,shape = :circle,kwargs...)
     @unpack T,f,e,s,c = Results
     ThermQuantities = (f,e,s,c)
     # linestyles = (:solid,:dash,:dot,:dashdot)
@@ -248,3 +211,5 @@ function cutDataAndRecompute(Results,index1,index2 = 0;kwargs...)
     end
     return GetThermo(fields;kwargs...)
 end
+
+end #module

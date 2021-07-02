@@ -45,7 +45,7 @@ function setupSystem(Par::Params)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params;method=DP5(),save_everystep = false,saveat = [1.,Par.Lam_min])
+function SolveFRG(Par::Params;method=DP5(),MaxVal = 50,kwargs...)
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
 
@@ -53,9 +53,10 @@ function SolveFRG(Par::Params;method=DP5(),save_everystep = false,saveat = [1.,P
 
     saved_values = SavedValues(double,Observables)
     cb = SavingCallback(save_func, saved_values,save_everystep =true,tdir=-1)
-
+    unstable_check(dt,u,p,t) = any(x->abs(x)>MaxVal,u) # returns true -> Interrupts ODE integration if vertex gets too big
     problem = ODEProblem(getDeriv!,State,(Lam_max,Lam_min),setup)
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = save_everystep,saveat = saveat,callback=cb,dtmin = 0.005*Lam_min)
+    #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,saveat = [1.,Par.Lam_min],callback=cb,dt=0.2*Lam_max,dtmin = -0.005*Lam_min,unstable_check = unstable_check;kwargs...)
     if !MinimalOutput
         println(sol.destats)
     end

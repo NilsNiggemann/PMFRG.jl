@@ -32,8 +32,9 @@ Julia-Performance-tip: Make sure the type definitions are as accurate as possibl
     usesymmetry::Bool = true
     MinimalOutput::Bool = false
     ex_freq::double = (2*N-1)*pi*T
-    lenIntw::Int = floor(Int,  (min(ex_freq,Lam_max)/pi/T-1)/2)
-    lenIntw_acc::Int = 10*lenIntw # more accurate for less demanding sums
+    # lenIntw::Int = floor(Int,  (min(ex_freq,Lam_max)/pi/T-1)/2)
+    lenIntw::Int = N
+    lenIntw_acc::Int = Ngamma # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1)
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1)
 

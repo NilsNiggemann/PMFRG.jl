@@ -2,7 +2,7 @@ module PMFRG
     using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools
     export SolveFRG,Params,double,BS3,Vern7,DP5,version
 
-    version() = """v.1.0.0"""
+    version() = """v.1.0.1"""
     # Essentials
     include("Globals.jl")
     include("VertexFunctions_Dense.jl")
@@ -14,7 +14,6 @@ module PMFRG
         @eval Main begin
 
             include(string($(@__DIR__),"/Evaluation.jl"))
-            using .Evaluation
         end
     end
     #Precompilation

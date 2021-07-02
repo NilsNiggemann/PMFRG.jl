@@ -1,7 +1,3 @@
-module Evaluation
-
-export deriv,get_e,get_c,get_e,get_c,getNumberFromName,ReadPMResults,Energy,GetThermo,reverseTOrder,GetBetaThermo,PMResults,Thermoplots,plotgamma_T,plotgamma,getHTSE,cutData,cutDataAndRecompute
-
 using HDF5,Plots,Parameters,LaTeXStrings,SmoothingSplines,DelimitedFiles,Dierckx
 function deriv(y::AbstractArray,x,order=1) 
     func = Spline1D(x, y, k=3,bc="extrapolate") 
@@ -147,7 +143,7 @@ function Thermoplots(Results,pl =plot(layout = (4,1));method = plot!,shape = :ci
         method(pl[i],T,obs,ylabel = lab,xlabel = "",shape=shape,xformatter=_->"",top_margin = -20*Plots.px,xlims =  [0,maximum(T)];kwargs...,label = legendLabel[i])
     end
     # plot!(pl[1],,legend = true;kwargs...)
-    plot!(pl[end],xlabel = L"T",xformatter=x->x,size = (500,700),link=:x,left_margin=20*Plots.px;kwargs...)
+    plot!(pl[end],[],[],label = "",xlabel = L"T",xformatter=x->x,size = (500,700),left_margin=20*Plots.px)
     return pl
 end
 function plotgamma_T(Results,iT,pl = plot())
@@ -211,5 +207,3 @@ function cutDataAndRecompute(Results,index1,index2 = 0;kwargs...)
     end
     return GetThermo(fields;kwargs...)
 end
-
-end #module

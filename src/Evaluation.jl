@@ -131,7 +131,7 @@ function PMResults(Filename;kwargs...)
 
 end
 
-function Thermoplots(Results,pl =plot(layout = (4,1));method = plot!,shape = :circle,kwargs...)
+function Thermoplots(Results,pl =plot(layout = (4,1));xAxis = "T",method = plot!,shape = :circle,kwargs...)
     @unpack T,f,e,s,c = Results
     ThermQuantities = (f,e,s,c)
     # linestyles = (:solid,:dash,:dot,:dashdot)
@@ -139,11 +139,17 @@ function Thermoplots(Results,pl =plot(layout = (4,1));method = plot!,shape = :ci
     # colors = ("blue","red","black","cyan","magenta","green","pink")
     Labels = [L"f",L"e",L"s",L"c"]
     legendLabel = (kwargs[:label],"","","")
+    x = T
+    if xAxis in ("Beta", "beta","1/T")
+        x = 1 ./T
+        xAxis = "\\beta"
+    end
+
     for (i,(obs,lab)) in enumerate(zip(ThermQuantities,Labels))
-        method(pl[i],T,obs,ylabel = lab,xlabel = "",shape=shape,xformatter=_->"",top_margin = -20*Plots.px,xlims =  [0,maximum(T)];kwargs...,label = legendLabel[i])
+        method(pl[i],x,obs,ylabel = lab,xlabel = "",shape=shape,xformatter=_->"",top_margin = -20*Plots.px,xlims =  [0,maximum(x)];kwargs...,label = legendLabel[i])
     end
     # plot!(pl[1],,legend = true;kwargs...)
-    plot!(pl[end],[],[],label = "",xlabel = L"T",xformatter=x->x,size = (500,700),left_margin=20*Plots.px)
+    plot!(pl[end],[],[],label = "",xlabel = latexstring(xAxis),xformatter=x->x,size = (500,700),left_margin=20*Plots.px)
     return pl
 end
 function plotgamma_T(Results,iT,pl = plot())

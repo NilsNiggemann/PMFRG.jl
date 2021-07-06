@@ -51,9 +51,28 @@ end
 """
 Returns value of vertex, swaps sites i <-> j by reading from inverted pairs when necessary. For performance, it is advised to directly use the Arrays like Va after pre-checking the frequency structure 
 """
-function V_(Vertex::AbstractArray, Rj::Integer, is::Integer,it::Integer,iu::Integer,Rji::Integer)
-    if it*iu<0
-        return Vertex[Rji,abs(is),abs(it),abs(iu)]
-    end
-    return Vertex[Rj,abs(is),abs(it),abs(iu)]
+@inline function V_(Vertex::AbstractArray, Rj::Integer, is::Integer,it::Integer,iu::Integer,Rji::Integer)
+    Rj = ifelse(it*iu<0,Rji, Rj) #use ifselse to avoid branching
+    @inbounds Vertex[Rj,abs(is),abs(it),abs(iu)]
 end
+
+@inline function bufferV_!(Cache, Vertex::AbstractArray, is::Integer,it::Integer,iu::Integer,invpairs::AbstractArray)
+    @inbounds begin 
+        if it*iu<0
+            @turbo unroll = 1 inline = true for R in eachindex(Cache,invpairs)
+                Cache[R] = Vertex[invpairs[R],abs(is),abs(it),abs(iu)]
+            end
+        else
+            @turbo unroll = 1 inline = true for R in eachindex(Cache,invpairs)
+                Cache[R] = Vertex[R,abs(is),abs(it),abs(iu)]
+            end
+        end
+    end
+end
+
+# function V_(Vertex::AbstractArray, Rj::Integer, is::Integer,it::Integer,iu::Integer,Rji::Integer)
+#     if it*iu<0
+#         return Vertex[Rji,abs(is),abs(it),abs(iu)]
+#     end
+#     return Vertex[Rj,abs(is),abs(it),abs(iu)]
+# end

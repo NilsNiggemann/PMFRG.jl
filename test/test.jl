@@ -1,25 +1,25 @@
 using PMFRG,Profile,SpinFRGLattices,OrdinaryDiffEq
+using SpinFRGLattices.SimpleCubic
 ##
 println("Start program")
 flush(stdout)
 ##
 function Testrun()
     # System = getPyrochlore(4)
-    System = getPolymer(2)
-    # System = getCubic(7)
+    # System = getPolymer(2)
+    System = getCubic(4)
     # Par = Params(System = System,N=32,T=2.2,MinimalOutput=false,usesymmetry = true,accuracy= 1E-4,Ngamma = 200,Lam_min=145.)
     # SolveFRG(Par,method = BS3())
     # println("Setup-run includes compile time")
 
-    Par = Params(System = System,N=10,T=1.5,MinimalOutput=false,usesymmetry = true,accuracy= 1E-5,Ngamma = 200)
-    Solution,saved_values = SolveFRG(Par,method = BS3())
+    Par = Params(System = System,N=32,T=1.5,MinimalOutput=false,usesymmetry = true,accuracy= 1E-5,Ngamma = 200)
+    Solution,saved_values = SolveFRG(Par,method = DP5())
     return Par,Solution,saved_values
 end
 
 ##
 # @profview Par,Solution,saved_values = Testrun()
 Par,Solution,saved_values = Testrun()
-# Par,Solution,saved_values = Testrun()
 # State = Solution(0.01)
 # println(@Free_Energy())
 obs = saved_values.saveval[end]

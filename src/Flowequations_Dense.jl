@@ -54,6 +54,7 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 	iSKat(x,nw) = iSKat_(gamma,Dgamma,x,Lam,nw,Par)
 
 	Props = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
+	Buffers = [VertexBuffer(Par.Npairs) for _ in 1:Threads.nthreads()] 
 	function getKataninProp!(BubbleProp,nw1,nw2)
 		for i in 1:NUnique, j in 1:NUnique
 			BubbleProp[i,j] = iSKat(i,nw1) *iG(j,nw2)* T
@@ -62,6 +63,7 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 	end
     Threads.@threads for is in 1:N
 		BubbleProp = Props[Threads.threadid()]
+		Buffer = Buffers[Threads.threadid()]
         ns = np_vec[is]
         for nw in -lenIntw:lenIntw-1
             sprop = getKataninProp!(BubbleProp,nw,nw+ns)
@@ -73,7 +75,7 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
                 end
                 addXTilde!(Workspace,is,it,iu,nw,sprop,Par)
                 if(!usesymmetry || nu<=nt)
-                    addX!(Workspace,is,it,iu,nw,sprop,Par)
+                    addX!(Workspace,is,it,iu,nw,sprop,Par,Buffer)
                 end
             end
         end
@@ -124,70 +126,73 @@ function mixedFrequencies(is,it,iu,nwpr,Par)
     wmw4 = get_sign_iw(nwpr - nw4,N)
 	return wpw1,wpw2,wmw3,wmw4
 end
+struct VertexBuffer
+	Va12::Vector{double}
+	Vb12::Vector{double}
+	Vc12::Vector{double}
+
+	Va34::Vector{double}
+	Vb34::Vector{double}
+	Vc34::Vector{double}
+	
+	Vc21::Vector{double}
+	Vc43::Vector{double}
+end
+VertexBuffer(Npairs) = VertexBuffer((zeros(Npairs) for _ in 1:8)...)
 """
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
-@inline function addX!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params)
+@inline function addX!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
 	@unpack Va,Vb,Vc,Xa,Xb,Xc = Workspace 
+	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
 	@unpack Npairs,Nsum,siteSum,invpairs = Par
-	
-	Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij])
-	Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij])
-	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
-
 
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(is,it,iu,nwpr,Par)
-	inverse_ki,wpw1,wpw2 = flip_tu(wpw1,wpw2)
-	inverse_kj,wmw3,wmw4 = flip_tu(wmw3,wmw4)
 
-	Va12 = @view Va[:, is, wpw1, wpw2]
-	Vb12 = @view Vb[:, is, wpw1, wpw2]
-	Vc12 = @view Vc[:, is, wpw1, wpw2]
+	bufferV_!(Va12, Va , is, wpw1, wpw2, invpairs)
+	bufferV_!(Vb12, Vb , is, wpw1, wpw2, invpairs)
+	bufferV_!(Vc12, Vc , is, wpw1, wpw2, invpairs)
 
-	Va34 = @view Va[:, is, wmw3, wmw4]
-	Vb34 = @view Vb[:, is, wmw3, wmw4]
-	Vc34 = @view Vc[:, is, wmw3, wmw4]
+	bufferV_!(Va34, Va , is, wmw3, wmw4, invpairs)
+	bufferV_!(Vb34, Vb , is, wmw3, wmw4, invpairs)
+	bufferV_!(Vc34, Vc , is, wmw3, wmw4, invpairs)
 	
-	Vc21 = @view Vc[:, is, wpw2, wpw1]
-	Vc43 = @view Vc[:, is, wmw4, wmw3]
-	
-	@inbounds begin 
-		for Rij in 1:Npairs
-			#loop over all left hand side inequivalent pairs Rij
-			Xa_sum = 0. #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
-			Xb_sum = 0.
-			Xc_sum = 0.
-			@fastmath @simd for k_spl in 1:Nsum[Rij]
-				#loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
-				@unpack ki,kj,m,xk = siteSum[k_spl,Rij]
-				Ptm = Props[xk,xk]*m
-				if (inverse_ki) 
-					ki= invpairs[ki]
-				end
+	bufferV_!(Vc21, Vc , is, wpw2, wpw1, invpairs)
+	bufferV_!(Vc43, Vc , is, wmw4, wmw3, invpairs)
 
-				if (inverse_kj) 
-					kj= invpairs[kj]
-				end
-				Xa_sum += (
-					+Va12[ki] * Va34[kj] 
-					+Vb12[ki] * Vb34[kj] * 2
-				)* Ptm
+	@inbounds for Rij in 1:Npairs
+		#loop over all left hand side inequivalent pairs Rij
+		Xa_sum = 0. #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
+		Xb_sum = 0.
+		Xc_sum = 0.
+		# @fastmath @simd for k_spl in 1:Nsum[Rij]
+		@turbo unroll = 1 inline = true for k_spl in 1:Nsum[Rij]
+			#loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
+			# @unpack ki,kj,m,xk = siteSum[k_spl,Rij]
+			S = siteSum[k_spl,Rij]
+			# ki,kj,m,xk = getfield.(S,(:ki,:kj,:m,:xk))
+			ki,kj,m,xk = S.ki,S.kj,S.m,S.xk
+			Ptm = Props[xk,xk]*m
 
-				Xb_sum += (
-					+Va12[ki] * Vb34[kj]
-					+Vb12[ki] * Va34[kj]
-					+Vb12[ki] * Vb34[kj]
-				)* Ptm
-				
-				Xc_sum += (
-					+Vc12[ki] * Vc34[kj]
-					+Vc21[ki] * Vc43[kj]
-				)* Ptm
-			end
-			Xa[Rij,is,it,iu] += Xa_sum
-			Xb[Rij,is,it,iu] += Xb_sum
-			Xc[Rij,is,it,iu] += Xc_sum
-        end
+			Xa_sum += (
+				+Va12[ki] * Va34[kj] 
+				+Vb12[ki] * Vb34[kj] * 2
+			)* Ptm
+
+			Xb_sum += (
+				+Va12[ki] * Vb34[kj]
+				+Vb12[ki] * Va34[kj]
+				+Vb12[ki] * Vb34[kj]
+			)* Ptm
+			
+			Xc_sum += (
+				+Vc12[ki] * Vc34[kj]
+				+Vc21[ki] * Vc43[kj]
+			)* Ptm
+		end
+		Xa[Rij,is,it,iu] += Xa_sum
+		Xb[Rij,is,it,iu] += Xb_sum
+		Xc[Rij,is,it,iu] += Xc_sum
     end
     return
 end
@@ -208,7 +213,7 @@ function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::I
 		Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
 		@unpack xi,xj = PairTypes[Rij]
 
-		#These doubles are used several times so they are saved locally
+		#These values are used several times so they are saved locally
 		Va12 = Va_(Rji, wpw1, is, wpw2)
 		Va21 = Va_(Rij, wpw2, is, wpw1)
 		Va34 = Va_(Rji, wmw3, is, wmw4)
@@ -271,10 +276,6 @@ function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::I
     end
 end
 ##
-# The pirate's code
-function Pirate(everything)
-    return nothing
-end
 
 function getChi(State, Lam::double,Par::Params,Numax = 1)
 	@unpack T,N,Npairs,lenIntw_acc,np_vec,invpairs,PairTypes,OnsitePairs = Par

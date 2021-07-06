@@ -69,26 +69,6 @@ function ReadPMResults(Filename)
     return (Dict(:T => T ,:fint_T => fint_T ,:Chi_TR => Chi_TR ,:gamma_TxN => gamma_TxN ,:N => N ,:NLen => NLen ,:NUnique => NUnique))
 end
 
-"""Compute energy from spin correlations"""
-function Energy(Chi_R, Lattice)
-    @unpack PairList,SiteList,PairTypes,Basis,UnitCell,pairToInequiv = Lattice
-    J_ij = Lattice.System.couplings
-    E = 0.
-    for i_site in UnitCell
-        # println(Ri)
-        for j_site in SiteList # site summation
-            R_Ref,ij = pairToInequiv(i_site,j_site) #Map j to correct pair so that we may use Chi_0,j'
-            xi = getSiteType(R_Ref,Basis)
-            pair = MapToPair(xi,ij,PairList,PairTypes)
-            if pair !== 0
-                E += 3/(2*Basis.NCell) *J_ij[pair] * Chi_R[pair]
-            end
-            # println(j_site,Chi_R[pair])
-        end
-    end
-    return E
-end
-
 function GetThermo(PMData::Dict;skipvals = 1,smoothen = false,smoothParam = 0.001)
 
     T,fint_T,Chi_TR,gamma_TxN,N,NLen,NUnique = getindex.(Ref(PMData),(:T,:fint_T,:Chi_TR,:gamma_TxN,:N,:NLen,:NUnique))

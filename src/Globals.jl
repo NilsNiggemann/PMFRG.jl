@@ -45,6 +45,9 @@ struct Observables
     Chi::Array{double,1}
     gamma::Array{double,2}
     f_int::Array{double,1}
+    MaxVa::double
+    MaxVb::double
+    MaxVc::double
 end
 
 ## ______________ State Variables shorthand ______________

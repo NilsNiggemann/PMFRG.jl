@@ -2,7 +2,7 @@ module PMFRG
     using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays
     export SolveFRG,Params,double,BS3,Vern7,DP5,version
 
-    version() = """v.1.0.3"""
+    version() = """v.1.0.4"""
     # Essentials
     include("Globals.jl")
     include("VertexFunctions_Dense.jl")

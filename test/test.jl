@@ -1,4 +1,4 @@
-using PMFRG,Profile,SpinFRGLattices,OrdinaryDiffEq
+using PMFRG,Profile,SpinFRGLattices
 using SpinFRGLattices.SimpleCubic
 ##
 println("Start program")
@@ -28,7 +28,7 @@ println(obs.Chi)
 
 ##
 # Par = Params(System=getDimerSquareKagome(3,[1.,1,1,0]),N=64);
-Par = Params(System=getCubic(7),N=32);
+Par = Params(System=getCubic(10),N=20);
 using BenchmarkTools,Parameters,RecursiveArrayTools
 ##
 function test(Par)
@@ -59,14 +59,11 @@ function test(Par)
     # display(@benchmark getDeriv!($Deriv,$State,$(X,XTilde,Par),$Lam) evals = 6)
     # @btime PMFRG.getVertexDeriv!($Workspace,$Lam,$Par)
     Buf = PMFRG.VertexBuffer(Par.Npairs)
-    S = Par.S
-    S_ki = S.ki
-	S_kj = S.kj
-	S_xk = S.xk
-	S_m = S.m
 
-    @btime PMFRG.addX!($Workspace,1,1,1,2,$[1],$Par,$Buf,$S_ki,$S_kj,$S_xk,$S_m)
-    # display(@benchmark getVertexDeriv!($Workspace,$Lam,$Par) evals = 6)
+
+    # @btime PMFRG.addX!($Workspace,1,1,1,2,$[1],$Par,$Buf)
+    # display(@benchmark PMFRG.getVertexDeriv!($Workspace,$Lam,$Par) evals = 1)
+    @btime PMFRG.getVertexDeriv!($Workspace,$Lam,$Par)
     # display(@benchmark get_Self_Energy!($Workspace,$Lam,$Par) evals = 6)
     # @benchmark getChi($State, $Lam,$Par)
     # for _ in 1:10

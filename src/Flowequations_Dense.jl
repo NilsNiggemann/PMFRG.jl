@@ -169,7 +169,7 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 		Xa_sum = 0. #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
 		Xb_sum = 0.
 		Xc_sum = 0.
-		@turbo for k_spl in 1:Nsum[Rij]
+		@turbo unroll = 1 for k_spl in 1:Nsum[Rij]
 			#loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
 			# @unpack ki,kj,m,xk = siteSum[k_spl,Rij]
 			ki,kj,m,xk = S_ki[k_spl,Rij],S_kj[k_spl,Rij],S_m[k_spl,Rij],S_xk[k_spl,Rij]

@@ -7,7 +7,7 @@ flush(stdout)
 function Testrun()
     # System = getPyrochlore(4)
     # System = getPolymer(2)
-    System = getCubic(4)
+    System = getCubic(5)
     # Par = Params(System = System,N=32,T=2.2,MinimalOutput=false,usesymmetry = true,accuracy= 1E-4,Ngamma = 200,Lam_min=145.)
     # SolveFRG(Par,method = BS3())
     # println("Setup-run includes compile time")
@@ -25,12 +25,11 @@ Par,Solution,saved_values = Testrun()
 obs = saved_values.saveval[end]
 # println(obs.f_int)
 println(obs.Chi)
-##
-exit()
+
 ##
 # Par = Params(System=getDimerSquareKagome(3,[1.,1,1,0]),N=64);
 Par = Params(System=getCubic(7),N=32);
-using BenchmarkTools
+using BenchmarkTools,Parameters,RecursiveArrayTools
 ##
 function test(Par)
     @unpack VDims,NUnique,Ngamma,T = Par
@@ -54,11 +53,19 @@ function test(Par)
         zeros(double,VDims),
         zeros(double,VDims)
     )
-    @allocated Workspace = Workspace_Struct(Deriv,State,X,XTilde)
+    @allocated Workspace = PMFRG.Workspace_Struct(Deriv,State,X,XTilde)
     Lam = 10.
 
     # display(@benchmark getDeriv!($Deriv,$State,$(X,XTilde,Par),$Lam) evals = 6)
-    @btime PMFRG.getVertexDeriv!($Workspace,$Lam,$Par)
+    # @btime PMFRG.getVertexDeriv!($Workspace,$Lam,$Par)
+    Buf = PMFRG.VertexBuffer(Par.Npairs)
+    S = Par.S
+    S_ki = S.ki
+	S_kj = S.kj
+	S_xk = S.xk
+	S_m = S.m
+
+    @btime PMFRG.addX!($Workspace,1,1,1,2,$[1],$Par,$Buf,$S_ki,$S_kj,$S_xk,$S_m)
     # display(@benchmark getVertexDeriv!($Workspace,$Lam,$Par) evals = 6)
     # display(@benchmark get_Self_Energy!($Workspace,$Lam,$Par) evals = 6)
     # @benchmark getChi($State, $Lam,$Par)

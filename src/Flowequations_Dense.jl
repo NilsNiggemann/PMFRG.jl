@@ -145,7 +145,7 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 @inline function addX!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
 	@unpack Va,Vb,Vc,Xa,Xb,Xc = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
-	@unpack Npairs,Nsum,siteSum,invpairs = Par
+	@unpack Npairs,Nsum,S,invpairs = Par
 
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(is,it,iu,nwpr,Par)
 
@@ -159,19 +159,20 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 	
 	bufferV_!(Vc21, Vc , is, wpw2, wpw1, invpairs)
 	bufferV_!(Vc43, Vc , is, wmw4, wmw3, invpairs)
-
+	# get fields of siteSum struct as Matrices for better use of LoopVectorization
+	S_ki = S.ki
+	S_kj = S.kj
+	S_xk = S.xk
+	S_m = S.m
 	@inbounds for Rij in 1:Npairs
 		#loop over all left hand side inequivalent pairs Rij
 		Xa_sum = 0. #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
 		Xb_sum = 0.
 		Xc_sum = 0.
-		# @fastmath @simd for k_spl in 1:Nsum[Rij]
-		@turbo unroll = 1 inline = true for k_spl in 1:Nsum[Rij]
+		@turbo for k_spl in 1:Nsum[Rij]
 			#loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
 			# @unpack ki,kj,m,xk = siteSum[k_spl,Rij]
-			S = siteSum[k_spl,Rij]
-			# ki,kj,m,xk = getfield.(S,(:ki,:kj,:m,:xk))
-			ki,kj,m,xk = S.ki,S.kj,S.m,S.xk
+			ki,kj,m,xk = S_ki[k_spl,Rij],S_kj[k_spl,Rij],S_m[k_spl,Rij],S_xk[k_spl,Rij]
 			Ptm = Props[xk,xk]*m
 
 			Xa_sum += (

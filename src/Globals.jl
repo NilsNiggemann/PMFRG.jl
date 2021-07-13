@@ -5,7 +5,7 @@ const double = Float64
 Struct to hold all relevant quantities that are needed throughout the computation. They can be unpacked using the Parameters package. 
 Julia-Performance-tip: Make sure the type definitions are as accurate as possible to prevent run-time allocations. If used correctly, the values are only passed by reference.
 """
-@with_kw struct Params
+@with_kw struct Params{SType}
     # ______________ Model ______________
 
     T::double = 0.5 # Temperature
@@ -19,6 +19,7 @@ Julia-Performance-tip: Make sure the type definitions are as accurate as possibl
     couplings::Vector{Float64} = System.couplings
     invpairs::Vector{Int} = System.invpairs
     siteSum::Matrix{sumElements} = System.siteSum
+    S::SType = StructArray(siteSum)
     PairTypes::Vector{sitePair} = System.PairTypes
     OnsitePairs::Vector{Int}= System.OnsitePairs
     

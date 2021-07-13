@@ -67,7 +67,9 @@ function writeOutput(State,Lam,Par)
     @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
     f_int,gamma,Va,Vb,Vc = State.x
     chi = getChi(State,Lam,Par)[:,1]
-
+    MaxVa,MaxPosVa = absmax(Va)
+    MaxVb,MaxPosVb = absmax(Vb)
+    MaxVc,MaxPosVc = absmax(Vc)
     if !MinimalOutput 
         print("T= ",strd(T)," at Lambda step: ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
         for f in f_int
@@ -87,12 +89,9 @@ function writeOutput(State,Lam,Par)
             return f1,f2,f3
         end
 
-        Max,MaxPos = absmax(Va)
-        println("Max Va",Tuple(MaxPos) ," = ", Max)
-        Max,MaxPos = absmax(Vb)
-        println("Max Vb",Tuple(MaxPos) ," = ", Max)
-        Max,MaxPos = absmax(Vc)
-        println("Max Vc",Tuple(MaxPos) ," = ", Max)
+        println("Max Va",Tuple(MaxPosVa) ," = ", MaxVa)
+        println("Max Vb",Tuple(MaxPosVb) ," = ", MaxVb)
+        println("Max Vc",Tuple(MaxPosVc) ," = ", MaxVc)
         
         f1,f2,f3 = givefreqs()
         println("\t_____Symmetry tests_____")
@@ -117,5 +116,5 @@ function writeOutput(State,Lam,Par)
         end
         flush(stdout)
     end
-    return Observables(chi,gamma,f_int)
+    return Observables(chi,gamma,f_int,MaxVa,MaxVb,MaxVc)
 end

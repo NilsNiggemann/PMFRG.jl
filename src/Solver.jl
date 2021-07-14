@@ -12,8 +12,8 @@ function getDeriv!(Deriv,State,XandPar,Lam)
     get_Self_Energy!(Workspace,Lam,Par)
     getVertexDeriv!(Workspace,Lam,Par)
 
-    for iu in 1:N, it in 1:N, is in 1:N
-        DVc[1,is,it,iu] = -DVb[1,it,is,iu]
+    for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
+        DVc[R,is,it,iu] = -DVb[R,it,is,iu]
     end
     return
 end
@@ -56,7 +56,7 @@ function SolveFRG(Par::Params;method=DP5(),MaxVal = 50,kwargs...)
     unstable_check(dt,u,p,t) = any(x->abs(x)>MaxVal,u) # returns true -> Interrupts ODE integration if vertex gets too big
     problem = ODEProblem(getDeriv!,State,(Lam_max,Lam_min),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,saveat = [1.,Par.Lam_min],callback=cb,dt=0.2*Lam_max,dtmin = -0.005*Lam_min,unstable_check = unstable_check;kwargs...)
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,saveat = [1.,Par.Lam_min],callback=cb,dt=0.2*Lam_max,dtmin = 0.1*Lam_min,unstable_check = unstable_check;kwargs...)
     if !MinimalOutput
         println(sol.destats)
     end
@@ -67,9 +67,6 @@ function writeOutput(State,Lam,Par)
     @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
     f_int,gamma,Va,Vb,Vc = State.x
     chi = getChi(State,Lam,Par)[:,1]
-    MaxVa,MaxPosVa = absmax(Va)
-    MaxVb,MaxPosVb = absmax(Vb)
-    MaxVc,MaxPosVc = absmax(Vc)
     if !MinimalOutput 
         print("T= ",strd(T)," at Lambda step: ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
         for f in f_int
@@ -88,7 +85,9 @@ function writeOutput(State,Lam,Par)
             end
             return f1,f2,f3
         end
-
+        MaxVa,MaxPosVa = absmax(Va)
+        MaxVb,MaxPosVb = absmax(Vb)
+        MaxVc,MaxPosVc = absmax(Vc)
         println("Max Va",Tuple(MaxPosVa) ," = ", MaxVa)
         println("Max Vb",Tuple(MaxPosVb) ," = ", MaxVb)
         println("Max Vc",Tuple(MaxPosVc) ," = ", MaxVc)
@@ -116,5 +115,8 @@ function writeOutput(State,Lam,Par)
         end
         flush(stdout)
     end
+    MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
+    MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
+    MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
     return Observables(chi,gamma,f_int,MaxVa,MaxVb,MaxVc)
 end

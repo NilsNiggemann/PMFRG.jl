@@ -47,7 +47,7 @@ end
 
 function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 	@unpack gamma,Dgamma,DVa,DVb,DVc,Xa,Xb,Xc,XTa,XTb,XTc,XTd = Workspace 
-    @unpack T,N,Npairs,lenIntw,np_vec,usesymmetry,NUnique = Par 
+    @unpack T,N,Npairs,lenIntw,np_vec,usesymmetry,NUnique,OnsitePairs = Par 
 	
 	iS(x,nw) = iS_(gamma,x,Lam,nw,Par)
 	iG(x,nw) = iG_(gamma,x,Lam,nw,Par)
@@ -94,11 +94,11 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 		end
     end
 	#local definitions of XTilde vertices
-	for iu in 1:N, it in 1:N, is in 1:N
-		XTa[1,is,it,iu] = Xa[1,is,it,iu]
-		XTb[1,is,it,iu] = Xb[1,is,it,iu]
-		XTc[1,is,it,iu] = Xc[1,is,it,iu]
-		XTd[1,is,it,iu] = -Xc[1,is,iu,it]
+	for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
+		XTa[R,is,it,iu] = Xa[R,is,it,iu]
+		XTb[R,is,it,iu] = Xb[R,is,it,iu]
+		XTc[R,is,it,iu] = Xc[R,is,it,iu]
+		XTd[R,is,it,iu] = -Xc[R,is,iu,it]
 	end
 	Threads.@threads for iu in 1:N
 		for it in 1:N, is in 1:N, Rij in 1:Npairs

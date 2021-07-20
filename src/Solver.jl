@@ -118,5 +118,5 @@ function writeOutput(State,Lam,Par)
     MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
     MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
     MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
-    return Observables(chi,gamma,f_int,MaxVa,MaxVb,MaxVc)
+    return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
 end

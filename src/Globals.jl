@@ -43,9 +43,12 @@ end
 
 """Struct containing the observables that are saved at every step"""
 struct Observables
-    Chi::Array{double,1}
-    gamma::Array{double,2}
-    f_int::Array{double,1}
+    Chi::Vector{double}
+    gamma::Matrix{double}
+    f_int::Vector{double}
+    MaxVa::Vector{double}
+    MaxVb::Vector{double}
+    MaxVc::Vector{double}
 end
 
 ## ______________ State Variables shorthand ______________

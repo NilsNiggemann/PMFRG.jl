@@ -12,8 +12,8 @@ function getDeriv!(Deriv,State,XandPar,Lam)
     get_Self_Energy!(Workspace,Lam,Par)
     getVertexDeriv!(Workspace,Lam,Par)
 
-    for iu in 1:N, it in 1:N, is in 1:N
-        DVc[1,is,it,iu] = -DVb[1,it,is,iu]
+    for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
+        DVc[R,is,it,iu] = -DVb[R,it,is,iu]
     end
     return
 end
@@ -105,13 +105,12 @@ function writeOutput(State,saved_values,Lam,Par)
             end
             return f1,f2,f3
         end
-
-        Max,MaxPos = absmax(Va)
-        println("Max Va",Tuple(MaxPos) ," = ", Max)
-        Max,MaxPos = absmax(Vb)
-        println("Max Vb",Tuple(MaxPos) ," = ", Max)
-        Max,MaxPos = absmax(Vc)
-        println("Max Vc",Tuple(MaxPos) ," = ", Max)
+        MaxVa,MaxPosVa = absmax(Va)
+        MaxVb,MaxPosVb = absmax(Vb)
+        MaxVc,MaxPosVc = absmax(Vc)
+        println("Max Va",Tuple(MaxPosVa) ," = ", MaxVa)
+        println("Max Vb",Tuple(MaxPosVb) ," = ", MaxVb)
+        println("Max Vc",Tuple(MaxPosVc) ," = ", MaxVc)
         
         f1,f2,f3 = givefreqs()
         println("\t_____Symmetry tests_____")

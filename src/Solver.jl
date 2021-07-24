@@ -45,29 +45,48 @@ function setupSystem(Par::Params)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params;method=DP5(),MaxVal = 50,kwargs...)
+function SolveFRG(Par::Params;method=DP5(),MaxVal = 50,ObsSaveat = nothing,kwargs...)
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
 
-    save_func(State,Lam,integrator) = writeOutput(State,Lam,Par)
-
+    save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
     saved_values = SavedValues(double,Observables)
-    cb = SavingCallback(save_func, saved_values,save_everystep =true,tdir=-1)
+
+    output_func(State,Lam,integrator) = writeOutput(State,saved_values,Lam,Par)
+    #get Default for lambda range for observables
+    if ObsSaveat === nothing
+        dense_range = collect(LinRange(Lam_min,5.,100))
+        medium_range = collect(LinRange(5.,10.,50))
+        sparse_range = collect(LinRange(10.,Lam_max,50))
+        ObsSaveat = unique!(append!(dense_range,medium_range,sparse_range))
+    end
+    saveCB = SavingCallback(save_func, saved_values,save_everystep =false,saveat = ObsSaveat,tdir=-1)
+    outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
     unstable_check(dt,u,p,t) = any(x->abs(x)>MaxVal,u) # returns true -> Interrupts ODE integration if vertex gets too big
+
     problem = ODEProblem(getDeriv!,State,(Lam_max,Lam_min),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,saveat = [1.,Par.Lam_min],callback=cb,dt=0.2*Lam_max,dtmin = -0.005*Lam_min,unstable_check = unstable_check;kwargs...)
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,saveat = [1.,Par.Lam_min],callback=CallbackSet(saveCB,outputCB),dt=0.2*Lam_max,dtmin = 0.1*Lam_min,unstable_check = unstable_check;kwargs...)
     if !MinimalOutput
         println(sol.destats)
     end
     return sol,saved_values
 end
 
-function writeOutput(State,Lam,Par)
+function getObservables(State,Lam,Par)
     @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
     f_int,gamma,Va,Vb,Vc = State.x
-    chi = getChi(State,Lam,Par)[:,1]
+    chi = @view getChi(State,Lam,Par)[:,1]
+    MaxVa = @view maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
+    MaxVb = @view maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
+    MaxVc = @view maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
+    return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
+end
 
+function writeOutput(State,saved_values,Lam,Par)
+    @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
+    f_int,gamma,Va,Vb,Vc = State.x
+    chi = saved_values.saveval[end].Chi
     if !MinimalOutput 
         print("T= ",strd(T)," at Lambda step: ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
         for f in f_int
@@ -117,5 +136,5 @@ function writeOutput(State,Lam,Par)
         end
         flush(stdout)
     end
-    return Observables(chi,gamma,f_int)
+    return 
 end

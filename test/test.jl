@@ -12,7 +12,7 @@ function Testrun()
     # SolveFRG(Par,method = BS3())
     # println("Setup-run includes compile time")
 
-    Par = Params(System = System,N=32,T=1.5,MinimalOutput=false,usesymmetry = true,accuracy= 1E-5,Ngamma = 200)
+    Par = Params(System = System,N=24,T=1.5,MinimalOutput=false,usesymmetry = true,accuracy= 1E-5,Ngamma = 200)
     Solution,saved_values = SolveFRG(Par,method = DP5())
     return Par,Solution,saved_values
 end
@@ -25,7 +25,8 @@ Par,Solution,saved_values = Testrun()
 obs = saved_values.saveval[end]
 # println(obs.f_int)
 println(obs.Chi)
-
+using Plots
+scatter(saved_values.t,getindex.(getfield.(saved_values.saveval,:Chi),1),xlims = [0,2.5])
 ##
 # Par = Params(System=getDimerSquareKagome(3,[1.,1,1,0]),N=64);
 Par = Params(System=getCubic(7),N=32);

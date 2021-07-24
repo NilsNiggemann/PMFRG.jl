@@ -278,7 +278,7 @@ function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::I
 end
 ##
 
-function getChi(State, Lam::double,Par::Params,Numax = 1)
+function getChi(State, Lam::double,Par::Params,Numax)
 	@unpack T,N,Npairs,lenIntw_acc,np_vec,invpairs,PairTypes,OnsitePairs = Par
 	gamma = State.x[2]
 	Vc = State.x[5]
@@ -287,7 +287,8 @@ function getChi(State, Lam::double,Par::Params,Numax = 1)
 	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
 
 	Chi = zeros(Npairs,N)
-	Threads.@threads for Rij in 1:Npairs
+
+	@inbounds Threads.@threads for Rij in 1:Npairs
 		@unpack xi,xj = PairTypes[Rij]
 		for i_nu in 1:Numax
        		n_nu = np_vec[i_nu]
@@ -304,6 +305,34 @@ function getChi(State, Lam::double,Par::Params,Numax = 1)
 					Chi[Rij,i_nu] += T^2 * GGGG *Vc_(Rij,i_nu,npwpw2,wmw2)
                 end
             end
+        end
+    end
+	return(Chi)
+end
+
+function getChi(State, Lam::double,Par::Params)
+	@unpack T,N,Npairs,lenIntw_acc,np_vec,invpairs,PairTypes,OnsitePairs = Par
+	gamma = State.x[2]
+	Vc = State.x[5]
+
+	iG(x,w) = iG_(gamma,x, Lam,w,Par)
+	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
+
+	Chi = zeros(Npairs)
+
+	@inbounds Threads.@threads for Rij in 1:Npairs
+		@unpack xi,xj = PairTypes[Rij]
+		for nK in -lenIntw_acc:lenIntw_acc-1
+			if Rij in OnsitePairs
+				Chi[Rij,1] += T * iG(xi,nK) ^2
+			end
+			for nK2 in -lenIntw_acc:lenIntw_acc-1
+				npwpw2 = get_sign_iw(nK+nK2+1,N)
+				wmw2 = get_sign_iw(nK-nK2,N)
+				#use that Vc_0 is calculated from Vb
+				GGGG = iG(xi,nK)^2 * iG(xj,nK2)^2
+				Chi[Rij] += T^2 * GGGG *Vc_(Rij,1,npwpw2,wmw2)
+			end
         end
     end
 	return(Chi)

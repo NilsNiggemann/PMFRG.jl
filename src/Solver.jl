@@ -45,10 +45,13 @@ function setupSystem(Par::Params)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params;method=DP5(),MaxVal = 50,ObsSaveat = nothing,kwargs...)
+function SolveFRG(Par::Params;kwargs...)
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
-    @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
+    launchPMFRG!(State,setup,getDeriv!,Par;kwargs...)
+end
 
+function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;method = DP5(),MaxVal = 50,ObsSaveat = nothing,kwargs...)
+    @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
     save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
     saved_values = SavedValues(double,Observables)
 
@@ -57,14 +60,14 @@ function SolveFRG(Par::Params;method=DP5(),MaxVal = 50,ObsSaveat = nothing,kwarg
     if ObsSaveat === nothing
         dense_range = collect(LinRange(Lam_min,5.,100))
         medium_range = collect(LinRange(5.,10.,50))
-        sparse_range = collect(LinRange(10.,Lam_max,50))
+        sparse_range = collect(LinRange(10.,Lam_max,30))
         ObsSaveat = unique!(append!(dense_range,medium_range,sparse_range))
     end
     saveCB = SavingCallback(save_func, saved_values,save_everystep =false,saveat = ObsSaveat,tdir=-1)
     outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
-    unstable_check(dt,u,p,t) = any(x->abs(x)>MaxVal,u) # returns true -> Interrupts ODE integration if vertex gets too big
+    unstable_check(dt,u,p,t) = maximum(abs,u) >MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
 
-    problem = ODEProblem(getDeriv!,State,(Lam_max,Lam_min),setup)
+    problem = ODEProblem(Deriv!,State,(Lam_max,Lam_min),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,saveat = [1.,Par.Lam_min],callback=CallbackSet(saveCB,outputCB),dt=0.2*Lam_max,dtmin = 0.1*Lam_min,unstable_check = unstable_check;kwargs...)
     if !MinimalOutput
@@ -76,7 +79,7 @@ end
 function getObservables(State,Lam,Par)
     @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
     f_int,gamma,Va,Vb,Vc = State.x
-    chi = @view getChi(State,Lam,Par)[:,1]
+    chi = getChi(State,Lam,Par)
     MaxVa = @view maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
     MaxVb = @view maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
     MaxVc = @view maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]

@@ -116,10 +116,10 @@ function mixedFrequencies(is,it,iu,nwpr,Par)
 	nt = np_vec[it]
 	nu = np_vec[iu]
 
-	nw1=div(ns+nt+nu+1,2)
-    nw2=div(ns-nt-nu+1,2)
-    nw3=div(-ns+nt-nu+1,2)
-    nw4=div(-ns-nt+nu+1,2)
+	nw1=div(ns+nt+nu-1,2)
+    nw2=div(ns-nt-nu-1,2)
+    nw3=div(-ns+nt-nu-1,2)
+    nw4=div(-ns-nt+nu-1,2)
 	wpw1 = get_sign_iw(nwpr + nw1+1,N)
     wpw2 = get_sign_iw(nwpr + nw2+1,N)
     wmw3 = get_sign_iw(nwpr - nw3,N)

@@ -24,8 +24,8 @@ function get_Self_Energy!(Workspace::Workspace_Struct,Lam::double,Par::Params)
     @unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma,siteSum,invpairs,Nsum,OnsitePairs = Par 
 	
 	iS(x,nw) = iS_(gamma,x,Lam,nw,Par)
-	Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij])
-	Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij])
+	Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij],N)
+	Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij],N)
 
 	Threads.@threads for iw1 in 1:Ngamma
 		nw1 = np_vec_gamma[iw1]
@@ -116,10 +116,10 @@ function mixedFrequencies(is,it,iu,nwpr,Par)
 	nt = np_vec[it]
 	nu = np_vec[iu]
 
-	nw1=div(ns+nt+nu+1,2)
-    nw2=div(ns-nt-nu+1,2)
-    nw3=div(-ns+nt-nu+1,2)
-    nw4=div(-ns-nt+nu+1,2)
+	nw1=div(ns+nt+nu-1,2)
+    nw2=div(ns-nt-nu-1,2)
+    nw3=div(-ns+nt-nu-1,2)
+    nw4=div(-ns-nt+nu-1,2)
 	wpw1 = get_sign_iw(nwpr + nw1+1,N)
     wpw2 = get_sign_iw(nwpr + nw2+1,N)
     wmw3 = get_sign_iw(nwpr - nw3,N)
@@ -145,26 +145,26 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 @inline function addX!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
 	@unpack Va,Vb,Vc,Xa,Xb,Xc = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
-	@unpack Npairs,Nsum,S,invpairs = Par
+	@unpack N,Npairs,Nsum,S,invpairs = Par
 
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(is,it,iu,nwpr,Par)
 
-	bufferV_!(Va12, Va , is, wpw1, wpw2, invpairs)
-	bufferV_!(Vb12, Vb , is, wpw1, wpw2, invpairs)
-	bufferV_!(Vc12, Vc , is, wpw1, wpw2, invpairs)
+	bufferV_!(Va12, Va , is, wpw1, wpw2, invpairs,N)
+	bufferV_!(Vb12, Vb , is, wpw1, wpw2, invpairs,N)
+	bufferV_!(Vc12, Vc , is, wpw1, wpw2, invpairs,N)
 
-	bufferV_!(Va34, Va , is, wmw3, wmw4, invpairs)
-	bufferV_!(Vb34, Vb , is, wmw3, wmw4, invpairs)
-	bufferV_!(Vc34, Vc , is, wmw3, wmw4, invpairs)
+	bufferV_!(Va34, Va , is, wmw3, wmw4, invpairs,N)
+	bufferV_!(Vb34, Vb , is, wmw3, wmw4, invpairs,N)
+	bufferV_!(Vc34, Vc , is, wmw3, wmw4, invpairs,N)
 	
-	bufferV_!(Vc21, Vc , is, wpw2, wpw1, invpairs)
-	bufferV_!(Vc43, Vc , is, wmw4, wmw3, invpairs)
+	bufferV_!(Vc21, Vc , is, wpw2, wpw1, invpairs,N)
+	bufferV_!(Vc43, Vc , is, wmw4, wmw3, invpairs,N)
 	# get fields of siteSum struct as Matrices for better use of LoopVectorization
 	S_ki = S.ki
 	S_kj = S.kj
 	S_xk = S.xk
 	S_m = S.m
-	@inbounds for Rij in 1:Npairs
+	for Rij in 1:Npairs
 		#loop over all left hand side inequivalent pairs Rij
 		Xa_sum = 0. #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
 		Xb_sum = 0.
@@ -200,11 +200,11 @@ end
 ##
 function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params)
 	@unpack Va,Vb,Vc,XTa,XTb,XTc,XTd = Workspace 
-	@unpack Npairs,invpairs,PairTypes = Par
+	@unpack N,Npairs,invpairs,PairTypes = Par
     
-	Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij])
-	Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij])
-	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
+	Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij],N)
+	Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij],N)
+	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij],N)
 
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(is,it,iu,nwpr,Par)
 
@@ -284,7 +284,7 @@ function getChi(State, Lam::double,Par::Params,Numax)
 	Vc = State.x[5]
 
 	iG(x,w) = iG_(gamma,x, Lam,w,Par)
-	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
+	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(Npairs,N)
 

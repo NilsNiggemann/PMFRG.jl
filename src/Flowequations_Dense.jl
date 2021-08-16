@@ -316,7 +316,7 @@ function getChi(State, Lam::double,Par::Params)
 	Vc = State.x[5]
 
 	iG(x,w) = iG_(gamma,x, Lam,w,Par)
-	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
+	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(Npairs)
 

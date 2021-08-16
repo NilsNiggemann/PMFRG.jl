@@ -45,7 +45,6 @@ end
         it == N && return is,it-1,iu,swapsites
         iu == N && return is,it,iu-1,swapsites
     end
-    @assert (is+it+iu-3) %2 != 0 "$is + $it +  $iu = $(is+it+iu)"
     return is,it,iu,swapsites
 end
 
@@ -70,12 +69,14 @@ Returns value of vertex, swaps sites i <-> j by reading from inverted pairs when
 """
 @inline function V_(Vertex::AbstractArray, Rj::Integer, is::Integer,it::Integer,iu::Integer,Rji::Integer,N::Integer)
     is,it,iu,swapsites = convertFreqArgs(is,it,iu,N)
+    @assert (is+it+iu-3) %2 != 0 "$is + $it +  $iu = $(is+it+iu)"
     Rj = ifelse(swapsites,Rji,Rj)
     @inbounds Vertex[Rj,abs(is),abs(it),abs(iu)]
 end
 
 @inline function bufferV_!(Cache, Vertex::AbstractArray, is::Integer,it::Integer,iu::Integer,invpairs::AbstractArray,N)
     is,it,iu,swapsites = convertFreqArgs(is,it,iu,N)
+    @assert (is+it+iu-3) %2 != 0 "$is + $it +  $iu = $(is+it+iu)"
     @inbounds begin 
         if swapsites<0
             @turbo unroll = 1 inline = true for R in eachindex(Cache,invpairs)

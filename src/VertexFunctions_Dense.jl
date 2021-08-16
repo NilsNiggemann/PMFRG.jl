@@ -17,16 +17,6 @@ function get_sign_iw(nw::Integer,N::Integer)
     return s *N
 end
 
-"""Given a (Matsubara) integer, returns a corresponding signed integer within the considered range"""
-function get_sign_iw(nw::Integer,N::Integer)
-    s = sgn(nw)
-    nw = abs(nw)
-    if nw < N
-        return s*(nw +1) # Need to add 1 because Julia arrays do not start at 0
-    end
-    return s *N
-end
-
 """Given the last two frequencies of a vertex return their absolute values together with a bool whether the pair ij has to be inverted"""
 function flip_tu(it,iu)
     if it*iu>=0

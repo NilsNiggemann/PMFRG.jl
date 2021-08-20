@@ -32,12 +32,12 @@ function get_Self_Energy!(Workspace::Workspace_Struct,Lam::double,Par::Params)
     	for (x,Rx) in enumerate(OnsitePairs)
 			for nw in -lenIntw_acc: lenIntw_acc-1
 				jsum = 0.
-				w1pw = get_sign_iw(nw1+nw+1,N) #w1 + w: Adding two Matsubara frequencies gives a +1
-				w1mw = get_sign_iw(nw1-nw,N)
+				w1pw = nw1+nw+1 #w1 + w: Adding two Matsubara frequencies gives a +1
+				w1mw = nw1-nw
 				for k_spl in 1:Nsum[Rx]
 					@unpack m,ki,xk = siteSum[k_spl,Rx]
 					ik = invpairs[ki] # pair ik is inversed relative to pre-generated site summation in X (ki)!
-					jsum += (Va_(ik,1,w1pw,w1mw)+2*Vb_(ik,1,w1pw,w1mw))*iS(xk,nw)*m
+					jsum += (Va_(ik,0,w1pw,w1mw)+2*Vb_(ik,0,w1pw,w1mw))*iS(xk,nw)*m
 				end
 				Dgamma[x,iw1] += T/2 *jsum
 			end
@@ -110,20 +110,16 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 
 end
 
-function mixedFrequencies(is,it,iu,nwpr,Par)
-	@unpack np_vec,N = Par
-    ns = np_vec[is]
-	nt = np_vec[it]
-	nu = np_vec[iu]
-
-	nw1=div(ns+nt+nu-1,2)
-    nw2=div(ns-nt-nu-1,2)
-    nw3=div(-ns+nt-nu-1,2)
-    nw4=div(-ns-nt+nu-1,2)
-	wpw1 = get_sign_iw(nwpr + nw1+1,N)
-    wpw2 = get_sign_iw(nwpr + nw2+1,N)
-    wmw3 = get_sign_iw(nwpr - nw3,N)
-    wmw4 = get_sign_iw(nwpr - nw4,N)
+function mixedFrequencies(ns,nt,nu,nwpr)
+	nw1=Int((ns+nt+nu-1)/2)
+    nw2=Int((ns-nt-nu-1)/2)
+    nw3=Int((-ns+nt-nu-1)/2)
+    nw4=Int((-ns-nt+nu-1)/2)
+	wpw1 = nwpr + nw1+1
+    wpw2 = nwpr + nw2+1
+    wmw3 = nwpr - nw3
+    wmw4 = nwpr - nw4
+	@assert (ns + wmw3 +wmw4)%2 != 0 "error in freq"
 	return wpw1,wpw2,wmw3,wmw4
 end
 struct VertexBuffer
@@ -145,20 +141,22 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 @inline function addX!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
 	@unpack Va,Vb,Vc,Xa,Xb,Xc = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
-	@unpack N,Npairs,Nsum,S,invpairs = Par
+	@unpack N,Npairs,Nsum,S,invpairs,np_vec = Par
+	ns = np_vec[is]
+	nt = np_vec[it]
+	nu = np_vec[iu]
+	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
-	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(is,it,iu,nwpr,Par)
+	bufferV_!(Va12, Va , ns, wpw1, wpw2, invpairs,N)
+	bufferV_!(Vb12, Vb , ns, wpw1, wpw2, invpairs,N)
+	bufferV_!(Vc12, Vc , ns, wpw1, wpw2, invpairs,N)
 
-	bufferV_!(Va12, Va , is, wpw1, wpw2, invpairs,N)
-	bufferV_!(Vb12, Vb , is, wpw1, wpw2, invpairs,N)
-	bufferV_!(Vc12, Vc , is, wpw1, wpw2, invpairs,N)
-
-	bufferV_!(Va34, Va , is, wmw3, wmw4, invpairs,N)
-	bufferV_!(Vb34, Vb , is, wmw3, wmw4, invpairs,N)
-	bufferV_!(Vc34, Vc , is, wmw3, wmw4, invpairs,N)
+	bufferV_!(Va34, Va , ns, wmw3, wmw4, invpairs,N)
+	bufferV_!(Vb34, Vb , ns, wmw3, wmw4, invpairs,N)
+	bufferV_!(Vc34, Vc , ns, wmw3, wmw4, invpairs,N)
 	
-	bufferV_!(Vc21, Vc , is, wpw2, wpw1, invpairs,N)
-	bufferV_!(Vc43, Vc , is, wmw4, wmw3, invpairs,N)
+	bufferV_!(Vc21, Vc , ns, wpw2, wpw1, invpairs,N)
+	bufferV_!(Vc43, Vc , ns, wmw4, wmw3, invpairs,N)
 	# get fields of siteSum struct as Matrices for better use of LoopVectorization
 	S_ki = S.ki
 	S_kj = S.kj
@@ -200,13 +198,14 @@ end
 ##
 function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params)
 	@unpack Va,Vb,Vc,XTa,XTb,XTc,XTd = Workspace 
-	@unpack N,Npairs,invpairs,PairTypes = Par
-    
+	@unpack N,Npairs,invpairs,PairTypes,np_vec = Par
 	Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij],N)
 	Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij],N)
 	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij],N)
-
-	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(is,it,iu,nwpr,Par)
+	ns = np_vec[is]
+	nt = np_vec[it]
+	nu = np_vec[iu]
+	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
 	#Xtilde only defined for nonlocal pairs Rij >= 2
 	for Rij in 2:Npairs
@@ -215,20 +214,20 @@ function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::I
 		@unpack xi,xj = PairTypes[Rij]
 
 		#These values are used several times so they are saved locally
-		Va12 = Va_(Rji, wpw1, is, wpw2)
-		Va21 = Va_(Rij, wpw2, is, wpw1)
-		Va34 = Va_(Rji, wmw3, is, wmw4)
-		Va43 = Va_(Rij, wmw4, is, wmw3)
+		Va12 = Va_(Rji, wpw1, ns, wpw2)
+		Va21 = Va_(Rij, wpw2, ns, wpw1)
+		Va34 = Va_(Rji, wmw3, ns, wmw4)
+		Va43 = Va_(Rij, wmw4, ns, wmw3)
 
-		Vb12 = Vb_(Rji, wpw1, is, wpw2)
-		Vb21 = Vb_(Rij, wpw2, is, wpw1)
-		Vb34 = Vb_(Rji, wmw3, is, wmw4)
-		Vb43 = Vb_(Rij, wmw4, is, wmw3)
+		Vb12 = Vb_(Rji, wpw1, ns, wpw2)
+		Vb21 = Vb_(Rij, wpw2, ns, wpw1)
+		Vb34 = Vb_(Rji, wmw3, ns, wmw4)
+		Vb43 = Vb_(Rij, wmw4, ns, wmw3)
 
-		Vc12 = Vc_(Rji, wpw1, is, wpw2)
-		Vc21 = Vc_(Rij, wpw2, is, wpw1)
-		Vc34 = Vc_(Rji, wmw3, is, wmw4)
-		Vc43 = Vc_(Rij, wmw4, is, wmw3)
+		Vc12 = Vc_(Rji, wpw1, ns, wpw2)
+		Vc21 = Vc_(Rij, wpw2, ns, wpw1)
+		Vc34 = Vc_(Rji, wmw3, ns, wmw4)
+		Vc43 = Vc_(Rij, wmw4, ns, wmw3)
 
 	    XTa[Rij,is,it,iu] += (
 			(+Va21 * Va43
@@ -246,15 +245,15 @@ function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::I
 			+Vc12 * Vc34
 			+Vc12 * Va34)* Props[xj,xi]
 		)
-		Vb12 = Vb_(Rji, wpw1, wpw2, is)
-		Vb21 = Vb_(Rij, wpw2, wpw1, is)
-		Vb34 = Vb_(Rji, wmw3, wmw4, is)
-		Vb43 = Vb_(Rij, wmw4, wmw3, is)
+		Vb12 = Vb_(Rji, wpw1, wpw2, ns)
+		Vb21 = Vb_(Rij, wpw2, wpw1, ns)
+		Vb34 = Vb_(Rji, wmw3, wmw4, ns)
+		Vb43 = Vb_(Rij, wmw4, wmw3, ns)
 
-		Vc12 = Vc_(Rji, wpw1, wpw2, is)
-		Vc21 = Vc_(Rij, wpw2, wpw1, is)
-		Vc34 = Vc_(Rji, wmw3, wmw4, is)
-		Vc43 = Vc_(Rij, wmw4, wmw3, is)
+		Vc12 = Vc_(Rji, wpw1, wpw2, ns)
+		Vc21 = Vc_(Rij, wpw2, wpw1, ns)
+		Vc34 = Vc_(Rji, wmw3, wmw4, ns)
+		Vc43 = Vc_(Rij, wmw4, wmw3, ns)
 
 
 	    XTc[Rij,is,it,iu] += (
@@ -298,11 +297,11 @@ function getChi(State, Lam::double,Par::Params,Numax)
 					Chi[Rij,i_nu] += T * iG(xi,nK) * iG(xi,nK+n_nu)
 				end
 				for nK2 in -lenIntw_acc:lenIntw_acc-1
-					npwpw2 = get_sign_iw(n_nu+nK+nK2+1,N)
-					wmw2 = get_sign_iw(nK-nK2,N)
+					npwpw2 = n_nu+nK+nK2+1
+					wmw2 = nK-nK2
 					#use that Vc_0 is calculated from Vb
 					GGGG = iG(xi,nK)*iG(xi,nK+n_nu) * iG(xj,nK2)*iG(xj,nK2+n_nu)
-					Chi[Rij,i_nu] += T^2 * GGGG *Vc_(Rij,i_nu,npwpw2,wmw2)
+					Chi[Rij,i_nu] += T^2 * GGGG *Vc_(Rij,n_nu,npwpw2,wmw2)
                 end
             end
         end
@@ -316,7 +315,7 @@ function getChi(State, Lam::double,Par::Params)
 	Vc = State.x[5]
 
 	iG(x,w) = iG_(gamma,x, Lam,w,Par)
-	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij])
+	Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(Npairs)
 
@@ -327,11 +326,11 @@ function getChi(State, Lam::double,Par::Params)
 				Chi[Rij,1] += T * iG(xi,nK) ^2
 			end
 			for nK2 in -lenIntw_acc:lenIntw_acc-1
-				npwpw2 = get_sign_iw(nK+nK2+1,N)
-				wmw2 = get_sign_iw(nK-nK2,N)
+				npwpw2 = nK+nK2+1
+				wmw2 = nK-nK2
 				#use that Vc_0 is calculated from Vb
 				GGGG = iG(xi,nK)^2 * iG(xj,nK2)^2
-				Chi[Rij] += T^2 * GGGG *Vc_(Rij,1,npwpw2,wmw2)
+				Chi[Rij] += T^2 * GGGG *Vc_(Rij,0,npwpw2,wmw2)
 			end
         end
     end

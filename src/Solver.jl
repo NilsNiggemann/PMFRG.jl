@@ -25,6 +25,7 @@ end
 function setupSystem(Par::Params)
     @unpack N,Ngamma,Npairs,VDims,couplings,T,NUnique = Par
     println("T= ",T)
+
     ##Allocate Memory:
     State = ArrayPartition(
         zeros(double,NUnique), # f_int 
@@ -37,7 +38,6 @@ function setupSystem(Par::Params)
     X = CreateX(3,VDims)
     XTilde = CreateX(4,VDims)
 
-
     Vc = State.x[5]
     for is in 1:N, it in 1:N, iu in 1:N, Rj in 1:Npairs
         Vc[Rj,is,it,iu] = -couplings[Rj]
@@ -45,17 +45,25 @@ function setupSystem(Par::Params)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params;kwargs...)
+function SolveFRG(Par::Params,CheckpointDirectory = nothing;kwargs...)
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
-    launchPMFRG!(State,setup,getDeriv!,Par;kwargs...)
+    
+    setupDirectory(CheckpointDirectory,Par)
+
+    launchPMFRG!(State,setup,getDeriv!,Par,CheckpointDirectory =CheckpointDirectory ;kwargs...)
 end
 
-function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;method = DP5(),MaxVal = 50,ObsSaveat = nothing,kwargs...)
+function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],kwargs...)
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
     save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
     saved_values = SavedValues(double,Observables)
 
-    output_func(State,Lam,integrator) = writeOutput(State,saved_values,Lam,Par)
+    function output_func(State,Lam,integrator)
+        setCheckpoint(CheckpointDirectory,State,Lam,Par,VertexCheckpoints)
+        writeOutput(State,saved_values,Lam,Par)
+    end
+
+    sort!(VertexCheckpoints)
     #get Default for lambda range for observables
     if ObsSaveat === nothing
         dense_range = collect(LinRange(Lam_min,5.,100))
@@ -69,7 +77,7 @@ function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;method = DP5(),Ma
 
     problem = ODEProblem(Deriv!,State,(Lam_max,Lam_min),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,saveat = [1.,Par.Lam_min],callback=CallbackSet(saveCB,outputCB),dt=0.2*Lam_max,dtmin = 0.1*Lam_min,unstable_check = unstable_check;kwargs...)
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=0.2*Lam_max,dtmin = 0.1*Lam_min,unstable_check = unstable_check;kwargs...)
     if !MinimalOutput
         println(sol.destats)
     end
@@ -139,4 +147,15 @@ function writeOutput(State,saved_values,Lam,Par)
         flush(stdout)
     end
     return 
+end
+
+function setCheckpoint(Directory,State,Lam,Par,checkPointList)
+    if !isempty(checkPointList) && Directory !== nothing
+        if Lam < last(checkPointList) 
+            Checkpoint = pop!(checkPointList)
+            println("saving Checkpoint Lam ≤ $Checkpoint at ",Lam)
+            mv(joinpath(Directory,"CurrentState.h5"),"$Directory/Checkpoints/$(strd(Lam)).h5")
+        end
+    end
+    saveCurrentState(Directory,State,Lam,Par)
 end

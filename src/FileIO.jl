@@ -66,11 +66,11 @@ function readParams(Filename,Geometry;modifyParams...)
 end
 
 function setupDirectory(DirPath,Par)
-    if DirPath !== nothing
-        DirPath = generateUniqueName(DirPath,Par)
-        println("Checkpoints saved at $DirPath")
-        mkpath(joinpath(DirPath,"Checkpoints")) 
-    end
+    DirPath = generateUniqueName(DirPath,Par)
+    println("Checkpoints saved at $DirPath")
+    # CheckPath = joinpath(DirPath,"Checkpoints")
+    mkpath(DirPath)
+    return DirPath 
 end
 
 function saveCurrentState(DirPath,State,Lam,Par)
@@ -117,12 +117,5 @@ function SolveFRG_Checkpoint(Filename::String,Geometry;kwargs...)
     State,setup = setupFromCheckpoint(Filename,Geometry) #Package parameter and pre-allocate arrays
     Par = setup[3]
     FilePath = dirname(Filename)
-    if last(split(FilePath,"/")) == "Checkpoints"
-        CheckPath = FilePath
-    elseif ispath(joinpath(FilePath,"..","Checkpoints"))
-        CheckPath = joinpath(FilePath,"..","Checkpoints")
-    else
-        setupDirectory(FilePath,Par)
-    end
     launchPMFRG!(State,setup,getDeriv!,Par;CheckpointDirectory = FilePath,kwargs...)
 end

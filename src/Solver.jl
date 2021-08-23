@@ -45,10 +45,10 @@ function setupSystem(Par::Params)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params,CheckpointDirectory = nothing;kwargs...)
+function SolveFRG(Par::Params,CheckpointDirectory = "";kwargs...)
+    CheckpointDirectory = setupDirectory(CheckpointDirectory,Par)
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
     
-    setupDirectory(CheckpointDirectory,Par)
 
     launchPMFRG!(State,setup,getDeriv!,Par,CheckpointDirectory =CheckpointDirectory ;kwargs...)
 end
@@ -154,7 +154,7 @@ function setCheckpoint(Directory,State,Lam,Par,checkPointList)
         if Lam < last(checkPointList) 
             Checkpoint = pop!(checkPointList)
             println("saving Checkpoint Lam ≤ $Checkpoint at ",Lam)
-            mv(joinpath(Directory,"CurrentState.h5"),"$Directory/Checkpoints/$(strd(Lam)).h5")
+            mv(joinpath(Directory,"CurrentState.h5"),"$Directory/$(strd(Lam)).h5")
         end
     end
     saveCurrentState(Directory,State,Lam,Par)

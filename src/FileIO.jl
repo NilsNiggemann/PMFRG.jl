@@ -73,9 +73,10 @@ function setupDirectory(DirPath,Par)
     return DirPath 
 end
 
-function saveCurrentState(DirPath,State,Lam,Par)
+function saveCurrentState(DirPath::String,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,Lam::Real,Par::Params)
     saveState(joinpath(DirPath,"CurrentState.h5"),State,Lam,"w")
     saveParams(joinpath(DirPath,"CurrentState.h5"),Par)
+    saveObs(joinpath(DirPath,"CurrentState.h5"),saved_Values,"Observables")
 end
 
 function UniqueDirName(FullPath)
@@ -118,4 +119,19 @@ function SolveFRG_Checkpoint(Filename::String,Geometry;kwargs...)
     Par = setup[3]
     FilePath = dirname(Filename)
     launchPMFRG!(State,setup,getDeriv!,Par;CheckpointDirectory = FilePath,kwargs...)
+end
+
+"""Saves Observables"""
+function saveObs(Filename,Obs::DiffEqCallbacks.SavedValues,Group = "")
+    Fields = fieldnames(eltype(Obs.saveval))
+    ObsArr = StructArray(Obs.saveval)
+    for F in Fields
+        arr = convertToArray(getproperty(ObsArr,F))
+        h5write(Filename,joinpath(Group,string(F)),arr)
+    end
+    h5write(Filename,joinpath(Group,"Lambda"),Obs.t)
+end
+
+function convertToArray(VecOfArray::AbstractVector{VT}) where {T,N,VT <: AbstractArray{T,N}}
+    cat(VecOfArray...,dims = N+1)
 end

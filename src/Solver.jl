@@ -59,7 +59,11 @@ function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;CheckpointDirecto
     saved_values = SavedValues(double,Observables)
 
     function output_func(State,Lam,integrator)
-        setCheckpoint(CheckpointDirectory,State,Lam,Par,VertexCheckpoints)
+        println("Time taken for output saving: ")
+        @time begin
+            setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
+        end
+        println("") 
         writeOutput(State,saved_values,Lam,Par)
     end
 
@@ -149,7 +153,7 @@ function writeOutput(State,saved_values,Lam,Par)
     return 
 end
 
-function setCheckpoint(Directory,State,Lam,Par,checkPointList)
+function setCheckpoint(Directory,State,saved_values,Lam,Par,checkPointList)
     if !isempty(checkPointList) && Directory !== nothing
         if Lam < last(checkPointList) 
             Checkpoint = pop!(checkPointList)
@@ -160,5 +164,5 @@ function setCheckpoint(Directory,State,Lam,Par,checkPointList)
             mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
         end
     end
-    saveCurrentState(Directory,State,Lam,Par)
+    saveCurrentState(Directory,State,saved_values,Lam,Par)
 end

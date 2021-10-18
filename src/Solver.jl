@@ -153,8 +153,11 @@ function setCheckpoint(Directory,State,Lam,Par,checkPointList)
     if !isempty(checkPointList) && Directory !== nothing
         if Lam < last(checkPointList) 
             Checkpoint = pop!(checkPointList)
-            println("saving Checkpoint Lam ≤ $Checkpoint at ",Lam)
-            mv(joinpath(Directory,"CurrentState.h5"),"$Directory/$(strd(Lam)).h5")
+            CheckpointFile = UniqueDirName("$Directory/$(strd(Lam)).h5")
+            println("\nsaving Checkpoint Lam ≤ $Checkpoint at ",Lam)
+            println("in file ", CheckpointFile)
+            println("")
+            mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
         end
     end
     saveCurrentState(Directory,State,Lam,Par)

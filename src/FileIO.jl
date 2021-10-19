@@ -110,22 +110,29 @@ function generateUniqueName(Directory::String,Par::Params)
     return Name
 end
 
-function setupFromCheckpoint(Filename::String,Geometry)
+function setupFromCheckpoint(Filename::String,Geometry,Par=nothing)
     State = readState(Filename)
     Lam = readLam(Filename)
-    Par = readParams(Filename,Geometry;Lam_max = Lam)
-    @unpack N,Ngamma,Npairs,VDims,couplings,T,NUnique = Par
+    Par_file = readParams(Filename,Geometry;Lam_max = Lam)
+    Fields = (:Npairs,:N,:Ngamma) 
+    if Par !== nothing
+        for f in Fields
+            @assert getproperty(Par,f) == getproperty(Par_file,f) "$f not compatible with parameters used in Checkpoint"
+        end
+    else
+        Par = Par_file
+    end
+
     println("Reading Checkpoint from $Filename")
     # println("starting with ",generateName(Par))
-    X = CreateX(3,VDims)
-    XTilde = CreateX(4,VDims)
+    X = CreateX(3,Par.VDims)
+    XTilde = CreateX(4,Par.VDims)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG_Checkpoint(Filename::String,Geometry;kwargs...)
-    State,setup = setupFromCheckpoint(Filename,Geometry) #Package parameter and pre-allocate arrays
-    Par = setup[3]
-    FilePath = dirname(Filename)
+function SolveFRG_Checkpoint(Filename::String,Geometry,Par = nothing;kwargs...)
+    State,setup = setupFromCheckpoint(Filename,Geometry,Par) #Package parameter and pre-allocate arrays
+    FilePath = dirname(dirname(Filename))
     launchPMFRG!(State,setup,getDeriv!,Par;CheckpointDirectory = FilePath,kwargs...)
 end
 

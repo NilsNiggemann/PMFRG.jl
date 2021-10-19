@@ -45,12 +45,16 @@ function setupSystem(Par::Params)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params,CheckpointDirectory = "";kwargs...)
-    CheckpointDirectory = setupDirectory(CheckpointDirectory,Par)
+function SolveFRG(Par::Params,MainFile = nothing, CheckpointDirectory = nothing;Group =string(Par.T)::String, kwargs...)
+    typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par))
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
     
 
-    launchPMFRG!(State,setup,getDeriv!,Par,CheckpointDirectory =CheckpointDirectory ;kwargs...)
+    sol,saved_values = launchPMFRG!(State,setup,getDeriv!,Par, CheckpointDirectory = CheckpointDirectory; kwargs...)
+    if MainFile !== nothing
+        saveMainOutput(MainFile,sol,saved_values,Par,Group)
+    end
+    return sol,saved_values
 end
 
 function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],kwargs...)
@@ -59,22 +63,15 @@ function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;CheckpointDirecto
     saved_values = SavedValues(double,Observables)
 
     function output_func(State,Lam,integrator)
-        println("Time taken for output saving: ")
-        @time begin
-            setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
-        end
+        setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
         println("") 
         writeOutput(State,saved_values,Lam,Par)
     end
 
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
-    if ObsSaveat === nothing
-        dense_range = collect(LinRange(Lam_min,5.,100))
-        medium_range = collect(LinRange(5.,10.,50))
-        sparse_range = collect(LinRange(10.,Lam_max,30))
-        ObsSaveat = unique!(append!(dense_range,medium_range,sparse_range))
-    end
+    ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
+
     saveCB = SavingCallback(save_func, saved_values,save_everystep =false,saveat = ObsSaveat,tdir=-1)
     outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
     unstable_check(dt,u,p,t) = maximum(abs,u) >MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
@@ -153,16 +150,35 @@ function writeOutput(State,saved_values,Lam,Par)
     return 
 end
 
-function setCheckpoint(Directory,State,saved_values,Lam,Par,checkPointList)
-    if !isempty(checkPointList) && Directory !== nothing
-        if Lam < last(checkPointList) 
-            Checkpoint = pop!(checkPointList)
-            CheckpointFile = UniqueDirName("$Directory/$(strd(Lam)).h5")
-            println("\nsaving Checkpoint Lam ≤ $Checkpoint at ",Lam)
-            println("in file ", CheckpointFile)
-            println("")
-            mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
+function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointList)
+    println("Time taken for output saving: ")
+    @time begin
+        if !isempty(checkPointList)
+            if Lam < last(checkPointList) 
+                Checkpoint = pop!(checkPointList)
+                CheckpointFile = UniqueDirName("$Directory/$(strd(Lam)).h5")
+                println("\nsaving Checkpoint Lam ≤ $Checkpoint at ",Lam)
+                println("in file ", CheckpointFile)
+                println("")
+                mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
+            end
         end
+        saveCurrentState(Directory,State,saved_values,Lam,Par)
     end
-    saveCurrentState(Directory,State,saved_values,Lam,Par)
+end
+
+function setCheckpoint(Directory::Nothing,State,saved_values,Lam,Par,checkPointList)
+    return
+end
+
+function getLambdaMesh(Saveat::Nothing,Lam_min,Lam_max)
+    dense_range = collect(LinRange(Lam_min,5.,100))
+    medium_range = collect(LinRange(5.,10.,50))
+    sparse_range = collect(LinRange(10.,Lam_max,30))
+    ObsSaveat = unique!(append!(dense_range,medium_range,sparse_range))
+    return ObsSaveat
+end
+
+function getLambdaMesh(Saveat::AbstractVector)
+    return Saveat
 end

@@ -16,7 +16,7 @@ Julia-Performance-tip: Make sure the type definitions are as accurate as possibl
     Npairs::Int = System.Npairs
     Nsum::Vector{Int} = System.Nsum
     NUnique::Int = System.NUnique
-    couplings::Vector{Float64} = System.couplings
+    couplings::Vector{double} = System.couplings
     invpairs::Vector{Int} = System.invpairs
     siteSum::Matrix{sumElements} = System.siteSum
     S::SType = StructArray(siteSum)

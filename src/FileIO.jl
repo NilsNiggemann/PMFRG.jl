@@ -34,6 +34,14 @@ function readLam(Filename::String)
     return Lam
 end
 
+# function readObservables(Filename::String)
+#     t = h5read(Filename,"Observables/Lambda")
+#     Fields = fieldnames(Observables)
+#     obsTuple = (h5read(Filename,"Observables/$f" for f in Fields)
+
+#     saved_values = SavedValues()
+# end
+
 EssentialParamFields() = (
     :T,
     :N,
@@ -47,15 +55,15 @@ EssentialParamFields() = (
 )
 
 """Saves important information about computation parameters so that they can be reconstructed"""
-function saveParams(Filename,Par::Params)
+function saveParams(Filename,Par::Params,Group = "")
     Fields = EssentialParamFields()
     for F in Fields
-        h5write(Filename,"Params/$F",getfield(Par,F))
+        h5write(Filename,joinpath(Group,"Params/$F"),getfield(Par,F))
     end
-    h5write(Filename,"Geometry/Name",Par.System.Name)
-    h5write(Filename,"Geometry/NLen",Par.System.NLen)
-    h5write(Filename,"Geometry/couplings",Par.System.couplings)
-    h5write(Filename,"Geometry/Npairs",Par.System.Npairs)
+    h5write(Filename,joinpath(Group,"Geometry/Name"),Par.System.Name)
+    h5write(Filename,joinpath(Group,"Geometry/NLen"),Par.System.NLen)
+    h5write(Filename,joinpath(Group,"Geometry/couplings"),Par.System.couplings)
+    h5write(Filename,joinpath(Group,"Geometry/Npairs"),Par.System.Npairs)
 end
 
 function readParams(Filename,Geometry;modifyParams...)
@@ -122,16 +130,45 @@ function SolveFRG_Checkpoint(Filename::String,Geometry;kwargs...)
 end
 
 """Saves Observables"""
-function saveObs(Filename,Obs::DiffEqCallbacks.SavedValues,Group = "")
-    Fields = fieldnames(eltype(Obs.saveval))
-    ObsArr = StructArray(Obs.saveval)
+function saveObs(Filename,saved_values::DiffEqCallbacks.SavedValues,Group = "")
+    Fields = fieldnames(eltype(saved_values.saveval))
+    ObsArr = StructArray(saved_values.saveval)
     for F in Fields
         arr = convertToArray(getproperty(ObsArr,F))
         h5write(Filename,joinpath(Group,string(F)),arr)
     end
-    h5write(Filename,joinpath(Group,"Lambda"),Obs.t)
+    h5write(Filename,joinpath(Group,"Lambda"),saved_values.t)
 end
 
 function convertToArray(VecOfArray::AbstractVector{VT}) where {T,N,VT <: AbstractArray{T,N}}
     cat(VecOfArray...,dims = N+1)
+end
+
+function saveMainOutput(Filename::String,saved_values::DiffEqCallbacks.SavedValues,Group::String)
+    println("Saving Main output to ", Filename)
+    mkpath(dirname(Filename))
+    saveObs(Filename,saved_values,Group)
+end
+
+function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::Params,Group)
+    @unpack T,System,N = Par
+    @unpack Name,NUnique,Npairs,NLen = System
+    Lambda = saved_values.t
+    function save(name)
+        saveMainOutput(name,saved_values,Group)
+        Chi_nu = getChi(Solution[end],Lambda[end],Par,N)
+        h5write(name,"$Group/T",T)
+        h5write(name,"$Group/N",N)
+        h5write(name,"$Group/NUnique",NUnique)
+        h5write(name,"$Group/NLen",NLen)
+        h5write(name,"$Group/Chi_nu",Chi_nu)
+    end
+    try
+        save(Filename)
+    catch e
+        newName = UniqueDirName(Filename)
+        @warn "Writing to $Filename errored with exception $(string(e))! Writing to $newName instead."
+        save(newName)
+    end
+    # saveParams(Filename,Par,Group)
 end

@@ -49,12 +49,7 @@ function SolveFRG(Par::Params,MainFile = nothing, CheckpointDirectory = nothing;
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par))
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
     
-
-    sol,saved_values = launchPMFRG!(State,setup,getDeriv!,Par, CheckpointDirectory = CheckpointDirectory; kwargs...)
-    if MainFile !== nothing
-        saveMainOutput(MainFile,sol,saved_values,Par,Group)
-    end
-    return sol,saved_values
+    launchPMFRG!(State,setup,getDeriv!,Par, CheckpointDirectory = CheckpointDirectory; kwargs...)
 end
 
 function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],kwargs...)
@@ -81,6 +76,9 @@ function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;CheckpointDirecto
     @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=0.2*Lam_max,dtmin = 0.1*Lam_min,unstable_check = unstable_check;kwargs...)
     if !MinimalOutput
         println(sol.destats)
+    end
+    if MainFile !== nothing
+        saveMainOutput(MainFile,sol,saved_values,Par,Group)
     end
     return sol,saved_values
 end

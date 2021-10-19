@@ -45,14 +45,14 @@ function setupSystem(Par::Params)
     return State,(X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params,MainFile = nothing, CheckpointDirectory = nothing;Group =string(Par.T)::String, kwargs...)
-    typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par))
+function SolveFRG(Par::Params; kwargs...)
     State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
     
-    launchPMFRG!(State,setup,getDeriv!,Par, CheckpointDirectory = CheckpointDirectory; kwargs...)
+    launchPMFRG!(State,setup,getDeriv!,Par; kwargs...)
 end
 
-function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],kwargs...)
+function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;MainFile = nothing,CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],Group =string(Par.T)::String,kwargs...)
+    typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par))
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
     save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
     saved_values = SavedValues(double,Observables)

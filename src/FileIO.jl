@@ -110,6 +110,12 @@ function generateUniqueName(Directory::String,Par::Params)
     return Name
 end
 
+function generateFileName(Par::Params)
+    @unpack Name,N = Par
+    Name = "$(Name)_N=$(N).h5"
+    return Name
+end
+
 function setupFromCheckpoint(Filename::String,Geometry,Par=nothing)
     State = readState(Filename)
     Lam = readLam(Filename)

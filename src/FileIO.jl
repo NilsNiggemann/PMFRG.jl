@@ -112,7 +112,7 @@ end
 
 function generateFileName(Par::Params)
     @unpack Name,N = Par
-    Name = "$(Name)_N=$(N).h5"
+    Name = "$(Name)_N=$(N)_l_1.h5"
     return Name
 end
 

@@ -73,6 +73,11 @@ function readParams(Filename,Geometry;modifyParams...)
     return Par
 end
 
+function modifyParams(Par;modifyParams...)
+    ParKwargs = Dict((F => getfield(Par,F) for F in fieldnames(Params))...)
+    Par = Params(;ParKwargs...,modifyParams...)
+end
+
 function setupDirectory(DirPath,Par)
     DirPath = generateUniqueName(DirPath,Par)
     println("Checkpoints saved at $DirPath")
@@ -116,30 +121,34 @@ function generateFileName(Par::Params)
     return Name
 end
 
-function setupFromCheckpoint(Filename::String,Geometry,Par=nothing)
-    State = readState(Filename)
-    Lam = readLam(Filename)
-    Par_file = readParams(Filename,Geometry;Lam_max = Lam)
-    Fields = (:Npairs,:N,:Ngamma) 
-    if Par !== nothing
-        for f in Fields
-            @assert getproperty(Par,f) == getproperty(Par_file,f) "$f not compatible with parameters used in Checkpoint"
-        end
-    else
-        Par = Par_file
+function ParamsCompatible(Par1,Par2)
+    Fields = (:Npairs,:N,:Ngamma,:Lam_max,:System) 
+    for f in Fields
+        @assert getproperty(Par1,f) == getproperty(Par2,f) "$f not compatible with parameters used in Checkpoint"
     end
 
-    println("Reading Checkpoint from $Filename")
-    # println("starting with ",generateName(Par))
-    X = CreateX(3,Par.VDims)
-    XTilde = CreateX(4,Par.VDims)
-    return State,(X,XTilde,Par)
+    return true
+end
+
+function getFileParams(Filename,Geometry,Par::Params)
+    Lam = readLam(Filename)
+    Par_file = readParams(Filename,Geometry;Lam_max = Lam)
+    Par = modifyParams(Par;Lam_max = Lam)
+    ParamsCompatible(Par,Par_file)
+    return Par
+end
+
+function getFileParams(Filename,Geometry,Par::Nothing)
+    Lam = readLam(Filename)
+    return readParams(Filename,Geometry;Lam_max = Lam)
 end
 
 function SolveFRG_Checkpoint(Filename::String,Geometry,Par = nothing;kwargs...)
-    State,setup = setupFromCheckpoint(Filename,Geometry,Par) #Package parameter and pre-allocate arrays
+    State = readState(Filename)
+    Par = getFileParams(Filename,Geometry,Par)
+    setup = AllocateSetup(Par)
     FilePath = dirname(dirname(Filename))
-    launchPMFRG!(State,setup,getDeriv!,Par;CheckpointDirectory = FilePath,kwargs...)
+    launchPMFRG!(State,setup,getDeriv!;CheckpointDirectory = FilePath,kwargs...)
 end
 
 """Saves Observables"""

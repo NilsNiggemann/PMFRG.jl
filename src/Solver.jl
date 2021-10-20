@@ -1,8 +1,5 @@
 Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
-
-## ______________ Helper for symmetry check ______________
-
 function getDeriv!(Deriv,State,XandPar,Lam)
     X,XTilde,Par = XandPar #use pre-allocated X and XTilde to reduce garbage collector time
     N = Par.N
@@ -18,14 +15,9 @@ function getDeriv!(Deriv,State,XandPar,Lam)
     return
 end
 
-function CreateX(Number,VDims)
-    return ArrayPartition(Tuple(zeros(double,VDims) for _ in 1:Number))
-end
-
-function setupSystem(Par::Params)
-    @unpack N,Ngamma,Npairs,VDims,couplings,T,NUnique = Par
-    println("T= ",T)
-
+function InitializeState(Par::Params)
+    @unpack N,Ngamma,Npairs,VDims,couplings,NUnique = Par
+    
     ##Allocate Memory:
     State = ArrayPartition(
         zeros(double,NUnique), # f_int 
@@ -35,23 +27,35 @@ function setupSystem(Par::Params)
         zeros(double,VDims) #Vc
     )
 
-    X = CreateX(3,VDims)
-    XTilde = CreateX(4,VDims)
-
     Vc = State.x[5]
     for is in 1:N, it in 1:N, iu in 1:N, Rj in 1:Npairs
         Vc[Rj,is,it,iu] = -couplings[Rj]
     end
-    return State,(X,XTilde,Par)
+    return State
+end
+
+function CreateX(Number,VDims)
+    return ArrayPartition(Tuple(zeros(double,VDims) for _ in 1:Number))
+end
+
+function AllocateSetup(Par::Params)
+    @unpack N,Ngamma,Npairs,VDims,couplings,T,NUnique = Par
+    println("One Loop: T= ",T)
+    ##Allocate Memory:
+    X = CreateX(3,VDims)
+    XTilde = CreateX(4,VDims)
+    return (X,XTilde,Par)
 end
 
 function SolveFRG(Par::Params; kwargs...)
-    State,setup = setupSystem(Par) #Package parameter and pre-allocate arrays 
+    State = InitializeState(Par)
+    setup = AllocateSetup(Par) #Package parameter and pre-allocate arrays 
     
-    launchPMFRG!(State,setup,getDeriv!,Par; kwargs...)
+    launchPMFRG!(State,setup,getDeriv!; kwargs...)
 end
 
-function launchPMFRG!(State,setup,Deriv!::Function,Par::Params;MainFile = nothing,CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],Group =string(Par.T)::String,kwargs...)
+function launchPMFRG!(State,setup,Deriv!::Function;MainFile = nothing,CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],Group =string(setup[end].T)::String,kwargs...)
+    Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par))
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
     save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
@@ -151,6 +155,7 @@ end
 function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointList)
     println("Time taken for output saving: ")
     @time begin
+        saveCurrentState(Directory,State,saved_values,Lam,Par)
         if !isempty(checkPointList)
             if Lam < last(checkPointList) 
                 Checkpoint = pop!(checkPointList)
@@ -161,7 +166,6 @@ function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointLi
                 mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
             end
         end
-        saveCurrentState(Directory,State,saved_values,Lam,Par)
     end
 end
 

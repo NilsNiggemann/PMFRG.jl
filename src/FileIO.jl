@@ -115,9 +115,9 @@ function generateUniqueName(Directory::String,Par::Params)
     return Name
 end
 
-function generateFileName(Par::Params)
+function generateFileName(Par::Params,arg::String = "")
     @unpack Name,N = Par
-    Name = "$(Name)_N=$(N)_l_1.h5"
+    Name = "$(Name)_N=$(N)_l_1_$arg.h5"
     return Name
 end
 

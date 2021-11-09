@@ -87,12 +87,14 @@ function saveParams(Filename,Par::Params,Group = "")
     h5write(Filename,joinpath(Group,"Geometry/Npairs"),Par.System.Npairs)
 end
 
-function readParams(Filename,Geometry;modifyParams...)
+function readParams(Filename::String,Geometry::SpinFRGLattices.Geometry;modifyParams...)
     Fields = EssentialParamFields()
     Kwargs = Dict((F => h5read(Filename,"Params/$F") for F in Fields)...)
     Par = Params(;System = Geometry,Kwargs...,modifyParams...)
     return Par
 end
+
+readParams(Filename::String,GeometryGenerator::Function;modifyParams...) = readParams(Filename,readGeometry(Filename,GeometryGenerator);modifyParams...)
 
 function modifyParams(Par;modifyParams...)
     ParKwargs = Dict((F => getfield(Par,F) for F in fieldnames(Params))...)

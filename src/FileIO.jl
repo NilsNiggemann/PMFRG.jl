@@ -175,13 +175,16 @@ function getFileParams(Filename,Geometry,Par::Nothing)
     return readParams(Filename,Geometry;Lam_max = Lam)
 end
 
-function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par = nothing;MainFile = nothing,Group =nothing,kwargs...)
+function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par = nothing;MainFile = nothing,Group =nothing,overwrite=false,kwargs...)
     State = readState(Filename)
     Old_Lam_max = h5read(Filename,"Params/Lam_max")
     Par = getFileParams(Filename,Geometry,Par)
     saved_values_full = readObservables(Filename)
     setup = AllocateSetup(Par)
-    FilePath = dirname(dirname(Filename))
+    CheckPointfolder = dirname(Filename)
+    overwrite && mv(CheckPointfolder,CheckPointfolder*"_OLD")
+
+    FilePath = dirname(CheckPointfolder)
     ObsSaveat = getLambdaMesh(nothing,Par.Lam_min,Old_Lam_max)
     filter!(x-> x<Par.Lam_max,ObsSaveat)
     sol,saved_values = launchPMFRG!(State,setup,getDeriv!;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat, kwargs...)
@@ -190,6 +193,7 @@ function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry
     if MainFile !== nothing
         saveMainOutput(MainFile,sol,saved_values_full,Par,Group)
     end
+    overwrite && rm(CheckPointfolder*"_OLD",recursive=true)
     return sol,saved_values_full
 end
 

@@ -51,6 +51,18 @@ function readObservables(Filename::String)
     return saved_values
 end
 
+function readGeometry(Filename::String, GeometryGenerator::Function;Group="Geometry")
+    NLen = h5read(Filename,"$Group/NLen")
+    couplings = h5read(Filename,"$Group/couplings")
+    Npairs = h5read(Filename,"$Group/Npairs")
+    Name = h5read(Filename,"$Group/Name")
+    System = GeometryGenerator(NLen)
+    @assert Npairs == System.Npairs "Number of unique pairs does not match geometry in $Filename"
+    @assert Name == System.Name "Name does not match geometry in $Filename"
+    System.couplings .= couplings
+    return System
+end
+
 EssentialParamFields() = (
     :T,
     :N,
@@ -161,7 +173,7 @@ function getFileParams(Filename,Geometry,Par::Nothing)
     return readParams(Filename,Geometry;Lam_max = Lam)
 end
 
-function SolveFRG_Checkpoint(Filename::String,Geometry,Par = nothing;MainFile = nothing,Group =string(Par.T)::String,kwargs...)
+function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par = nothing;MainFile = nothing,Group =nothing,kwargs...)
     State = readState(Filename)
     Old_Lam_max = h5read(Filename,"Params/Lam_max")
     Par = getFileParams(Filename,Geometry,Par)
@@ -177,6 +189,11 @@ function SolveFRG_Checkpoint(Filename::String,Geometry,Par = nothing;MainFile = 
         saveMainOutput(MainFile,sol,saved_values_full,Par,Group)
     end
     return sol,saved_values_full
+end
+
+function SolveFRG_Checkpoint(Filename::String,GeometryGenerator::Function,Par = nothing;kwargs...)
+    System = readGeometry(Filename,GeometryGenerator)
+    SolveFRG_Checkpoint(Filename,System,Par;kwargs...)
 end
 
 """Saves Observables"""
@@ -200,7 +217,7 @@ function saveMainOutput(Filename::String,saved_values::DiffEqCallbacks.SavedValu
     saveObs(Filename,saved_values,Group)
 end
 
-function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::Params,Group)
+function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::Params,Group::String)
     @unpack T,System,N = Par
     @unpack Name,NUnique,Npairs,NLen = System
     Lambda = saved_values.t
@@ -222,6 +239,8 @@ function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::Dif
     end
     # saveParams(Filename,Par,Group)
 end
+
+saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::Params,Group::Nothing) = saveMainOutput(Filename,Solution,saved_values,Par,string(Par.T))
 
 function getFilesFromSubDirs(Folder::String)
     allpaths = collect(walkdir(Folder))

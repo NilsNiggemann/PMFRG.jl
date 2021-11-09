@@ -47,30 +47,31 @@ function AllocateSetup(Par::Params)
     return (X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params; kwargs...)
+function SolveFRG(Par::Params;MainFile = nothing,Group =string(Par.T)::String, kwargs...)
     State = InitializeState(Par)
     setup = AllocateSetup(Par) #Package parameter and pre-allocate arrays 
-    
-    launchPMFRG!(State,setup,getDeriv!; kwargs...)
+    sol,saved_values =launchPMFRG!(State,setup,getDeriv!; kwargs...)
+    if MainFile !== nothing
+        saveMainOutput(MainFile,sol,saved_values,Par,Group)
+    end
+    return sol,saved_values
 end
 
-function launchPMFRG!(State,setup,Deriv!::Function;MainFile = nothing,CheckpointDirectory = nothing,method = DP5(),MaxVal = 50,ObsSaveat = nothing,VertexCheckpoints = [],Group =string(setup[end].T)::String,kwargs...)
+function launchPMFRG!(State,setup,Deriv!::Function;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],kwargs...)
     Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par))
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
     save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
-    saved_values = SavedValues(double,Observables)
 
+    saved_values = SavedValues(double,Observables)
     function output_func(State,Lam,integrator)
         setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
         println("") 
         writeOutput(State,saved_values,Lam,Par)
     end
-
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
     ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
-
     saveCB = SavingCallback(save_func, saved_values,save_everystep =false,saveat = ObsSaveat,tdir=-1)
     outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
     unstable_check(dt,u,p,t) = maximum(abs,u) >MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
@@ -81,9 +82,8 @@ function launchPMFRG!(State,setup,Deriv!::Function;MainFile = nothing,Checkpoint
     if !MinimalOutput
         println(sol.destats)
     end
-    if MainFile !== nothing
-        saveMainOutput(MainFile,sol,saved_values,Par,Group)
-    end
+    saveCurrentState(CheckpointDirectory,sol[end],saved_values,sol.t[end],Par)
+    SetCompletionCheckmark(CheckpointDirectory)
     return sol,saved_values
 end
 
@@ -181,6 +181,6 @@ function getLambdaMesh(Saveat::Nothing,Lam_min,Lam_max)
     return ObsSaveat
 end
 
-function getLambdaMesh(Saveat::AbstractVector)
+function getLambdaMesh(Saveat::AbstractVector,Lam_min,Lam_max)
     return Saveat
 end

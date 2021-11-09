@@ -34,13 +34,22 @@ function readLam(Filename::String)
     return Lam
 end
 
-# function readObservables(Filename::String)
-#     t = h5read(Filename,"Observables/Lambda")
-#     Fields = fieldnames(Observables)
-#     obsTuple = (h5read(Filename,"Observables/$f" for f in Fields)
-
-#     saved_values = SavedValues()
-# end
+function readObservables(Filename::String)
+    t = h5read(Filename,"Observables/Lambda")
+    Fields = fieldnames(Observables)
+    obsTuple = Tuple(h5read(Filename,"Observables/$f") for f in Fields)
+    saveval = Observables[]
+    saved_values = SavedValues(double,Observables)
+    # return obsTuple
+    for i in eachindex(t)
+        Currentval(x) = selectdim(x,length(size(x)),i) |>Array
+        # return Currentval.(obsTuple)
+        push!(saveval,Observables(Currentval.(obsTuple)...))
+    end
+    append!(saved_values.t,t)
+    append!(saved_values.saveval, saveval)
+    return saved_values
+end
 
 EssentialParamFields() = (
     :T,
@@ -83,13 +92,22 @@ function setupDirectory(DirPath,Par)
     println("Checkpoints saved at $DirPath")
     # CheckPath = joinpath(DirPath,"Checkpoints")
     mkpath(DirPath)
-    return DirPath 
+    return DirPath
 end
 
 function saveCurrentState(DirPath::String,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,Lam::Real,Par::Params)
     saveState(joinpath(DirPath,"CurrentState.h5"),State,Lam,"w")
     saveParams(joinpath(DirPath,"CurrentState.h5"),Par)
     saveObs(joinpath(DirPath,"CurrentState.h5"),saved_Values,"Observables")
+end
+
+"""Rename CurrentState to FinalState as indicator that Job is finished"""
+function SetCompletionCheckmark(DirPath::String)
+    CurrState = joinpath(DirPath,"CurrentState.h5")
+    FinState = joinpath(DirPath,"FinalState.h5")
+    if ispath(CurrState) && !ispath(FinState)
+        mv(joinpath(DirPath,"CurrentState.h5"),joinpath(DirPath,"FinalState.h5"))
+    end
 end
 
 function UniqueDirName(FullPath)
@@ -143,12 +161,22 @@ function getFileParams(Filename,Geometry,Par::Nothing)
     return readParams(Filename,Geometry;Lam_max = Lam)
 end
 
-function SolveFRG_Checkpoint(Filename::String,Geometry,Par = nothing;kwargs...)
+function SolveFRG_Checkpoint(Filename::String,Geometry,Par = nothing;MainFile = nothing,Group =string(Par.T)::String,kwargs...)
     State = readState(Filename)
+    Old_Lam_max = h5read(Filename,"Params/Lam_max")
     Par = getFileParams(Filename,Geometry,Par)
+    saved_values_full = readObservables(Filename)
     setup = AllocateSetup(Par)
     FilePath = dirname(dirname(Filename))
-    launchPMFRG!(State,setup,getDeriv!;CheckpointDirectory = FilePath,kwargs...)
+    ObsSaveat = getLambdaMesh(nothing,Par.Lam_min,Old_Lam_max)
+    filter!(x-> x<Par.Lam_max,ObsSaveat)
+    sol,saved_values = launchPMFRG!(State,setup,getDeriv!;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat, kwargs...)
+    append!(saved_values_full.t,saved_values.t)
+    append!(saved_values_full.saveval,saved_values.saveval)
+    if MainFile !== nothing
+        saveMainOutput(MainFile,sol,saved_values_full,Par,Group)
+    end
+    return sol,saved_values_full
 end
 
 """Saves Observables"""
@@ -193,4 +221,23 @@ function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::Dif
         save(newName)
     end
     # saveParams(Filename,Par,Group)
+end
+
+function getFilesFromSubDirs(Folder::String)
+    allpaths = collect(walkdir(Folder))
+    Files = String[]
+    for p in allpaths
+        for filename in p[end]
+            pathAndName = joinpath(p[begin],filename)
+            push!(Files,pathAndName)
+        end
+    end
+    return Files
+end
+
+function getUnfinishedJobs(Folder::String)
+    allFiles = filter!(x->occursin("CurrentState.h5",x),getFilesFromSubDirs(Folder))
+
+    getLam_min(file) = h5read(file,"Params/Lam_min")
+    filter!(x-> getLam_min(x) != readLam(x),allFiles)
 end

@@ -101,8 +101,9 @@ function modifyParams(Par;modifyParams...)
     Par = Params(;ParKwargs...,modifyParams...)
 end
 
-function setupDirectory(DirPath,Par)
-    DirPath = generateUniqueName(DirPath,Par)
+function setupDirectory(DirPath,Par;overwrite=false)
+    DirPath = generateName_verbose(DirPath,Par)
+    overwrite || (DirPath = UniqueDirName(DirPath))
     println("Checkpoints saved at $DirPath")
     # CheckPath = joinpath(DirPath,"Checkpoints")
     mkpath(DirPath)
@@ -118,9 +119,9 @@ end
 """Rename CurrentState to FinalState as indicator that Job is finished"""
 function SetCompletionCheckmark(DirPath::String)
     CurrState = joinpath(DirPath,"CurrentState.h5")
-    FinState = joinpath(DirPath,"FinalState.h5")
-    if ispath(CurrState) && !ispath(FinState)
-        mv(joinpath(DirPath,"CurrentState.h5"),joinpath(DirPath,"FinalState.h5"))
+    FinState = UniqueDirName(joinpath(DirPath,"FinalState.h5"))
+    if ispath(CurrState)
+        mv(CurrState,FinState)
     end
 end
 
@@ -139,13 +140,15 @@ function UniqueDirName(FullPath)
     return newpath
 end
 
-
-function generateUniqueName(Directory::String,Par::Params)
+function generateName_verbose(Directory::String,Par::Params)
     @unpack Name,T,N = Par
     Name = "$(Name)_N=$(N)_T=$T"
-    Name = UniqueDirName(joinpath(Directory,Name))
+    Name = joinpath(Directory,Name)
     return Name
 end
+
+generateUniqueName(Directory::String,Par::Params) = UniqueDirName(generateName_verbose(Directory,Par))
+
 
 function generateFileName(Par::Params,arg::String = "")
     @unpack Name,N = Par
@@ -175,25 +178,22 @@ function getFileParams(Filename,Geometry,Par::Nothing)
     return readParams(Filename,Geometry;Lam_max = Lam)
 end
 
-function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par = nothing;MainFile = nothing,Group =nothing,overwrite=false,kwargs...)
+function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par = nothing;MainFile = nothing,Group =nothing,kwargs...)
     State = readState(Filename)
     Old_Lam_max = h5read(Filename,"Params/Lam_max")
     Par = getFileParams(Filename,Geometry,Par)
     saved_values_full = readObservables(Filename)
     setup = AllocateSetup(Par)
     CheckPointfolder = dirname(Filename)
-    overwrite && mv(CheckPointfolder,CheckPointfolder*"_OLD")
-
     FilePath = dirname(CheckPointfolder)
     ObsSaveat = getLambdaMesh(nothing,Par.Lam_min,Old_Lam_max)
     filter!(x-> x<Par.Lam_max,ObsSaveat)
-    sol,saved_values = launchPMFRG!(State,setup,getDeriv!;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat, kwargs...)
+    sol,saved_values = launchPMFRG!(State,setup,getDeriv!;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat,kwargs...)
     append!(saved_values_full.t,saved_values.t)
     append!(saved_values_full.saveval,saved_values.saveval)
     if MainFile !== nothing
         saveMainOutput(MainFile,sol,saved_values_full,Par,Group)
     end
-    overwrite && rm(CheckPointfolder*"_OLD",recursive=true)
     return sol,saved_values_full
 end
 
@@ -221,6 +221,28 @@ function saveMainOutput(Filename::String,saved_values::DiffEqCallbacks.SavedValu
     println("Saving Main output to ", Filename)
     mkpath(dirname(Filename))
     saveObs(Filename,saved_values,Group)
+end
+
+
+function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointList)
+    println("Time taken for output saving: ")
+    @time begin
+        saveCurrentState(Directory,State,saved_values,Lam,Par)
+        if !isempty(checkPointList)
+            if Lam < last(checkPointList) 
+                Checkpoint = pop!(checkPointList)
+                CheckpointFile = UniqueDirName("$Directory/$(strd(Lam)).h5")
+                println("\nsaving Checkpoint Lam ≤ $Checkpoint at ",Lam)
+                println("in file ", CheckpointFile)
+                println("")
+                mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
+            end
+        end
+    end
+end
+
+function setCheckpoint(Directory::Nothing,State,saved_values,Lam,Par,checkPointList)
+    return
 end
 
 function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::Params,Group::String)

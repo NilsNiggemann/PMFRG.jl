@@ -57,9 +57,9 @@ function SolveFRG(Par::Params;MainFile = nothing,Group =string(Par.T)::String, k
     return sol,saved_values
 end
 
-function launchPMFRG!(State,setup,Deriv!::Function;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],kwargs...)
+function launchPMFRG!(State,setup,Deriv!::Function;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],overwrite_Checkpoints = false::Bool,kwargs...)
     Par = setup[end]
-    typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par))
+    typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
     save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
 
@@ -78,7 +78,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;CheckpointDirectory = nothing
 
     problem = ODEProblem(Deriv!,State,(Lam_max,Lam_min),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=0.2*Lam_max,dtmin = 0.1*Lam_min,unstable_check = unstable_check;kwargs...)
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=0.2*Lam_max,unstable_check = unstable_check;kwargs...)
     if !MinimalOutput
         println(sol.destats)
     end
@@ -152,26 +152,6 @@ function writeOutput(State,saved_values,Lam,Par)
     return 
 end
 
-function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointList)
-    println("Time taken for output saving: ")
-    @time begin
-        saveCurrentState(Directory,State,saved_values,Lam,Par)
-        if !isempty(checkPointList)
-            if Lam < last(checkPointList) 
-                Checkpoint = pop!(checkPointList)
-                CheckpointFile = UniqueDirName("$Directory/$(strd(Lam)).h5")
-                println("\nsaving Checkpoint Lam ≤ $Checkpoint at ",Lam)
-                println("in file ", CheckpointFile)
-                println("")
-                mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
-            end
-        end
-    end
-end
-
-function setCheckpoint(Directory::Nothing,State,saved_values,Lam,Par,checkPointList)
-    return
-end
 
 function getLambdaMesh(Saveat::Nothing,Lam_min,Lam_max)
     dense_range = collect(LinRange(Lam_min,5.,100))

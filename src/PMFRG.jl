@@ -1,8 +1,7 @@
 module PMFRG
     using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5
     export SolveFRG,Params,double,BS3,Vern7,DP5,version,getChi
-
-    version() = """v.1.1.5"""
+    version() = """v.1.1.6"""
     # Essentials
     include("Globals.jl")
     include("VertexFunctions_Dense.jl")
@@ -10,7 +9,7 @@ module PMFRG
     include("Flowequations_Dense.jl")
     include("FileIO.jl")
     include("Solver.jl")
-    export saveState, readState, readLam, saveParams, readParams, setupDirectory, saveCurrentState, UniqueDirName, generateName, setupFromCheckpoint, SolveFRG_Checkpoint
+    export saveState, readState, readLam, saveParams, readParams, setupDirectory, saveCurrentState, UniqueDirName, generateName, setupFromCheckpoint, SolveFRG_Checkpoint,readGeometry, readObservables,getUnfinishedJobs
     #Precompilation
     # include("precompile.jl")
     

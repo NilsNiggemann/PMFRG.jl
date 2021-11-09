@@ -16,7 +16,8 @@ function Testrun(System)
 
     Par = Params(System = System,N=24,T=1.2,MinimalOutput=false,usesymmetry = true,accuracy= 1E-4,Ngamma = 24,Lam_min = 0.01)
     # Solution,saved_values = SolveFRG(Par,MainFile = "/storage/niggeni/test/main.h5",CheckpointDirectory = "/storage/niggeni/test/",method = BS3(),VertexCheckpoints = [10.5,0.2])
-    Solution,saved_values = SolveFRG_Checkpoint("/storage/niggeni/test/Cubic_NLen=4_N=24_T=1.200000000000000/10.394.h5",System,Par,MainFile="/storage/niggeni/test/main.h5",method = BS3(),VertexCheckpoints = [10.5,0.2])
+    # Solution,saved_values = SolveFRG_Checkpoint("/storage/niggeni/test/Cubic_NLen=4_N=24_T=1.200000000000000/CurrentState.h5",System,Par,MainFile="/storage/niggeni/test/main.h5",method = BS3(),VertexCheckpoints = [10.5,0.2])
+    Solution,saved_values = SolveFRG_Checkpoint("/storage/niggeni/test/Cubic_NLen=4_N=24_T=1.200000000000000/CurrentState.h5",getCubic,MainFile="/storage/niggeni/test/main.h5",method = BS3(),VertexCheckpoints = [10.5,0.2])
     return Par,Solution,saved_values
 end
 

@@ -47,17 +47,9 @@ function AllocateSetup(Par::Params)
     return (X,XTilde,Par)
 end
 
-function SolveFRG(Par::Params;MainFile = nothing,Group =string(Par.T)::String, kwargs...)
-    State = InitializeState(Par)
-    setup = AllocateSetup(Par) #Package parameter and pre-allocate arrays 
-    sol,saved_values =launchPMFRG!(State,setup,getDeriv!; kwargs...)
-    if MainFile !== nothing
-        saveMainOutput(MainFile,sol,saved_values,Par,Group)
-    end
-    return sol,saved_values
-end
+SolveFRG(Par::Params,Method = OneLoop()::OneLoop;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)
 
-function launchPMFRG!(State,setup,Deriv!::Function;CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],overwrite_Checkpoints = false::Bool,kwargs...)
+function launchPMFRG!(State,setup,Deriv!::Function; MainFile= nothing, Group =string(setup[end].T), CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],overwrite_Checkpoints = false::Bool,kwargs...)
     Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
@@ -83,6 +75,9 @@ function launchPMFRG!(State,setup,Deriv!::Function;CheckpointDirectory = nothing
         println(sol.destats)
     end
     saveCurrentState(CheckpointDirectory,sol[end],saved_values,sol.t[end],Par)
+    if MainFile !== nothing
+        saveMainOutput(MainFile,sol,saved_values,Par,Group)
+    end
     SetCompletionCheckmark(CheckpointDirectory)
     return sol,saved_values
 end

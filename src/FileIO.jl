@@ -152,9 +152,11 @@ generateUniqueName(Directory::String,Par::Params) = UniqueDirName(generateName_v
 
 function generateFileName(Par::Params,arg::String = "")
     @unpack Name,N = Par
-    Name = "$(Name)_N=$(N)_l_1_$arg.h5"
+    Name = "$(Name)_N=$(N)$arg.h5"
     return Name
 end
+
+generateFileName(Par::Params,Method::OneLoop,arg::String = "") = generateFileName(Par,"_l1_"*arg)
 
 function ParamsCompatible(Par1,Par2)
     Fields = (:Npairs,:N,:Ngamma,:Lam_max,:System) 
@@ -178,17 +180,19 @@ function getFileParams(Filename,Geometry,Par::Nothing)
     return readParams(Filename,Geometry;Lam_max = Lam)
 end
 
-function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par = nothing;MainFile = nothing,Group =nothing,kwargs...)
+SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Method = OneLoop()::OneLoop,Par=nothing;kwargs...) = launchPMFRG_Checkpoint(Filename,Geometry,AllocateSetup,getDeriv!,Par;kwargs...)
+
+function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,kwargs...)
     State = readState(Filename)
     Old_Lam_max = h5read(Filename,"Params/Lam_max")
     Par = getFileParams(Filename,Geometry,Par)
     saved_values_full = readObservables(Filename)
-    setup = AllocateSetup(Par)
+    setup = AllocatorFunction(Par)
     CheckPointfolder = dirname(Filename)
     FilePath = dirname(CheckPointfolder)
     ObsSaveat = getLambdaMesh(nothing,Par.Lam_min,Old_Lam_max)
     filter!(x-> x<Par.Lam_max,ObsSaveat)
-    sol,saved_values = launchPMFRG!(State,setup,getDeriv!;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat,kwargs...)
+    sol,saved_values = launchPMFRG!(State,setup,Derivative;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat,kwargs...,MainFile = nothing) #launch PMFRG but do not save output yet
     append!(saved_values_full.t,saved_values.t)
     append!(saved_values_full.saveval,saved_values.saveval)
     if MainFile !== nothing
@@ -197,10 +201,7 @@ function SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry
     return sol,saved_values_full
 end
 
-function SolveFRG_Checkpoint(Filename::String,GeometryGenerator::Function,Par = nothing;kwargs...)
-    System = readGeometry(Filename,GeometryGenerator)
-    SolveFRG_Checkpoint(Filename,System,Par;kwargs...)
-end
+SolveFRG_Checkpoint(Filename::String,GeometryGenerator::Function,Method = OneLoop(),Par = nothing;kwargs...) = SolveFRG_Checkpoint(Filename,readGeometry(Filename,GeometryGenerator),Method,Par;kwargs...)
 
 """Saves Observables"""
 function saveObs(Filename,saved_values::DiffEqCallbacks.SavedValues,Group = "")

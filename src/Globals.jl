@@ -1,6 +1,6 @@
-# const int nprocs 
 const double = Float64
-
+abstract type PMFRGMethod end
+struct OneLoop <: PMFRGMethod end
 """
 Struct to hold all relevant quantities that are needed throughout the computation. They can be unpacked using the Parameters package. 
 Julia-Performance-tip: Make sure the type definitions are as accurate as possible to prevent run-time allocations. If used correctly, the values are only passed by reference.

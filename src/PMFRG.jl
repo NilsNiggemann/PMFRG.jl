@@ -1,7 +1,7 @@
 module PMFRG
     using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5
     export SolveFRG,Params,double,BS3,Vern7,DP5,version,getChi,OneLoop
-    version() = """v.2.0.0"""
+    version() = """v.2.0.1"""
     # Essentials
     include("Globals.jl")
     include("VertexFunctions_Dense.jl")
@@ -15,7 +15,7 @@ module PMFRG
     using .TwoLoopPMFRG
     export TwoLoop
     #Precompilation
-    # include("precompile.jl")
-    
+    include("precompile.jl")
+    __precompile__quiet__()
 end # module
 ##

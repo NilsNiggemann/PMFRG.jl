@@ -285,7 +285,6 @@ end
 
 function getUnfinishedJobs(Folder::String)
     allFiles = filter!(x->occursin("CurrentState.h5",x),getFilesFromSubDirs(Folder))
-
-    getLam_min(file) = h5read(file,"Params/Lam_min")
-    filter!(x-> getLam_min(x) != readLam(x),allFiles)
+    # getLam_min(file) = h5read(file,"Params/Lam_min")
+    # filter!(x-> getLam_min(x) != readLam(x),allFiles)
 end

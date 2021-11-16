@@ -10,7 +10,7 @@ end
 
 function __precompile__()
     System = getPolymer(4)
-    Par = Params(System = System,N=16,T=1.2,MinimalOutput=true,usesymmetry = true,accuracy= 1E-4,Lam_min = 10)
+    Par = Params(System = System,N=16,T=1.2,MinimalOutput=false,usesymmetry = true,accuracy= 1E-4,Lam_min = 10)
     mainF = UniqueDirName("temp")*".h5"
     CheckF = UniqueDirName("temp_ch")
     Solution,saved_values = SolveFRG(Par,OneLoop(),MainFile = mainF,CheckpointDirectory = CheckF,method = DP5(),VertexCheckpoints = [],overwrite_Checkpoints=true)

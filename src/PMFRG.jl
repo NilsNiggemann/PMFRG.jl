@@ -15,7 +15,7 @@ module PMFRG
     using .TwoLoopPMFRG
     export TwoLoop
     #Precompilation
-    include("precompile.jl")
-    __precompile__quiet__()
+    # include("precompile.jl")
+    # __precompile__quiet__()
 end # module
 ##

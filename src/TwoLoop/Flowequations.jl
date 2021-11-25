@@ -96,6 +96,7 @@ function getTwoLoopDeriv!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Worksp
         YTc[R,is,it,iu] = Yc[R,is,it,iu]
         YTd[R,is,it,iu] = -Yc[R,is,iu,it]
     end
+    @. YTd= YTa - YTb - YTc
     Threads.@threads for iu in 1:N
         for it in 1:N, is in 1:N, Rij in 1:Npairs
             DVa[Rij,is,it,iu] += Ya[Rij,is,it,iu] - YTa[Rij,it,is,iu] + YTa[Rij,iu,is,it]
@@ -322,17 +323,5 @@ function addYTilde!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_St
         Vc_(Rji, wmw3, wmw4, ns)*XTb_(Rji, wpw2, wpw1, ns) + 
         Vb_(Rji, wpw1, ns, wpw2)*XTc_(Rji, wmw4, wmw3, ns) + 
         Vb_(Rji, wmw3, ns, wmw4)*XTc_(Rji, wpw2, wpw1, ns))
-
-        YTd[Rij,is,it,iu] += 
-        -Props[xj, xi]*(
-        Vc_(Rij, wpw2, wpw1, ns)*Xb_(Rij, wmw4, ns, wmw3) + 
-        Vc_(Rij, wmw4, wmw3, ns)*Xb_(Rij, wpw2, ns, wpw1) + 
-        Vb_(Rij, wpw2, ns, wpw1)*Xc_(Rij, wmw4, wmw3, ns) + 
-        Vb_(Rij, wmw4, ns, wmw3)*Xc_(Rij, wpw2, wpw1, ns)) + 
-        Props[xi, xj]*(
-        Vb_(Rji, wpw1, ns, wpw2)*XTb_(Rji, wmw4, wmw3, ns) + 
-        Vb_(Rji, wmw3, ns, wmw4)*XTb_(Rji, wpw2, wpw1, ns) - 
-        Vc_(Rji, wpw1, wpw2, ns)*XTc_(Rji, wmw4, wmw3, ns) - 
-        Vc_(Rji, wmw3, wmw4, ns)*XTc_(Rji, wpw2, wpw1, ns))
     end
 end

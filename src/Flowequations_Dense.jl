@@ -100,6 +100,8 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 		XTc[R,is,it,iu] = Xc[R,is,it,iu]
 		XTd[R,is,it,iu] = -Xc[R,is,iu,it]
 	end
+	# SO(3) symmetry for XTd
+	@. XTd= XTa - XTb - XTc
 	Threads.@threads for iu in 1:N
 		for it in 1:N, is in 1:N, Rij in 1:Npairs
 			DVa[Rij,is,it,iu] = Xa[Rij,is,it,iu] - XTa[Rij,it,is,iu] + XTa[Rij,iu,is,it]
@@ -262,15 +264,6 @@ function addXTilde!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::I
 			) * Props[xi,xj]
 			+(Vb12 * Vb34
 			+Vc12 * Vc34
-	    	)* Props[xj,xi]
-		)
-
-	    XTd[Rij,is,it,iu] += (
-			(+Vb21 * Vc43
-			+Vc21 * Vb43
-			) * Props[xi,xj]
-			+(Vb12 * Vc34
-			+Vc12 * Vb34
 	    	)* Props[xj,xi]
 		)
     end

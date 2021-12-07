@@ -156,7 +156,7 @@ function generateFileName(Par::Params,arg::String = "")
     return Name
 end
 
-generateFileName(Par::Params,Method::OneLoop,arg::String = "") = generateFileName(Par,"_l1_"*arg)
+generateFileName(Par::Params,Method::OneLoop,arg::String = "") = generateFileName(Par,"_l1"*arg)
 
 function ParamsCompatible(Par1,Par2)
     Fields = (:Npairs,:N,:Ngamma,:Lam_max,:System) 

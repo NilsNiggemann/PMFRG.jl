@@ -28,7 +28,7 @@ Julia-Performance-tip: Make sure the type definitions are as accurate as possibl
     Ngamma::Int = 100 #Number of gamma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
     accuracy::double = 1e-6
-    Lam_min::double = 0.01
+    Lam_min::double = 0.0
     Lam_max::double = 100.0
     usesymmetry::Bool = true
     MinimalOutput::Bool = false

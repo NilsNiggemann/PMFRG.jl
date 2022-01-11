@@ -115,6 +115,7 @@ function saveCurrentState(DirPath::String,State::AbstractArray,saved_Values::Dif
     saveParams(joinpath(DirPath,"CurrentState.h5"),Par)
     saveObs(joinpath(DirPath,"CurrentState.h5"),saved_Values,"Observables")
 end
+saveCurrentState(DirPath::Nothing,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,Lam::Real,Par::Params) = nothing
 
 """Rename CurrentState to FinalState as indicator that Job is finished"""
 function SetCompletionCheckmark(DirPath::String)
@@ -124,7 +125,7 @@ function SetCompletionCheckmark(DirPath::String)
         mv(CurrState,FinState)
     end
 end
-
+SetCompletionCheckmark(DirPath::Nothing) = nothing
 function UniqueDirName(FullPath)
     newpath = FullPath
     versionPath(index) = string(FullPath,"(v_",index,")")

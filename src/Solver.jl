@@ -156,6 +156,6 @@ function getLambdaMesh(Saveat::Nothing,Lam_min,Lam_max)
     return ObsSaveat
 end
 
-function getLambdaMesh(Saveat::AbstractVector,Lam_min,Lam_max)
-    return Saveat
+function getLambdaMesh(Saveat::Vector{Float64},Lam_min,Lam_max)
+    return unique(push!(Saveat,Lam_max)) # make sure that there is at least one element at beginning of code
 end

@@ -14,6 +14,10 @@ module PMFRG
     include("TwoLoop/TwoLoopPMFRG.jl")
     using .TwoLoopPMFRG
     export TwoLoop
+    
+    include("MultiLoop/MultiLoopPMFRG.jl")
+    using .MultiLoopPMFRG
+    export MultiLoop
     #Precompilation
     # include("precompile.jl")
     # __precompile__quiet__()

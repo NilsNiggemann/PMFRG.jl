@@ -45,43 +45,51 @@ function get_Self_Energy!(Workspace::Workspace_Struct,Lam::double,Par::Params)
 	end
 end
 
-function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
+
+function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par,PropsBuffers,VertexBuffers)
 	@unpack gamma,Dgamma,DVa,DVb,DVc,Xa,Xb,Xc,XTa,XTb,XTc,XTd = Workspace 
     @unpack T,N,Npairs,lenIntw,np_vec,usesymmetry,NUnique,OnsitePairs = Par 
-	
 	iS(x,nw) = iS_(gamma,x,Lam,nw,Par)
 	iG(x,nw) = iG_(gamma,x,Lam,nw,Par)
 	iSKat(x,nw) = iSKat_(gamma,Dgamma,x,Lam,nw,Par)
-
-	Props = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
-	Buffers = [VertexBuffer(Par.Npairs) for _ in 1:Threads.nthreads()] 
 	function getKataninProp!(BubbleProp,nw1,nw2)
 		for i in 1:NUnique, j in 1:NUnique
 			BubbleProp[i,j] = iSKat(i,nw1) *iG(j,nw2)* T
 		end
 		return BubbleProp
 	end
-    Threads.@threads for is in 1:N
-		BubbleProp = Props[Threads.threadid()]
-		Buffer = Buffers[Threads.threadid()]
-        ns = np_vec[is]
-        for nw in -lenIntw:lenIntw-1
-            sprop = getKataninProp!(BubbleProp,nw,nw+ns)
-            for it in 1:N, iu in 1:N
-                nt = np_vec[it]
-                nu = np_vec[iu]
-                if (ns+nt+nu)%2 == 0
-                    continue
-                end
-                addXTilde!(Workspace,is,it,iu,nw,sprop,Par)
-                if(!usesymmetry || nu<=nt)
-                    addX!(Workspace,is,it,iu,nw,sprop,Par,Buffer)
-                end
-            end
-        end
-    end
+	@sync begin
+		for is in 1:N,it in 1:N
+			Threads.@spawn begin
+				BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
+				Buffer = VertexBuffers[Threads.threadid()]
+				ns = np_vec[is]
+				nt = np_vec[it]
+				for iu in 1:N
+					nu = np_vec[iu]
+					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+						continue
+					end
+					for nw in -lenIntw:lenIntw-1 # Matsubara sum
+						sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
+						addXTilde!(Workspace,is,it,iu,nw,sprop,Par) # add to XTilde-type bubble functions
+						if(!usesymmetry || nu<=nt)
+							addX!(Workspace,is,it,iu,nw,sprop,Par,Buffer)# add to X-type bubble functions
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+"""Use symmetries and identities to compute the rest of bubble functions"""
+function symmetrizeX!(Workspace::Workspace_Struct,Par)
+	@unpack DVa,DVb,DVc,Xa,Xb,Xc,XTa,XTb,XTc,XTd = Workspace 
+    @unpack N,Npairs,usesymmetry,NUnique,OnsitePairs = Par 
+
     # use the u <--> t symmetry
-    if(usesymmetry)
+	if(usesymmetry)
 		Threads.@threads for it in 1:N
 			for iu in it+1:N, is in 1:N, Rij in 1:Npairs
 				Xa[Rij,is,it,iu] = -Xa[Rij,is,iu,it]
@@ -92,7 +100,7 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 				+ Xc[Rij,is,iu,it])
 			end
 		end
-    end
+	end
 	#local definitions of XTilde vertices
 	for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
 		XTa[R,is,it,iu] = Xa[R,is,it,iu]
@@ -110,6 +118,9 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par)
 		end
 	end
 
+	for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
+		DVc[R,is,it,iu] = -DVb[R,it,is,iu]
+	end
 end
 
 function mixedFrequencies(ns,nt,nu,nwpr)

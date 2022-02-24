@@ -1,20 +1,47 @@
 function getDeriv!(Deriv,State,setup,Lam)
         
-    X,XTilde,Y,YTilde,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    X,XTilde,Y,YTilde,PropsBuffers,VertexBuffers,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
     N = Par.N
     OneLoopWorkspace = Workspace_Struct(Deriv,State,X,XTilde)
     TwoLoopWorkspace = Y_Workspace_Struct(Y,YTilde)
-    @unpack DVc,DVb = OneLoopWorkspace
     getDFint!(OneLoopWorkspace,Lam,Par)
     get_Self_Energy!(OneLoopWorkspace,Lam,Par)
-    getVertexDeriv!(OneLoopWorkspace,Lam,Par)
-    getTwoLoopDeriv!(OneLoopWorkspace,TwoLoopWorkspace,Lam,Par)
-
-    for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
-        DVc[R,is,it,iu] = -DVb[R,it,is,iu]
-    end
+    getVertexDeriv!(OneLoopWorkspace,Lam,Par,PropsBuffers,VertexBuffers)
+    symmetrizeX!(OneLoopWorkspace,Par)
+    getTwoLoopDeriv!(OneLoopWorkspace,TwoLoopWorkspace,Lam,Par,PropsBuffers,VertexBuffers)
+    symmetrizeY!(OneLoopWorkspace,TwoLoopWorkspace,Par)
     return
 end
+
+function getDerivVerbose!(Deriv,State,XandPar,Lam)
+    X,XTilde,Y,YTilde,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    N = Par.N
+    print("Workspace:\n\t") 
+    @time begin
+        OneLoopWorkspace = Workspace_Struct(Deriv,State,X,XTilde)
+        TwoLoopWorkspace = Y_Workspace_Struct(Y,YTilde)
+    end
+    print("getDFint:\n\t") 
+    @time getDFint!(Workspace,Lam,Par)
+
+    print("get_Self_Energy:\n\t") 
+    @time get_Self_Energy!(Workspace,Lam,Par)
+
+    print("getVertexDeriv:\n\t") 
+    @time getVertexDeriv!(Workspace,Lam,Par,PropsBuffers,VertexBuffers)
+
+    print("SymmetryX:\n\t") 
+    @time symmetrizeX!(Workspace,Par)
+
+    print("TwoLoop:\n\t") 
+    @time getTwoLoopDeriv!(OneLoopWorkspace,TwoLoopWorkspace,Lam,Par,PropsBuffers,VertexBuffers)
+    
+    print("SymmetryX:\n\t") 
+    @time symmetrizeY!(OneLoopWorkspace,TwoLoopWorkspace,Par)
+
+    return
+end
+
 struct Y_Workspace_Struct
     Ya::Array{double,4}
     Yb::Array{double,4}
@@ -31,40 +58,48 @@ function Y_Workspace_Struct(Y,YTilde)
     return Y_Workspace_Struct(Y.x...,YTilde.x...)
 end
 
-function getTwoLoopDeriv!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_Struct,Lam,Par)
+function getTwoLoopDeriv!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_Struct,Lam,Par,PropsBuffers,VertexBuffers)
     @unpack gamma,DVa,DVb,DVc= Workspace 
     @unpack Ya,Yb,Yc,YTa,YTb,YTc,YTd = TwoLoopWorkspace 
     @unpack T,N,Npairs,lenIntw,np_vec,usesymmetry,NUnique,OnsitePairs = Par 
     
     iG(x,nw) = iG_(gamma,x,Lam,nw,Par)
-
-    Props = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
-    Buffers = [VertexBuffer(Par.Npairs) for _ in 1:Threads.nthreads()]
     function getProp!(BubbleProp,nw1,nw2)
         for i in 1:NUnique, j in 1:NUnique
             BubbleProp[i,j] = iG(i,nw1) *iG(j,nw2)* T
         end
         return BubbleProp
     end
-    Threads.@threads for is in 1:N
-        BubbleProp = Props[Threads.threadid()]
-        Buffer = Buffers[Threads.threadid()]
-        ns = np_vec[is]
-        for nw in -lenIntw:lenIntw-1
-            sprop = getProp!(BubbleProp,nw,nw+ns)
-            for it in 1:N, iu in 1:N
-                nt = np_vec[it]
-                nu = np_vec[iu]
-                if (ns+nt+nu)%2 == 0
-                    continue
-                end
-                addYTilde!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par)
-                if(!usesymmetry || nu<=nt)
-                    addY!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par,Buffer)
-                end
-            end
-        end
-    end
+    @sync begin
+		for is in 1:N,it in 1:N
+			Threads.@spawn begin
+				BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
+				Buffer = VertexBuffers[Threads.threadid()]
+				ns = np_vec[is]
+				nt = np_vec[it]
+				for iu in 1:N
+					nu = np_vec[iu]
+					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+						continue
+					end
+					for nw in -lenIntw:lenIntw-1 # Matsubara sum
+                        sprop = getProp!(BubbleProp,nw,nw+ns)
+                        addYTilde!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par)
+                        if(!usesymmetry || nu<=nt)
+                            addY!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par,Buffer)
+                        end
+					end
+				end
+			end
+		end
+	end
+end
+
+"""Use symmetries and identities to compute the rest of bubble functions"""
+function symmetrizeY!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_Struct,Par)
+    @unpack N,Npairs,usesymmetry,NUnique,OnsitePairs = Par 
+    @unpack  DVa,DVb,DVc = Workspace 
+    @unpack Ya,Yb,Yc,YTa,YTb,YTc,YTd = TwoLoopWorkspace 
     # use the u <--> t symmetry
     if(usesymmetry)
         Threads.@threads for it in 1:N
@@ -104,7 +139,11 @@ function getTwoLoopDeriv!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Worksp
             DVc[Rij,is,it,iu] += Yc[Rij,is,it,iu] - YTb[Rij,it,is,iu] + YTd[Rij,iu,is,it]
         end
     end
+	for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
+		DVc[R,is,it,iu] = -DVb[R,it,is,iu]
+	end
 end
+
 
 @inline function convertFreqArgsXT(ns,nt,nu,Nw)
     # @assert (ns+nt+nu) %2 != 0 "trying to convert wrong freqs $ns + $nt +  $nu = $(ns+nt+nu)"

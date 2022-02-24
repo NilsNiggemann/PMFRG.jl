@@ -4,17 +4,44 @@ function getDeriv!(Deriv,State,setup,Lam)
     N = Par.N
     OneLoopWorkspace = Workspace_Struct(Deriv,State,X,XTilde)
     TwoLoopWorkspace = Y_Workspace_Struct(Y,YTilde)
-    @unpack DVc,DVb = OneLoopWorkspace
     getDFint!(OneLoopWorkspace,Lam,Par)
     get_Self_Energy!(OneLoopWorkspace,Lam,Par)
     getVertexDeriv!(OneLoopWorkspace,Lam,Par)
+    symmetrizeX!(OneLoopWorkspace,Par)
     getTwoLoopDeriv!(OneLoopWorkspace,TwoLoopWorkspace,Lam,Par)
-
-    for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
-        DVc[R,is,it,iu] = -DVb[R,it,is,iu]
-    end
+    symmetrizeY!(TwoLoopWorkspace,Par)
     return
 end
+
+function getDerivVerbose!(Deriv,State,XandPar,Lam)
+    X,XTilde,Y,YTilde,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    N = Par.N
+    print("Workspace:\n\t") 
+    @time begin
+        OneLoopWorkspace = Workspace_Struct(Deriv,State,X,XTilde)
+        TwoLoopWorkspace = Y_Workspace_Struct(Y,YTilde)
+    end
+    print("getDFint:\n\t") 
+    @time getDFint!(Workspace,Lam,Par)
+
+    print("get_Self_Energy:\n\t") 
+    @time get_Self_Energy!(Workspace,Lam,Par)
+
+    print("getVertexDeriv:\n\t") 
+    @time getVertexDeriv!(Workspace,Lam,Par,PropsBuffers,VertexBuffers)
+
+    print("SymmetryX:\n\t") 
+    @time symmetrizeX!(Workspace,Par)
+
+    print("TwoLoop:\n\t") 
+    @time getTwoLoopDeriv!(OneLoopWorkspace,TwoLoopWorkspace,Lam,Par)
+    
+    print("SymmetryX:\n\t") 
+    @time symmetrizeY!(TwoLoopWorkspace,Par)
+
+    return
+end
+
 struct Y_Workspace_Struct
     Ya::Array{double,4}
     Yb::Array{double,4}
@@ -65,6 +92,13 @@ function getTwoLoopDeriv!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Worksp
             end
         end
     end
+
+end
+
+"""Use symmetries and identities to compute the rest of bubble functions"""
+function symmetrizeY!(TwoLoopWorkspace::Y_Workspace_Struct,Par)
+    @unpack N,Npairs,usesymmetry,NUnique,OnsitePairs = Par 
+    @unpack Ya,Yb,Yc,YTa,YTb,YTc,YTd = TwoLoopWorkspace 
     # use the u <--> t symmetry
     if(usesymmetry)
         Threads.@threads for it in 1:N
@@ -104,7 +138,11 @@ function getTwoLoopDeriv!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Worksp
             DVc[Rij,is,it,iu] += Yc[Rij,is,it,iu] - YTb[Rij,it,is,iu] + YTd[Rij,iu,is,it]
         end
     end
+	for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
+		DVc[R,is,it,iu] = -DVb[R,it,is,iu]
+	end
 end
+
 
 @inline function convertFreqArgsXT(ns,nt,nu,Nw)
     # @assert (ns+nt+nu) %2 != 0 "trying to convert wrong freqs $ns + $nt +  $nu = $(ns+nt+nu)"

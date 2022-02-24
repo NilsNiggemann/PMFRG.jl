@@ -1,17 +1,31 @@
 Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
 function getDeriv!(Deriv,State,XandPar,Lam)
-    X,XTilde,Par = XandPar #use pre-allocated X and XTilde to reduce garbage collector time
+    X,XTilde,PropsBuffers,VertexBuffers,Par = XandPar #use pre-allocated X and XTilde to reduce garbage collector time
     N = Par.N
     Workspace = Workspace_Struct(Deriv,State,X,XTilde)
-    @unpack DVb,DVc = Workspace
     getDFint!(Workspace,Lam,Par)
     get_Self_Energy!(Workspace,Lam,Par)
-    getVertexDeriv!(Workspace,Lam,Par)
+    getVertexDeriv!(Workspace,Lam,Par,PropsBuffers,VertexBuffers)
+    symmetrizeX!(Workspace,Par)
 
-    for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
-        DVc[R,is,it,iu] = -DVb[R,it,is,iu]
-    end
+    return
+end
+
+function getDerivVerbose!(Deriv,State,XandPar,Lam)
+    X,XTilde,PropsBuffers,VertexBuffers,Par = XandPar #use pre-allocated X and XTilde to reduce garbage collector time
+    N = Par.N
+    print("Workspace:\n\t") 
+    @time Workspace = Workspace_Struct(Deriv,State,X,XTilde)
+    print("getDFint:\n\t") 
+    @time getDFint!(Workspace,Lam,Par)
+    print("get_Self_Energy:\n\t") 
+    @time get_Self_Energy!(Workspace,Lam,Par)
+    print("getVertexDeriv:\n\t") 
+    @time getVertexDeriv!(Workspace,Lam,Par,PropsBuffers,VertexBuffers)
+    print("Symmetry:\n\t") 
+    @time symmetrizeX!(Workspace,Par)
+    flush(stdout)
     return
 end
 
@@ -34,17 +48,32 @@ function InitializeState(Par::Params)
     return State
 end
 
-function CreateX(Number,VDims)
-    return ArrayPartition(Tuple(zeros(double,VDims) for _ in 1:Number))
+function CreateX(VDims::NTuple{4, Int64})
+    return ArrayPartition(
+        zeros(double,VDims),
+        zeros(double,VDims),
+        zeros(double,VDims)
+    )
+end
+
+function CreateXT(VDims::NTuple{4, Int64})
+    return ArrayPartition(
+        zeros(double,VDims),
+        zeros(double,VDims),
+        zeros(double,VDims),
+        zeros(double,VDims)
+    )
 end
 
 function AllocateSetup(Par::Params)
     @unpack N,Ngamma,Npairs,VDims,couplings,T,NUnique = Par
     println("One Loop: T= ",T)
     ##Allocate Memory:
-    X = CreateX(3,VDims)
-    XTilde = CreateX(4,VDims)
-    return (X,XTilde,Par)
+    X = CreateX(VDims)
+    XTilde = CreateXT(VDims)
+    PropsBuffers = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
+	VertexBuffers = [VertexBuffer(Par.Npairs) for _ in 1:Threads.nthreads()] 
+    return (X,XTilde,PropsBuffers,VertexBuffers,Par)
 end
 
 SolveFRG(Par::Params,Method = OneLoop()::OneLoop;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)

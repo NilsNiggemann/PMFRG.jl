@@ -59,24 +59,22 @@ function getVertexDeriv!(Workspace::Workspace_Struct,Lam,Par,PropsBuffers,Vertex
 		return BubbleProp
 	end
 	@sync begin
-		for is in 1:N
-			for it in 1:N
-				Threads.@spawn begin
-					BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
-					Buffer = VertexBuffers[Threads.threadid()]
-					ns = np_vec[is]
-					nt = np_vec[it]
-					for iu in 1:N
-						nu = np_vec[iu]
-						if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
-							continue
-						end
-						for nw in -lenIntw:lenIntw-1 # Matsubara sum
-							sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
-							addXTilde!(Workspace,is,it,iu,nw,sprop,Par) # add to XTilde-type bubble functions
-							if(!usesymmetry || nu<=nt)
-								addX!(Workspace,is,it,iu,nw,sprop,Par,Buffer)# add to X-type bubble functions
-							end
+		for is in 1:N,it in 1:N
+			Threads.@spawn begin
+				BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
+				Buffer = VertexBuffers[Threads.threadid()]
+				ns = np_vec[is]
+				nt = np_vec[it]
+				for iu in 1:N
+					nu = np_vec[iu]
+					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+						continue
+					end
+					for nw in -lenIntw:lenIntw-1 # Matsubara sum
+						sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
+						addXTilde!(Workspace,is,it,iu,nw,sprop,Par) # add to XTilde-type bubble functions
+						if(!usesymmetry || nu<=nt)
+							addX!(Workspace,is,it,iu,nw,sprop,Par,Buffer)# add to X-type bubble functions
 						end
 					end
 				end

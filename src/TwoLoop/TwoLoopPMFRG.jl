@@ -20,7 +20,10 @@ module TwoLoopPMFRG
         
         Y = CreateX(VDims)
         YTilde = CreateXT(VDims)
-        return (X,XTilde,Y,YTilde,Par)
+        PropsBuffers = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
+        VertexBuffers = [VertexBuffer(Par.Npairs) for _ in 1:Threads.nthreads()] 
+    
+        return (X,XTilde,Y,YTilde,PropsBuffers,VertexBuffers,Par)
     end
     #Overwrite getDeriv function
     include("Flowequations.jl")

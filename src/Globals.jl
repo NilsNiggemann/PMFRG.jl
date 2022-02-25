@@ -1,11 +1,22 @@
 const double = Float64
-abstract type PMFRGMethod end
-struct OneLoop <: PMFRGMethod end
+abstract type PMFRGMethod end #we want to use multiple dispatch on loop order for maximum efficiency
+struct OneLoop <: PMFRGMethod
+    l::Int # loop order
+end
+
+struct TwoLoop <: PMFRGMethod
+    l::Int # loop order
+end
+
+struct MultiLoop <: PMFRGMethod
+    l::Int # loop order
+end
+
 """
 Struct to hold all relevant quantities that are needed throughout the computation. They can be unpacked using the Parameters package. 
 Julia-Performance-tip: Make sure the type definitions are as accurate as possible to prevent run-time allocations. If used correctly, the values are only passed by reference.
 """
-@with_kw struct Params{SType}
+@with_kw struct Params1{SType,MethodType}
     # ______________ Model ______________
 
     T::double = 0.5 # Temperature
@@ -24,6 +35,8 @@ Julia-Performance-tip: Make sure the type definitions are as accurate as possibl
     OnsitePairs::Vector{Int}= System.OnsitePairs
     
     # ______________ parameters for numerics ______________
+    loopOrder::Int =1
+    Method::MethodType = getLoopMethod(loopOrder) #This field will allow us to dispatch on loop order
     N::Int = 24
     Ngamma::Int = 100 #Number of gamma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
@@ -40,6 +53,62 @@ Julia-Performance-tip: Make sure the type definitions are as accurate as possibl
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1)
 
 end
+Params = Params1
+
+function getLoopMethod(loopOrder::Int)
+    loopOrder == 1 && return OneLoop(1)
+    loopOrder == 2 && return TwoLoop(2)
+    loopOrder >= 3 && return MultiLoop(3)
+end
+
+
+"""Struct containing information about the (physical) ODE State, i.e. vertices"""
+struct StateType{T}
+    f_int::Array{T,1}
+    gamma::Array{T,2}
+    Va::Array{T,4}
+    Vb::Array{T,4}
+    Vc::Array{T,4}
+end
+
+function StateType(NUnique::Int,Ngamma::Int,VDims::Tuple)
+    return StateType(
+        zeros(NUnique), # fint
+        zeros(NUnique,Ngamma), # gamma
+        zeros(VDims), # Gamma_a
+        zeros(VDims), # Gamma_b
+        zeros(VDims) # Gamma_c
+    )
+end
+
+StateType(Par::Params) = StateType(Par.NUnique,Par.Ngamma,Par.VDims) 
+
+"""Struct storing information about Bubble functions, i.e. rhs derivatives of vertex flow equations."""
+struct BubbleType{T}
+    a::Array{T,4} #"a" type bubble
+    b::Array{T,4}
+    c::Array{T,4}
+
+    Ta::Array{T,4} #"a-Tilde" type bubble
+    Tb::Array{T,4}
+    Tc::Array{T,4}
+    Td::Array{T,4}
+end
+
+function BubbleType(VDims::Tuple)
+    return BubbleType(
+        zeros(VDims),
+        zeros(VDims),
+        zeros(VDims),
+
+        zeros(VDims),
+        zeros(VDims),
+        zeros(VDims),
+        zeros(VDims)
+    )
+end
+
+BubbleType(Par::Params) = BubbleType(Par.VDims) 
 
 """Struct containing the observables that are saved at every step"""
 struct Observables

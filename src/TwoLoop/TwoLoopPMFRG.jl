@@ -8,9 +8,7 @@ module TwoLoopPMFRG
 
     using ..PMFRG: Params,Workspace_Struct,setZero!,iG_,V_,getDFint!,get_Self_Energy!,getVertexDeriv!,symmetrizeX!,mixedFrequencies,double,CreateX,CreateXT,Observables,writeOutput,bufferV_!,getChi,launchPMFRG!,launchPMFRG_Checkpoint,InitializeState,readState,getFileParams,PMFRGMethod
     #functions that are extended
-    import ..PMFRG: SolveFRG,SolveFRG_Checkpoint,generateFileName
-
-    struct TwoLoop <: PMFRGMethod end
+    import ..PMFRG: SolveFRG,SolveFRG_Checkpoint,generateFileName,TwoLoop
 
     function AllocateSetup(Par::Params)
         @unpack N,Ngamma,Npairs,VDims,couplings,T,NUnique = Par
@@ -27,7 +25,6 @@ module TwoLoopPMFRG
     end
     #Overwrite getDeriv function
     include("Flowequations.jl")
-    
     """
     Solves FRG as specified for parameters
     """

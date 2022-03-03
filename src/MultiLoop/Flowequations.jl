@@ -69,7 +69,7 @@ Computes a two-particle bubble in the s-Channel given two four-point functions (
 Γ is assumed to be a vertex.
 To allow the computation using just the left part of a bubble, specification of the transpose is needed i.e. Transpose(X_L) = X_R and Transpose(X) = X, where X = XL + XR is the full bubble.
 """
-function compute2PartBubble!(ResultBubble,X,XTransp,Γ,getProp!,Par)
+function computeLeft2PartBubble!(ResultBubble,X,XTransp,Γ,getProp!,Par,PropsBuffers,VertexBuffers)
     @unpack T,N,lenIntw,np_vec,usesymmetry = Par 
 
     @sync begin
@@ -86,112 +86,104 @@ function compute2PartBubble!(ResultBubble,X,XTransp,Γ,getProp!,Par)
 					end
 					for nw in -lenIntw:lenIntw-1 # Matsubara sum
                         sprop = getProp!(BubbleProp,nw,nw+ns)
-                        addYTilde!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par)
+                        addBLTilde!(ResultBubble,X,XTransp,Γ, is,it,iu,nw,Par,sprop)
                         if(!usesymmetry || nu<=nt)
-                            addY!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par,Buffer)
+                            addBL!(ResultBubble,X,XTransp,Γ,is,it,iu,nw,Par,sprop,Buffer)
                         end
 					end
 				end
 			end
 		end
 	end
-
+    return ResultBubble
 end
 
 """
-Computes a single-particle (i.e. self-energy) bubble.
+Computes a single-particle (i.e. self-energy) bubble. Allows specification of function type, i.e. what vertices are used since this is different if a bubble function is inserted as opposed to a vertex.
 """
-function compute1PartBubble(Result,Bubble,Prop)
-
-end
-
-
-function getTwoLoopDeriv!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_Struct,Lam,Par,PropsBuffers,VertexBuffers)
-    @unpack gamma,DVa,DVb,DVc= Workspace 
-    @unpack Ya,Yb,Yc,YTa,YTb,YTc,YTd = TwoLoopWorkspace 
-    @unpack T,N,Npairs,lenIntw,np_vec,usesymmetry,NUnique,OnsitePairs = Par 
-    
-    iG(x,nw) = iG_(gamma,x,Lam,nw,Par)
-    function getProp!(BubbleProp,nw1,nw2)
-        for i in 1:NUnique, j in 1:NUnique
-            BubbleProp[i,j] = iG(i,nw1) *iG(j,nw2)* T
-        end
-        return BubbleProp
-    end
-    @sync begin
-		for is in 1:N,it in 1:N
-			Threads.@spawn begin
-				BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
-				Buffer = VertexBuffers[Threads.threadid()]
-				ns = np_vec[is]
-				nt = np_vec[it]
-				for iu in 1:N
-					nu = np_vec[iu]
-					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
-						continue
-					end
-					for nw in -lenIntw:lenIntw-1 # Matsubara sum
-                        sprop = getProp!(BubbleProp,nw,nw+ns)
-                        addYTilde!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par)
-                        if(!usesymmetry || nu<=nt)
-                            addY!(Workspace,TwoLoopWorkspace,is,it,iu,nw,sprop,Par,Buffer)
-                        end
-					end
+function _compute1PartBubble!(Dgamma,XT1_::Function,XT2_::Function,Prop,Par)
+    @unpack Ngamma,OnsitePairs,invpairs,T,siteSum,lenIntw_acc,np_vec_gamma,Nsum = Par
+	Threads.@threads for iw1 in 1:Ngamma
+		nw1 = np_vec_gamma[iw1]
+    	for (x,Rx) in enumerate(OnsitePairs)
+			for nw in -lenIntw_acc: lenIntw_acc-1
+				jsum = 0.
+				w1pw = nw1+nw+1 #w1 + w: Adding two Matsubara frequencies gives a +1
+				w1mw = nw1-nw
+				for k_spl in 1:Nsum[Rx]
+					@unpack m,ki,xk = siteSum[k_spl,Rx]
+					ik = invpairs[ki] # pair ik is inversed relative to pre-generated site summation in X (ki)!
+					jsum += (XT1_(ik,0,w1pw,w1mw)+2*XT2_(ik,0,w1pw,w1mw))*Prop(xk,nw)*m
 				end
+				Dgamma[x,iw1] += T *jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
 			end
 		end
 	end
+    return Dgamma
 end
+
+"""
+Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
+"""
+function compute1PartBubble!(Dgamma,X::BubbleType,Prop,Par)
+	XTa_(Rij,s,t,u) = XT_(X.a,X.a,Rij,s,t,u,Par.invpairs[Rij],Par.N)
+	XTc_(Rij,s,t,u) = XT_(X.c,X.b,Rij,s,t,u,Par.invpairs[Rij],Par.N)
+    _compute1PartBubble!(Dgamma,XTa_,XTc_,Prop,Par)
+end
+
+"""
+Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
+"""
+function compute1PartBubble!(Dgamma,Γ::VertexType,Prop,Par)
+	ΓTa_(Rij,s,t,u) = V_(Γ.a,Rij,t,u,s,Par.invpairs[Rij],Par.N) # Tilde-type can be obtained by permutation of vertices
+	ΓTc_(Rij,s,t,u) = V_(Γ.b,Rij,t,u,s,Par.invpairs[Rij],Par.N) # cTilde corresponds to b type vertex!
+    _compute1PartBubble!(Dgamma,Γa_,Γb_,Prop,Par)
+end
+
 
 """Use symmetries and identities to compute the rest of bubble functions"""
-function symmetrizeY!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_Struct,Par)
+function symmetrizeBubble!(X::BubbleType,Par)
     @unpack N,Npairs,usesymmetry,NUnique,OnsitePairs = Par 
-    @unpack  DVa,DVb,DVc = Workspace 
     @unpack Ya,Yb,Yc,YTa,YTb,YTc,YTd = TwoLoopWorkspace 
     # use the u <--> t symmetry
     if(usesymmetry)
         Threads.@threads for it in 1:N
             for iu in it+1:N, is in 1:N, Rij in 1:Npairs
-                Ya[Rij,is,it,iu] = -Ya[Rij,is,iu,it]
-                Yb[Rij,is,it,iu] = -Yb[Rij,is,iu,it]
-                Yc[Rij,is,it,iu] = (
-                + Ya[Rij,is,it,iu]+
-                - Yb[Rij,is,it,iu]+
-                + Yc[Rij,is,iu,it])
+                X.a[Rij,is,it,iu] = -X.a[Rij,is,iu,it]
+                X.b[Rij,is,it,iu] = -X.b[Rij,is,iu,it]
+                X.c[Rij,is,it,iu] = (
+                + X.a[Rij,is,it,iu]+
+                - X.b[Rij,is,it,iu]+
+                + X.c[Rij,is,iu,it])
             end
         end
     else
         s = 0.
         for it in 1:N, iu in it+1:N, is in 1:N, Rij in 1:Npairs
-            s += abs(Ya[Rij,is,it,iu] +Ya[Rij,is,iu,it])
-            s += abs( Yb[Rij,is,it,iu]  + Yb[Rij,is,iu,it])
-            s += abs(Yc[Rij,is,it,iu]  -(
-            + Ya[Rij,is,it,iu]+
-            - Yb[Rij,is,it,iu]+
-            + Yc[Rij,is,iu,it]))
+            s += abs(X.a[Rij,is,it,iu] +X.a[Rij,is,iu,it])
+            s += abs(X.b[Rij,is,it,iu]  + X.b[Rij,is,iu,it])
+            s += abs(X.c[Rij,is,it,iu]  -(
+            + X.a[Rij,is,it,iu]+
+            - X.b[Rij,is,it,iu]+
+            + X.c[Rij,is,iu,it]))
         end
         println("Total Error: ",s)
     end
-    #local definitions of YTilde vertices
+    #local definitions of X.Tilde vertices
     for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
-        YTa[R,is,it,iu] = Ya[R,is,it,iu]
-        YTb[R,is,it,iu] = Yb[R,is,it,iu]
-        YTc[R,is,it,iu] = Yc[R,is,it,iu]
-        YTd[R,is,it,iu] = -Yc[R,is,iu,it]
+        X.Ta[R,is,it,iu] = X.a[R,is,it,iu]
+        X.Tb[R,is,it,iu] = X.b[R,is,it,iu]
+        X.Tc[R,is,it,iu] = X.c[R,is,it,iu]
+        X.Td[R,is,it,iu] = -X.c[R,is,iu,it]
     end
-    @. YTd= YTa - YTb - YTc
-    Threads.@threads for iu in 1:N
-        for it in 1:N, is in 1:N, Rij in 1:Npairs
-            DVa[Rij,is,it,iu] += Ya[Rij,is,it,iu] - YTa[Rij,it,is,iu] + YTa[Rij,iu,is,it]
-            DVb[Rij,is,it,iu] += Yb[Rij,is,it,iu] - YTc[Rij,it,is,iu] + YTc[Rij,iu,is,it]
-            DVc[Rij,is,it,iu] += Yc[Rij,is,it,iu] - YTb[Rij,it,is,iu] + YTd[Rij,iu,is,it]
-        end
-    end
-	for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
-		DVc[R,is,it,iu] = -DVb[R,it,is,iu]
-	end
+    @. X.Td= X.Ta - X.Tb - X.Tc
 end
 
+function symmetrizeVertex!(Γ::VertexType,Par)
+	for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
+		Γ.c[R,is,it,iu] = -Γ.b[R,it,is,iu]
+	end
+end
 
 @inline function convertFreqArgsXT(ns,nt,nu,Nw)
     # @assert (ns+nt+nu) %2 != 0 "trying to convert wrong freqs $ns + $nt +  $nu = $(ns+nt+nu)"
@@ -213,7 +205,7 @@ end
 
 @inline function XT_(XT::AbstractArray,XTTransp::AbstractArray, Rj::Integer, ns::Integer,nt::Integer,nu::Integer,Rji::Integer,N::Integer)
     @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
-    Vertex = ifelse(it*iu<0,XTTransp,XT)
+    Vertex = ifelse(nt*nu<0,XTTransp,XT)
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
     Rj = ifelse(swapsites,Rji,Rj)
     return @inbounds Vertex[Rj,ns+1,nt+1,nu+1]
@@ -221,7 +213,7 @@ end
 
 @inline function bufferXT_!(Cache, X::AbstractArray, XTransp::AbstractArray, ns::Integer,nt::Integer,nu::Integer,invpairs::AbstractArray,N)
     
-    Vertex = ifelse(it*iu<0,XTransp,X)
+    Vertex = ifelse(nt*nu<0,XTransp,X)
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
     @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
 
@@ -266,12 +258,8 @@ struct VertexBuffer
 
 end
 VertexBuffer(Npairs) = VertexBuffer((zeros(Npairs) for _ in 1:16)...)
-"""
-adds to ResultBubble given the vertex from State as well as a bubble inserted on the left. XL and XR need to be provided for this.
-"""
-@inline function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,State::StateType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
-    @unpack Va,Vb,Vc = State
 
+function fillBuffer!(Buffer::VertexBuffer,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params)
     @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
 
     @unpack Va34,Vb34,Vc34,Vc43,XTa21,XTb21,XTc21,XTd21 = Buffer
@@ -280,18 +268,42 @@ adds to ResultBubble given the vertex from State as well as a bubble inserted on
 	nu = np_vec[iu]
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
-	bufferV_!(Va34, Va , ns, wmw3, wmw4, invpairs, N)
-	bufferV_!(Vb34, Vb , ns, wmw3, wmw4, invpairs, N)
-	bufferV_!(Vc34, Vc , ns, wmw3, wmw4, invpairs, N)
+	bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
+	bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
+	bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
 	
-	bufferV_!(Vc21, Vc , ns, wpw2, wpw1, invpairs, N)
-	bufferV_!(Vc43, Vc , ns, wmw4, wmw3, invpairs, N)
+	bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
 
-	bufferXT_!(XTa43, XR.Ta , XL.Ta , wmw4, ns, wmw3, invpairs, N)
-	bufferXT_!(XTb43, XR.Tb , XL.Tb , wmw4, ns, wmw3, invpairs, N)
-	bufferXT_!(XTc43, XR.Tc , XL.Tc , wmw4, ns, wmw3, invpairs, N)
-	bufferXT_!(XTd43, XR.Td , XL.Td , wmw4, ns, wmw3, invpairs, N)
+    bufferXT_!(XTa21, XR.Ta, XL.Ta, wpw2, ns, wpw1, invpairs, N)
+    bufferXT_!(XTb21, XR.Tb, XL.Tb, wpw2, ns, wpw1, invpairs, N)
+    bufferXT_!(XTc21, XR.Tc, XL.Tc, wpw2, ns, wpw1, invpairs, N)
+    bufferXT_!(XTd21, XR.Td, XL.Td, wpw2, ns, wpw1, invpairs, N)
+end
 
+function fillBuffer!(Buffer::VertexBuffer,Γ0::BareVertexType{T},Γ::VertexType{T},is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params) where T
+    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+
+    @unpack Va34,Vb34,Vc34,Vc43,XTa21,XTb21,XTc21,XTd21 = Buffer
+    ns = np_vec[is]
+	nt = np_vec[it]
+	nu = np_vec[iu]
+	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
+
+	bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
+	bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
+	bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
+	
+	bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
+end
+
+"""
+adds to ResultBubble given the vertex as well as a bubble inserted on the left. Assumes that vertices and bubbles are given pre-computed in VertexBuffer.
+"""
+@inline function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params,Props,Buffer::VertexBuffer)
+    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    fillBuffer!(Buffer,XL,XR,Γ,is,it,iu,nwpr,Par)
+
+    @unpack Va34,Vb34,Vc34,Vc43,XTa21,XTb21,XTc21,XTd21 = Buffer
     S_ki = S.ki
 	S_kj = S.kj
 	S_xk = S.xk
@@ -337,15 +349,41 @@ adds to ResultBubble given the vertex from State as well as a bubble inserted on
     end
     return
 end
+
+@inline function addBL!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params,Props,Buffer::VertexBuffer)
+    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    fillBuffer!(Buffer,Γ0,Γ,is,it,iu,nwpr,Par)
+    
+    @unpack Va34,Vb34,Vc34,Vc43 = Buffer
+    S_ki = S.ki
+	S_kj = S.kj
+	S_xk = S.xk
+	S_m = S.m
+
+    @inbounds for Rij in 1:Npairs
+        Bc_sum = 0.
+        @turbo unroll = 1 for k_spl in 1:Nsum[Rij]
+            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
+            ki,kj,m,xk = S_ki[k_spl,Rij],S_kj[k_spl,Rij],S_m[k_spl,Rij],S_xk[k_spl,Rij]
+
+            Ptm = Props[xk,xk]*m
+
+            Bc_sum += (
+                Vc34[kj] * Γ0.c[ki]
+            )* Ptm
+        end
+        B.c[Rij,is,it,iu] += Bc_sum
+    end
+    return
+end
+@inline addBL!(B::BubbleType,Γ0L::BareVertexType,Γ0R::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params,Props,Buffer::VertexBuffer) = addBL!(B,Γ0L,Γ,is, it, iu, nwpr,Par,Props,Buffer)
 ##
 
-function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,State::StateType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params)
-    @unpack Va,Vb,Vc,Xa,Xb,Xc,XTa,XTb,XTc,XTd = Workspace 
-    @unpack YTa,YTb,YTc,YTd = TwoLoopWorkspace
+function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::Params,Props)
     @unpack Npairs,invpairs,PairTypes,N,np_vec = Par
-    Va_(Rij,s,t,u) = V_(Va,Rij,s,t,u,invpairs[Rij],N)
-    Vb_(Rij,s,t,u) = V_(Vb,Rij,s,t,u,invpairs[Rij],N)
-    Vc_(Rij,s,t,u) = V_(Vc,Rij,s,t,u,invpairs[Rij],N)
+    Va_(Rij,s,t,u) = V_(Γ.a,Rij,s,t,u,invpairs[Rij],N)
+    Vb_(Rij,s,t,u) = V_(Γ.b,Rij,s,t,u,invpairs[Rij],N)
+    Vc_(Rij,s,t,u) = V_(Γ.c,Rij,s,t,u,invpairs[Rij],N)
 
     XLa_(Rij,s,t,u) = X_(XL.a,XR.a,Rij,s,t,u,invpairs[Rij],N)
     XLb_(Rij,s,t,u) = X_(XL.b,XR.b,Rij,s,t,u,invpairs[Rij],N)
@@ -361,7 +399,7 @@ function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,State::StateTyp
 	nu = np_vec[iu]
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
-    #Ytilde only defined for nonlocal pairs Rij >= 2
+    #Btilde only defined for nonlocal pairs Rij >= 2
     for Rij in 2:Npairs
         #loop over all left hand side inequivalent pairs Rij
         Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
@@ -394,3 +432,40 @@ function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,State::StateTyp
         Vb_(Rji, wmw3, ns, wmw4)*XRTc_(Rji, wpw2, wpw1, ns))
     end
 end
+##
+
+function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::Params,Props)
+    @unpack Npairs,invpairs,PairTypes,N,np_vec = Par
+    Va_(Rij,s,t,u) = V_(Γ.a,Rij,s,t,u,invpairs[Rij],N)
+    Vb_(Rij,s,t,u) = V_(Γ.b,Rij,s,t,u,invpairs[Rij],N)
+    Vc_(Rij,s,t,u) = V_(Γ.c,Rij,s,t,u,invpairs[Rij],N)
+
+	ns = np_vec[is]
+	nt = np_vec[it]
+	nu = np_vec[iu]
+	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
+
+    #Btilde only defined for nonlocal pairs Rij >= 2
+    for Rij in 2:Npairs
+        #loop over all left hand side inequivalent pairs Rij
+        Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
+        @unpack xi,xj = PairTypes[Rij]
+
+        B.Ta[Rij,is,it,iu] += 
+        Props[xj, xi]*2*Vc_(Rij, wmw4, ns, wmw3)*Γ0.c[Rij] + 
+        Props[xi, xj]*2*Vc_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji]
+        
+        B.Tb[Rij,is,it,iu] += 
+        Props[xj, xi]*(
+        Va_(Rij, wmw4, ns, wmw3)*Γ0.c[Rij] + 
+        Vc_(Rij, wmw4, ns, wmw3)*Γ0.c[Rij]) + 
+        Props[xi, xj]*(
+        Va_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji] + 
+        Vc_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji])
+
+        B.Tc[Rij,is,it,iu] += 
+        Props[xj, xi]*Vc_(Rij, wmw4, wmw3, ns)*Γ0.c[Rij] + 
+        Props[xi, xj]*Vb_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji]
+    end
+end
+@inline addBLTilde!(B::BubbleType,Γ0L::BareVertexType,Γ0R::BareVertexType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::Params,Props) = addBLTilde!(B,Γ0L,Γ, is, it, iu, nwpr, Par, Props)

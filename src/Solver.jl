@@ -78,15 +78,17 @@ end
 
 SolveFRG(Par::Params,Method = OneLoop()::OneLoop;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)
 
-function launchPMFRG!(State,setup,Deriv!::Function; MainFile= nothing, Group =string(setup[end].T), CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],overwrite_Checkpoints = false::Bool,kwargs...)
+function launchPMFRG!(State,setup,Deriv!::Function; MainFile= nothing, Group =string(setup[end].T), CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],overwrite_Checkpoints = false::Bool,CheckPointSteps = 1,kwargs...)
     Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
     @unpack Lam_max,Lam_min,accuracy,MinimalOutput = Par
     save_func(State,Lam,integrator) = getObservables(State,Lam,Par)
-
+    
     saved_values = SavedValues(double,Observables)
+    i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
     function output_func(State,Lam,integrator)
-        setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
+        i+=1
+        i%CheckPointSteps == 0 && setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
         println("") 
         writeOutput(State,saved_values,Lam,Par)
     end

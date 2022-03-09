@@ -2,13 +2,13 @@
 includes MultiLoop corrections to PMFRG.
 """
 module MultiLoopPMFRG
-    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization
+    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays
 
     # export MultiLoop,SolveParquet
 
     using ..PMFRG: MultiLoop,Params,Workspace_Struct,iG_,V_,getDFint!,get_Self_Energy!,getVertexDeriv!,mixedFrequencies,double,CreateX,Observables,writeOutput,bufferV_!,convertFreqArgs,getChi,launchPMFRG!,launchPMFRG_Checkpoint,InitializeState,readState,getFileParams,PMFRGMethod
     #functions that are extended
-    import ..PMFRG: SolveFRG,SolveFRG_Checkpoint,generateFileName
+    import ..PMFRG: SolveFRG,SolveFRG_Checkpoint,generateFileName,getChi
     include("Types.jl")
     include("VertexUtils.jl")
     include("Flowequations.jl")

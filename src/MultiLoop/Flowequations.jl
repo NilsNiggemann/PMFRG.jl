@@ -113,7 +113,7 @@ function _compute1PartBubble!(Dgamma,XT1_::Function,XT2_::Function,Prop,Par)
 				for k_spl in 1:Nsum[Rx]
 					@unpack m,ki,xk = siteSum[k_spl,Rx]
 					ik = invpairs[ki] # pair ik is inversed relative to pre-generated site summation in X (ki)!
-					jsum += (XT1_(ik,0,w1pw,w1mw)+2*XT2_(ik,0,w1pw,w1mw))*Prop(xk,nw)*m
+					jsum += (XT1_(ik,w1pw,0,w1mw)+2*XT2_(ik,w1pw,0,w1mw))*Prop(xk,nw)*m
 				end
 				Dgamma[x,iw1] += T *jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
 			end
@@ -132,9 +132,10 @@ function compute1PartBubble!(Dgamma,X::BubbleType,Prop,Par)
 end
 
 """
-Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
+Computes a single-particle (i.e. self-energy) bubble. Can only be used if argument is a vertex
 """
 function compute1PartBubble!(Dgamma,Γ::VertexType,Prop,Par)
+    @warn "compute1PartBubble! for vertices is not tested yet!"
 	ΓTa_(Rij,s,t,u) = V_(Γ.a,Rij,t,u,s,Par.invpairs[Rij],Par.N) # Tilde-type can be obtained by permutation of vertices
 	ΓTc_(Rij,s,t,u) = V_(Γ.b,Rij,t,u,s,Par.invpairs[Rij],Par.N) # cTilde corresponds to b type vertex!
     _compute1PartBubble!(Dgamma,Γa_,Γb_,Prop,Par)
@@ -457,11 +458,11 @@ function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integ
         
         B.Tb[Rij,is,it,iu] += 
         Props[xj, xi]*(
-        Va_(Rij, wmw4, ns, wmw3)*Γ0.c[Rij] + 
-        Vc_(Rij, wmw4, ns, wmw3)*Γ0.c[Rij]) + 
+        Va_(Rij, wmw4, ns, wmw3) + 
+        Vc_(Rij, wmw4, ns, wmw3))*Γ0.c[Rij] + 
         Props[xi, xj]*(
-        Va_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji] + 
-        Vc_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji])
+        Va_(Rji, wmw3, ns, wmw4) + 
+        Vc_(Rji, wmw3, ns, wmw4))*Γ0.c[Rji]
 
         B.Tc[Rij,is,it,iu] += 
         Props[xj, xi]*Vc_(Rij, wmw4, wmw3, ns)*Γ0.c[Rij] + 

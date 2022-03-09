@@ -1,15 +1,15 @@
 
 """Set two objects equal by recusively setting all their fields to be equal"""
-function setEqual!(A::T,B::T) where T
+function writeTo!(A::T,B::T) where T
     for f in fieldnames(T)
         a = getfield(A,f)
         b = getfield(B,f)
-        setEqual!(a,b)
+        writeTo!(a,b)
     end
     return
 end
 
-function setEqual!(A::AbstractArray,B::AbstractArray)
+function writeTo!(A::AbstractArray,B::AbstractArray)
     A .= B
     return
 end

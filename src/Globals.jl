@@ -72,7 +72,7 @@ Arguments can be given as keywords and will usually have the default values as:
     loopOrder::Int = 1
     Method::MethodType = getLoopMethod(loopOrder) #This field will allow us to dispatch on loop order
     N::Int = 24
-    Ngamma::Int = 100 #Number of gamma frequencies
+    Ngamma::Int = N #Number of gamma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
     accuracy::double = 1e-6
     Lam_min::double = 0.0

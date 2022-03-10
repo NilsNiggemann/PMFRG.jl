@@ -56,7 +56,7 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,PropsBuffers,Ver
 
     Tol_Vertex = 1E16 #Initial tolerance level
 
-    iG(x,nw) = iG_(OldState.γ,x,Lam,nw,Par)
+    iG(x,nw) = iG_(State.γ,x,Lam,nw,Par)
 
     function getProp!(BubbleProp,nw1,nw2)
         for i in 1:NUnique, j in 1:NUnique
@@ -77,9 +77,11 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,PropsBuffers,Ver
         writeTo!(OldState.Γ,State.Γ)
 
         setZero!( (B0,BX) )
-
+                
         computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,PropsBuffers,VertexBuffers)
         computeLeft2PartBubble!(BX,X,X,State.Γ,getProp!,Par,PropsBuffers,VertexBuffers)
+        symmetrizeBubble!(B0,Par)
+        symmetrizeBubble!(BX,Par)
 
         getXFromBubbles!(X,B0,BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
         getVertexFromChannels!(State.Γ,I,X)
@@ -110,28 +112,29 @@ end
 function getVertexFromChannels!(Γ::VertexType,I::VertexType,X::BubbleType)
     Threads.@threads for iu in axes(Γ.a,4)
         for it in axes(Γ.a,3), is in axes(Γ.a,2), Rij in axes(Γ.a,1)
-            Γ.a[Rij,is,it,iu] = I.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
-            Γ.b[Rij,is,it,iu] = I.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
-            Γ.c[Rij,is,it,iu] = I.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
+            Γ.a[Rij,is,it,iu] = I.a[Rij,is,it,iu] + X.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
+            Γ.b[Rij,is,it,iu] = I.b[Rij,is,it,iu] + X.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
+            Γ.c[Rij,is,it,iu] = I.c[Rij,is,it,iu] + X.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
         end
     end
     return Γ
 end
 
+
 function iterateSDE!(Workspace,Lam, maxiter)
     @unpack OldState,State,I,X,B0,BX,Par = Workspace
-    Prop(x,nw) = -1/6*iG_(State.γ,x,Lam,nw,Par)
+    Prop(x,nw) = -1/6*iG_(OldState.γ,x,Lam,nw,Par)
 
     Tol_gamma = 1E16
     iter = 0
-    while Tol_gamma > Par.accuracy
+    while Tol_gamma > 1E-5* Par.accuracy
         if iter >= maxiter
-            @warn("SDE: No convergence found after $maxiter iterations\n
-            remaining Tol: $Tol_gamma")
+            # @warn("SDE: No convergence found after $maxiter iterations\nremaining Tol: $Tol_gamma")
             break
         end
         iter +=1
         writeTo!(OldState.γ,State.γ)
+        setZero!(State.γ)
         compute1PartBubble!(State.γ,B0,Prop,Par)
         
         # @views println(State.γ[1:5])
@@ -139,7 +142,7 @@ function iterateSDE!(Workspace,Lam, maxiter)
         Tol_gamma = dist(State.γ,OldState.γ)
     end
     println("""
-    \t\tSDE step done after $iter iterations """)
+    \t\tSDE step done after $iter / $maxiter iterations """)
     return 
 end
 

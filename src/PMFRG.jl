@@ -18,7 +18,7 @@ module PMFRG
     include("MultiLoop/MultiLoopPMFRG.jl")
     using .MultiLoopPMFRG
     export MultiLoop,SolveParquet
-    #Precompilation
+    # Precompilation
     # include("precompile.jl")
     # __precompile__quiet__()
 end # module

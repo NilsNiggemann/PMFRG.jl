@@ -145,7 +145,6 @@ end
 """Use symmetries and identities to compute the rest of bubble functions"""
 function symmetrizeBubble!(X::BubbleType,Par)
     @unpack N,Npairs,usesymmetry,NUnique,OnsitePairs = Par 
-    @unpack Ya,Yb,Yc,YTa,YTb,YTc,YTd = TwoLoopWorkspace 
     # use the u <--> t symmetry
     if(usesymmetry)
         Threads.@threads for it in 1:N
@@ -187,7 +186,7 @@ function symmetrizeVertex!(Γ::VertexType,Par)
 end
 
 @inline function convertFreqArgsXT(ns,nt,nu,Nw)
-    # @assert (ns+nt+nu) %2 != 0 "trying to convert wrong freqs $ns + $nt +  $nu = $(ns+nt+nu)"
+    @assert (ns+nt+nu) %2 != 0 "trying to convert wrong freqs $ns + $nt +  $nu = $(ns+nt+nu)"
     swapsites = ns*nu <0
     ns,nt,nu = abs.((ns,nt,nu))
     ns = min( ns, Nw - 1 - (ns+Nw-1)%2)
@@ -197,7 +196,7 @@ end
 end
 
 @inline function X_(X::AbstractArray,XTransp::AbstractArray, Rj::Integer, ns::Integer,nt::Integer,nu::Integer,Rji::Integer,N::Integer)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
     ns,nt,nu,swapsites = convertFreqArgs(ns,nt,nu,N)
     Vertex = ifelse(swapsites,XTransp,X)
     Rj = ifelse(swapsites,Rji,Rj)
@@ -205,7 +204,7 @@ end
 end
 
 @inline function XT_(XT::AbstractArray,XTTransp::AbstractArray, Rj::Integer, ns::Integer,nt::Integer,nu::Integer,Rji::Integer,N::Integer)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
     Vertex = ifelse(nt*nu<0,XTTransp,XT)
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
     Rj = ifelse(swapsites,Rji,Rj)
@@ -216,7 +215,7 @@ end
     
     Vertex = ifelse(nt*nu<0,XTransp,X)
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
 
     is,it,iu = ns+1,nt+1,nu+1
     @inbounds begin 

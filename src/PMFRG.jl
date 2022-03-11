@@ -3,7 +3,10 @@ module PMFRG
     export SolveFRG,Params,double,BS3,Vern7,DP5,version,getChi,OneLoop
     version() = """v.2.1.0"""
     # Essentials
-    include("Globals.jl")
+    include("Types.jl")
+    include("OneLoopDefinitions.jl")
+    include("VertexUtils.jl")
+
     include("VertexFunctions_Dense.jl")
     include("Propagators.jl")
     include("Flowequations_Dense.jl")

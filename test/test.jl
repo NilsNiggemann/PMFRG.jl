@@ -29,67 +29,117 @@ obs = saved_values.saveval[end]
 # println(obs.f_int)
 println(obs.Chi)
 ##
-using Plots,PMFRGEvaluation,RecursiveArrayTools,StaticArrays
-Oct = getOctochlore(6,0,0)
-Lattice = LatticeInfo(System = Oct,Basis = Octochlore.Basis,pairToInequiv = Octochlore.pairToInequiv)
-chi = VectorOfArray(getfield.(saved_values.saveval,:Chi))
-k,Jk = Fourier2D(-Oct.couplings,(x,y)-> SA[x,x,y],Lattice,ext= 4pi,res= 200)
-Chikplot(k,Jk,dpi =500)
-##
-plotMaxFlow(chi',saved_values.t,Lattice,(x,y) -> SA[x,x,y])
-##
-w = PMFRG.get_w.(1:Par.Ngamma,Ref(0.2))
-# scatter(saved_values.t,getindex.(getfield.(saved_values.saveval,:Chi),1))
-scatter(w,saved_values.saveval[end].gamma[1,:])
-plot!(w,9 ./(16 .*w),label = "\$T=0\$")
-vline!([w[Par.N]],linestyle = :dash)
-##
-# Par = Params(System=getDimerSquareKagome(3,[1.,1,1,0]),N=64);
-Par = Params(System=getCubic(10),N=20);
-using BenchmarkTools,Parameters,RecursiveArrayTools
-##
-function test(Par)
-    @unpack VDims,NUnique,Ngamma,T = Par
-    State = ArrayPartition(
-        zeros(double,NUnique), # f_int 
-        zeros(double,NUnique,Ngamma), # gamma
-        zeros(double,VDims), #Va
-        zeros(double,VDims), #Vb
-        zeros(double,VDims) #Vc
-    )
+using PMFRG,SpinFRGLattices,SpinFRGLattices.Pyrochlore,BenchmarkTools
 
-    Deriv = similar(State);
-    X =  ArrayPartition(
-        zeros(double,VDims),
-        zeros(double,VDims),
-        zeros(double,VDims)
-    )
-    XTilde =  ArrayPartition(
-        zeros(double,VDims),
-        zeros(double,VDims),
-        zeros(double,VDims),
-        zeros(double,VDims)
-    )
-    @allocated Workspace = PMFRG.Workspace_Struct(Deriv,State,X,XTilde)
-    Lam = 10.
+function CheckKernels(Par::Params;Lam=1.,MaxLengthInSecs=60*1)
+    State= PMFRG.InitializeState(Par)
+    rand!(State)
+    setup = PMFRG.AllocateSetup(Par)
+    Deriv = PMFRG.similar(State)
 
-    # display(@benchmark getDeriv!($Deriv,$State,$(X,XTilde,Par),$Lam) evals = 6)
-    # @btime PMFRG.getVertexDeriv!($Workspace,$Lam,$Par)
-    Buf = PMFRG.VertexBuffer(Par.Npairs)
-
-
-    # @btime PMFRG.addX!($Workspace,1,1,1,2,$[1],$Par,$Buf)
-    # display(@benchmark PMFRG.getVertexDeriv!($Workspace,$Lam,$Par) evals = 1)
-    @btime PMFRG.getVertexDeriv!($Workspace,$Lam,$Par)
-    # display(@benchmark get_Self_Energy!($Workspace,$Lam,$Par) evals = 6)
-    # @benchmark getChi($State, $Lam,$Par)
-    # for _ in 1:10
-    #     println(@time getDeriv!(Deriv,State,(X,XTilde,Par),Lam))
-    # end
-    # @code_warntype sChannel!(Workspace,3,3,3,1.,0.1,Par)
-    # @btime get_Self_Energy!($Workspace,0.1,$Par)
-
-    # @benchmark getKataninProp($gamma,$Dgamma,1.,0.1,$Par)
+    X,XTilde,PropsBuffers,VertexBuffers,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    N = Par.N
+    Workspace = PMFRG.Workspace_Struct(Deriv,State,X,XTilde)
+    BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
+    Buffer = VertexBuffers[Threads.threadid()]
+    sprop = rand!(BubbleProp)
+    display(@benchmark PMFRG.addXTilde!($Workspace,1,1,2,1,$sprop,$Par))
+    display(@benchmark PMFRG.addX!($Workspace,1,1,2,1,$sprop,$Par,$Buffer))
 end
-test(Par)
+
+
+System = getPyrochlore(5);
+Par = Params(System = System,N=24);
+State= PMFRG.InitializeState(Par);
+rand!(State);
+setup = PMFRG.AllocateSetup(Par);
+Deriv = PMFRG.similar(State);
+
+X,XTilde,PropsBuffers,VertexBuffers,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
+N = Par.N;
+Workspace = PMFRG.Workspace_Struct(Deriv,State,X,XTilde);
+BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated ;thread-safe buffers
+Buffer = VertexBuffers[Threads.threadid()];
+sprop = rand!(BubbleProp);
+
+@code_warntype PMFRG.getVertexDeriv!(Workspace,1.,Par,PropsBuffers,VertexBuffers)
+
+
 ##
+using PMFRG,SpinFRGLattices
+ParquetLambda = 0.
+Par = Params(System = getPolymer(2),N=24,T=0.5,accuracy = 1e-5,usesymmetry = true,Lam_min = ParquetLambda)
+Sol,Obs = SolveParquet(Par,ParquetLambda,maxiterBubble = 100,maxitergamma = 2000)
+
+##
+SolP,ObsPt = SolveFRG(Par)
+ObsP = PMFRG.StructArray(ObsPt.saveval)
+Obst = ObsPt.t
+LamIndex = findfirst(x-> x <= ParquetLambda, Obst)
+##
+chi1_ex(B) = (exp(B) - 1 + B )/(2*(exp(B)+3))
+chi2_ex(B) = -(exp(B) - 1 - B )/(2*(exp(B)+3))
+using Plots
+numiter = length(Obs)
+# plot(PMFRG.convertToArray(Obs.gamma)[1,1:5,:]')
+pls = []
+plot(PMFRG.convertToArray(Obs.gamma)[1,1:end,2],label = "i=1",ylabel = "γ",xlabel = "n")
+plot!(PMFRG.convertToArray(Obs.gamma)[1,1:end,div(numiter,2)],label = "i=$(div(numiter,2))")
+push!(pls, plot!(PMFRG.convertToArray(Obs.gamma)[1,1:end,end],label = "i=$(numiter)",color = :black))
+plot(xlabel = "iterations",ylabel = "χ")
+hline!([chi1_ex(1/Par.T),chi2_ex(1/Par.T)],labels = ["exact" ""],color = :grey, linestyle = :dash)
+hline!([ObsP.Chi[LamIndex]'],labels = ["PMFRG" ""],color = :red, linestyle = :dash)
+push!(pls, plot!(PMFRG.convertToArray(Obs.Chi)',color = :black,labels = ["Parquet" ""]))
+
+push!(pls, plot(PMFRG.convertToArray(Obs.MaxVc)',ylabel = "max(Γc)",xlabel = "iterations"))
+
+plot(pls...,size = (800,800),title = "T=$(PMFRG.strd(Par.T))")
+
+##
+using PMFRG,SpinFRGLattices
+ParquetLambda = 0.
+chis = Vector{Float64}[]
+chisbegin = Vector{Float64}[]
+Trange = 0.8:0.1:2.0
+for T in Trange
+    Par = Params(System = getPolymer(2),N=32,T=T,accuracy = 1e-5,usesymmetry = true,Lam_min = ParquetLambda)
+    Sol,Obs = SolveParquet(Par,ParquetLambda,maxiterBubble = 70,maxitergamma = 2000)
+    push!(chis,Obs.Chi[end])
+    push!(chisbegin,Obs.Chi[begin])
+end
+
+##
+using LaTeXStrings
+bareSt = PMFRG.MultiLoopPMFRG.StateType(Par)
+PMFRG.MultiLoopPMFRG.setToBareVertex!(bareSt.Γ,Par)
+
+TrangeDense = 0.0:0.01:maximum(Trange)
+TrangeDense2 = 0.5:0.01:maximum(Trange)
+chisBare = Vector{Float64}[]
+for T in TrangeDense2
+    Par = Params(System = getPolymer(2),N=32,T=T,accuracy = 1e-5,usesymmetry = true,Lam_min = ParquetLambda)
+
+    push!(chisBare, PMFRG.MultiLoopPMFRG.getChi(bareSt,Par.Lam_min,Par))
+end
+plot(xlabel = L"T",ylabel = L"\chi_{ij}")
+plot!(TrangeDense,chi1_ex.(1 ./TrangeDense),color = :grey, label = "exact")
+plot!(TrangeDense,chi2_ex.(1 ./TrangeDense),color = :grey, label = "")
+plot!(TrangeDense2,PMFRG.convertToArray(chisBare)',color = :black, labels = [L"\Gamma = \Gamma^0" ""])
+scatter!(Trange,PMFRG.convertToArray(chis)',color = :red,labels = ["Parquet" ""])
+# scatter!(Trange,PMFRG.convertToArray(chisbegin)',color = :blue,labels = ["init" ""])
+
+##
+@with_kw struct test1
+    t::Int
+end
+test1(;t=1,kwargs...) = test1(t)
+@with_kw struct test2
+    u::Int
+end
+test2(;u=2,kwargs...) = test2(u)
+struct test3
+    a::test1
+    b::test2
+end
+test3(;kwargs...) = test3(test1(;kwargs...),test2(;kwargs...))
+a = test3(t=1,u=3)

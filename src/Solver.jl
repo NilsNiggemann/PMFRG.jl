@@ -29,11 +29,11 @@ function getDerivVerbose!(Deriv,State,XandPar,Lam)
     return
 end
 
-function InitializeState(Par::Params)
-    @unpack N,Ngamma,Npairs,VDims,couplings,NUnique = Par
+function InitializeState(Par::OneLoopParams)
+    @unpack N,Ngamma,VDims = Par.NumericalParams
+    @unpack couplings,NUnique = Par.System
     
-    ##Allocate Memory:
-    State = ArrayPartition(
+    State = ArrayPartition( #Allocate Memory:
         zeros(double,NUnique), # f_int 
         zeros(double,NUnique,Ngamma), # gamma
         zeros(double,VDims), #Va
@@ -41,42 +41,24 @@ function InitializeState(Par::Params)
         zeros(double,VDims) #Vc
     )
 
-    Vc = State.x[5]
-    for is in 1:N, it in 1:N, iu in 1:N, Rj in 1:Npairs
-        Vc[Rj,is,it,iu] = -couplings[Rj]
-    end
+    Γc = State.x[5]
+    setToBareVertex!(Γc,couplings)
     return State
 end
 
-function CreateX(VDims::NTuple{4, Int64})
-    return ArrayPartition(
-        zeros(double,VDims),
-        zeros(double,VDims),
-        zeros(double,VDims)
-    )
-end
-
-function CreateXT(VDims::NTuple{4, Int64})
-    return ArrayPartition(
-        zeros(double,VDims),
-        zeros(double,VDims),
-        zeros(double,VDims),
-        zeros(double,VDims)
-    )
-end
-
-function AllocateSetup(Par::Params)
-    @unpack N,Ngamma,Npairs,VDims,couplings,T,NUnique = Par
-    println("One Loop: T= ",T)
+function AllocateSetup(Par::OneLoopParams)
+    @unpack N,Ngamma,VDims = Par.NumericalParams
+    @unpack couplings,NUnique,Npairs = Par.System
+    println("One Loop: T= ",Par.T)
     ##Allocate Memory:
-    X = CreateX(VDims)
-    XTilde = CreateXT(VDims)
+    X = BubbleType(VDims)
     PropsBuffers = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
-	VertexBuffers = [VertexBuffer(Par.Npairs) for _ in 1:Threads.nthreads()] 
-    return (X,XTilde,PropsBuffers,VertexBuffers,Par)
+	VertexBuffers = [VertexBuffer(Par.Npairs) for _ in 1:Threads.nthreads()]
+    Buffs = BufferType(PropsBuffers,VertexBuffers) 
+    return (X,Buffs,Par)
 end
 
-SolveFRG(Par::Params,Method = OneLoop()::OneLoop;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)
+SolveFRG(Par;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)
 
 function launchPMFRG!(State,setup,Deriv!::Function; MainFile= nothing, Group =string(setup[end].T), CheckpointDirectory = nothing,method = DP5(),MaxVal = 50*maximum(abs,setup[end].couplings),ObsSaveat = nothing,VertexCheckpoints = [],overwrite_Checkpoints = false::Bool,kwargs...)
     Par = setup[end]
@@ -111,8 +93,7 @@ function launchPMFRG!(State,setup,Deriv!::Function; MainFile= nothing, Group =st
     return sol,saved_values
 end
 
-function getObservables(State,Lam,Par)
-    @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
+function getObservables(State::ArrayPartition,Lam,Par)
     f_int,gamma,Va,Vb,Vc = State.x
     chi = getChi(State,Lam,Par)
     MaxVa = @view maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
@@ -120,10 +101,11 @@ function getObservables(State,Lam,Par)
     MaxVc = @view maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
     return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
 end
+writeOutput(State::ArrayPartition,saved_values,Lam,Par) = writeOutput(State.x...,saved_values,Lam,Par)
 
-function writeOutput(State,saved_values,Lam,Par)
-    @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
-    f_int,gamma,Va,Vb,Vc = State.x
+function writeOutput(f_int,gamma,Va,Vb,Vc,saved_values,Lam,Par)
+    @unpack MinimalOutput,usesymmetry = Par.Options
+    @unpack N,np_vec,T = Par
     chi = saved_values.saveval[end].Chi
     if !MinimalOutput 
         print("T= ",strd(T)," at Lambda step: ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")

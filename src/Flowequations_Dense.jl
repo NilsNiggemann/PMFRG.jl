@@ -154,7 +154,7 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 @inline function addX!(Workspace::Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
 	@unpack Va,Vb,Vc,Xa,Xb,Xc = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
-	@unpack N,Npairs,Nsum,S,invpairs,np_vec = Par
+	@unpack N,Npairs,Nsum,siteSum,invpairs,np_vec = Par
 	ns = np_vec[is]
 	nt = np_vec[it]
 	nu = np_vec[iu]
@@ -171,10 +171,10 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
 	bufferV_!(Vc21, Vc , ns, wpw2, wpw1, invpairs,N)
 	bufferV_!(Vc43, Vc , ns, wmw4, wmw3, invpairs,N)
 	# get fields of siteSum struct as Matrices for better use of LoopVectorization
-	S_ki = S.ki
-	S_kj = S.kj
-	S_xk = S.xk
-	S_m = S.m
+	S_ki = siteSum.ki
+	S_kj = siteSum.kj
+	S_xk = siteSum.xk
+	S_m = siteSum.m
 	for Rij in 1:Npairs
 		#loop over all left hand side inequivalent pairs Rij
 		Xa_sum = 0. #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!

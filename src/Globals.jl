@@ -50,7 +50,7 @@ Arguments can be given as keywords and will usually have the default values as:
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1)
 
 """
-@with_kw struct Params1{SType,MethodType}
+@with_kw struct Params1{SType <: StructArray,MethodType} 
     # ______________ Model ______________
 
     T::double = 0.5 # Temperature
@@ -63,8 +63,7 @@ Arguments can be given as keywords and will usually have the default values as:
     NUnique::Int = System.NUnique
     couplings::Vector{double} = System.couplings
     invpairs::Vector{Int} = System.invpairs
-    siteSum::Matrix{sumElements} = System.siteSum
-    S::SType = StructArray(siteSum)
+    siteSum::SType = StructArray(System.siteSum)
     PairTypes::Vector{sitePair} = System.PairTypes
     OnsitePairs::Vector{Int}= System.OnsitePairs
     

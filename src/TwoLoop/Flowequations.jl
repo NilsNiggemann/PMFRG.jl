@@ -211,7 +211,7 @@ like addX! but with Y
 @inline function addY!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
     @unpack Va,Vb,Vc,XTa,XTb,XTc,XTd  = Workspace 
     @unpack Ya,Yb,Yc = TwoLoopWorkspace 
-    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    @unpack Npairs,Nsum,siteSum,invpairs,N,np_vec = Par
     @unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43,XTa21,XTa43,XTb21,XTb43,XTc21,XTc43,XTd21,XTd43 = Buffer
     ns = np_vec[is]
 	nt = np_vec[it]
@@ -241,10 +241,10 @@ like addX! but with Y
     bufferXT_!(XTd21, XTd , wpw2, ns, wpw1, invpairs, N)
 	bufferXT_!(XTd43, XTd , wmw4, ns, wmw3, invpairs, N)
 
-    S_ki = S.ki
-	S_kj = S.kj
-	S_xk = S.xk
-	S_m = S.m
+    S_ki = siteSum.ki
+	S_kj = siteSum.kj
+	S_xk = siteSum.xk
+	S_m = siteSum.m
 
     @inbounds for Rij in 1:Npairs
         #loop over all left hand side inequivalent pairs Rij

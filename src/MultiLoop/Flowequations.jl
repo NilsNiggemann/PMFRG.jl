@@ -103,6 +103,7 @@ Computes a single-particle (i.e. self-energy) bubble. Allows specification of fu
 """
 function _compute1PartBubble!(Dgamma,XT1_::Function,XT2_::Function,Prop,Par)
     @unpack Ngamma,OnsitePairs,invpairs,T,siteSum,lenIntw_acc,np_vec_gamma,Nsum = Par
+    setZero!(Dgamma)
 	Threads.@threads for iw1 in 1:Ngamma
 		nw1 = np_vec_gamma[iw1]
     	for (x,Rx) in enumerate(OnsitePairs)

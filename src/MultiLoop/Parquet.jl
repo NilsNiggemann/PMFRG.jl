@@ -138,7 +138,6 @@ function iterateSDE!(Workspace,Lam, maxiter)
         end
         iter +=1
         writeTo!(OldState.γ,State.γ)
-        setZero!(State.γ)
         compute1PartBubble!(State.γ,B0,Prop,Par)
         
         # @views println(State.γ[1:5])

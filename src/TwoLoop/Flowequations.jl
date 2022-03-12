@@ -112,17 +112,6 @@ function symmetrizeY!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_
                 + Yc[Rij,is,iu,it])
             end
         end
-    else
-        s = 0.
-        for it in 1:N, iu in it+1:N, is in 1:N, Rij in 1:Npairs
-            s += abs(Ya[Rij,is,it,iu] +Ya[Rij,is,iu,it])
-            s += abs( Yb[Rij,is,it,iu]  + Yb[Rij,is,iu,it])
-            s += abs(Yc[Rij,is,it,iu]  -(
-            + Ya[Rij,is,it,iu]+
-            - Yb[Rij,is,it,iu]+
-            + Yc[Rij,is,iu,it]))
-        end
-        println("Total Error: ",s)
     end
     #local definitions of YTilde vertices
     for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
@@ -156,7 +145,7 @@ end
 end
 
 function XT_(Vertex::AbstractArray, Rj::Integer, ns::Integer,nt::Integer,nu::Integer,Rji::Integer,N::Integer)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
     Rj = ifelse(swapsites,Rji,Rj)
     return @inbounds Vertex[Rj,ns+1,nt+1,nu+1]
@@ -164,7 +153,7 @@ end
 
 @inline function bufferXT_!(Cache, Vertex::AbstractArray, ns::Integer,nt::Integer,nu::Integer,invpairs::AbstractArray,N)
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
 
     is,it,iu = ns+1,nt+1,nu+1
     @inbounds begin 

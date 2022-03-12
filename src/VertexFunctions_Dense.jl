@@ -48,7 +48,7 @@ end
 Returns value of vertex, swaps sites i <-> j by reading from inverted pairs when necessary. For performance, it is advised to directly use the Arrays like Va after pre-checking the frequency structure 
 """
 @inline function V_(Vertex::AbstractArray, Rj::Integer, ns::Integer,nt::Integer,nu::Integer,Rji::Integer,N::Integer)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
     ns,nt,nu,swapsites = convertFreqArgs(ns,nt,nu,N)
     Rj = ifelse(swapsites,Rji,Rj)
     return @inbounds Vertex[Rj,ns+1,nt+1,nu+1]
@@ -56,7 +56,7 @@ end
 
 @inline function bufferV_!(Cache, Vertex::AbstractArray, ns::Integer,nt::Integer,nu::Integer,invpairs::AbstractArray,N)
     ns,nt,nu,swapsites = convertFreqArgs(ns,nt,nu,N)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
 
     is,it,iu = ns+1,nt+1,nu+1
     @inbounds begin 

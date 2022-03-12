@@ -19,6 +19,10 @@ module PMFRG
     using .MultiLoopPMFRG
     export MultiLoop,SolveParquet
     # Precompilation
+    include("UnitTests/UnitTests.jl")
+    export UnitTests
+
+    #Precompilation
     # include("precompile.jl")
     # __precompile__quiet__()
 end # module

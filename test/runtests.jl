@@ -1,3 +1,3 @@
-include("DimerTest.jl")
-println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
-DimerTest()
+using PMFRG, PMFRG.UnitTests
+test_DimerFRG()
+test_DimerFRG(TwoLoop(),tol = 1e-5) # accuracy of symmetries is finite, given by length of Matsubara sum

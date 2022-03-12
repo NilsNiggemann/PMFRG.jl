@@ -1,5 +1,5 @@
 module PMFRG
-    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5,H5Zblosc
+    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5
     export SolveFRG,Params,double,BS3,Vern7,DP5,version,getChi,OneLoop
     version() = """v.2.0.3"""
     # Essentials
@@ -14,6 +14,10 @@ module PMFRG
     include("TwoLoop/TwoLoopPMFRG.jl")
     using .TwoLoopPMFRG
     export TwoLoop
+    
+    include("UnitTests/UnitTests.jl")
+    export UnitTests
+
     #Precompilation
     # include("precompile.jl")
     # __precompile__quiet__()

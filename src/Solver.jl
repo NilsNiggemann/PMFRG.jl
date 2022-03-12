@@ -89,8 +89,10 @@ function launchPMFRG!(State,setup,Deriv!::Function; MainFile= nothing, Group =st
     function output_func(State,Lam,integrator)
         i+=1
         i%CheckPointSteps == 0 && setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
-        println("") 
-        writeOutput(State,saved_values,Lam,Par)
+        if !MinimalOutput
+            println("") 
+            writeOutput(State,saved_values,Lam,Par)
+        end
     end
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
@@ -127,54 +129,52 @@ function writeOutput(State,saved_values,Lam,Par)
     @unpack MinimalOutput,N,np_vec,T,usesymmetry = Par
     f_int,gamma,Va,Vb,Vc = State.x
     chi = saved_values.saveval[end].Chi
-    if !MinimalOutput 
-        print("T= ",strd(T)," at Lambda step: ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
-        for f in f_int
-            print(strd(f),",")
-        end
-        println(")")
-        function givefreqs()
-            f1 = 1 
-            f2 = div(N,2)-3 
-            f3 = N - 5
-        
-            n1,n2,n3 = np_vec[f1],np_vec[f2],np_vec[f3]
-            while (n1+n2+n3)%2 == 0 && f3>0
-                f3 -=1
-                n3 = np_vec[f3]
-            end
-            return f1,f2,f3
-        end
-        MaxVa,MaxPosVa = absmax(Va)
-        MaxVb,MaxPosVb = absmax(Vb)
-        MaxVc,MaxPosVc = absmax(Vc)
-        println("Max Va",Tuple(MaxPosVa) ," = ", MaxVa)
-        println("Max Vb",Tuple(MaxPosVb) ," = ", MaxVb)
-        println("Max Vc",Tuple(MaxPosVc) ," = ", MaxVc)
-        
-        f1,f2,f3 = givefreqs()
-        println("\t_____Symmetry tests_____")
-        println("\t+Va_1($f1,$f2,$f3) = ", +Va[1,f1,f2,f3])
-        println("\t-Va_1($f3,$f2,$f1) = ", -Va[1,f3,f2,f1])
-        println("\t+Va_1($f2,$f3,$f1) = ", +Va[1,f2,f3,f1])
-
-        if(!usesymmetry)
-            println("\t-Va_1($f1,$f3,$f2) = ", -Va[1,f1,f3,f2] ,"\n")
-            println("\t+Va_2($f1,$f2,$f3) = ", +Va[2,f1,f2,f3] )
-            println("\t-Va_2($f1,$f3,$f2) = ", -Va[2,f1,f3,f2] )
-            println("\t+Vb_1($f1,$f2,$f3) = ", +Vb[1,f1,f2,f3] )
-            println("\t-Vb_1($f1,$f3,$f2) = ", -Vb[1,f1,f3,f2] ,"\n")
-
-            println("\t+Va_2($f1,$f2,$f3)\n\t-Vb_2($f1,$f2,$f3)\n\t+Vc_2($f1,$f3,$f2) = ",
-                (+Va[2,f1,f2,f3] -Vb[2,f1,f2,f3] +Vc[2,f1,f3,f2]))
-            println("\t+Vc_2($f1,$f2,$f3) = ", +Vc[2,f1,f2,f3] ,"\n")
-
-            println("\t+Va_1($f1,$f2,$f3)\n\t-Vb_1($f1,$f2,$f3)\n\t+Vc_1($f1,$f3,$f2) = ",
-                (+Va[1,f1,f2,f3] -Vb[1,f1,f2,f3] +Vc[1,f1,f3,f2]))
-            println("\t+Vc_1($f1,$f2,$f3) = ", +Vc[1,f1,f2,f3] ,"\n")
-        end
-        flush(stdout)
+    print("T= ",strd(T)," at Lambda step: ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
+    for f in f_int
+        print(strd(f),",")
     end
+    println(")")
+    function givefreqs()
+        f1 = 1 
+        f2 = div(N,2)-3 
+        f3 = N - 5
+    
+        n1,n2,n3 = np_vec[f1],np_vec[f2],np_vec[f3]
+        while (n1+n2+n3)%2 == 0 && f3>0
+            f3 -=1
+            n3 = np_vec[f3]
+        end
+        return f1,f2,f3
+    end
+    MaxVa,MaxPosVa = absmax(Va)
+    MaxVb,MaxPosVb = absmax(Vb)
+    MaxVc,MaxPosVc = absmax(Vc)
+    println("Max Va",Tuple(MaxPosVa) ," = ", MaxVa)
+    println("Max Vb",Tuple(MaxPosVb) ," = ", MaxVb)
+    println("Max Vc",Tuple(MaxPosVc) ," = ", MaxVc)
+    
+    f1,f2,f3 = givefreqs()
+    println("\t_____Symmetry tests_____")
+    println("\t+Va_1($f1,$f2,$f3) = ", +Va[1,f1,f2,f3])
+    println("\t-Va_1($f3,$f2,$f1) = ", -Va[1,f3,f2,f1])
+    println("\t+Va_1($f2,$f3,$f1) = ", +Va[1,f2,f3,f1])
+
+    if(!usesymmetry)
+        println("\t-Va_1($f1,$f3,$f2) = ", -Va[1,f1,f3,f2] ,"\n")
+        println("\t+Va_2($f1,$f2,$f3) = ", +Va[2,f1,f2,f3] )
+        println("\t-Va_2($f1,$f3,$f2) = ", -Va[2,f1,f3,f2] )
+        println("\t+Vb_1($f1,$f2,$f3) = ", +Vb[1,f1,f2,f3] )
+        println("\t-Vb_1($f1,$f3,$f2) = ", -Vb[1,f1,f3,f2] ,"\n")
+
+        println("\t+Va_2($f1,$f2,$f3)\n\t-Vb_2($f1,$f2,$f3)\n\t+Vc_2($f1,$f3,$f2) = ",
+            (+Va[2,f1,f2,f3] -Vb[2,f1,f2,f3] +Vc[2,f1,f3,f2]))
+        println("\t+Vc_2($f1,$f2,$f3) = ", +Vc[2,f1,f2,f3] ,"\n")
+
+        println("\t+Va_1($f1,$f2,$f3)\n\t-Vb_1($f1,$f2,$f3)\n\t+Vc_1($f1,$f3,$f2) = ",
+            (+Va[1,f1,f2,f3] -Vb[1,f1,f2,f3] +Vc[1,f1,f3,f2]))
+        println("\t+Vc_1($f1,$f2,$f3) = ", +Vc[1,f1,f2,f3] ,"\n")
+    end
+    flush(stdout)
     return 
 end
 

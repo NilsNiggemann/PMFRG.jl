@@ -112,17 +112,6 @@ function symmetrizeY!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_
                 + Yc[Rij,is,iu,it])
             end
         end
-    else
-        s = 0.
-        for it in 1:N, iu in it+1:N, is in 1:N, Rij in 1:Npairs
-            s += abs(Ya[Rij,is,it,iu] +Ya[Rij,is,iu,it])
-            s += abs( Yb[Rij,is,it,iu]  + Yb[Rij,is,iu,it])
-            s += abs(Yc[Rij,is,it,iu]  -(
-            + Ya[Rij,is,it,iu]+
-            - Yb[Rij,is,it,iu]+
-            + Yc[Rij,is,iu,it]))
-        end
-        println("Total Error: ",s)
     end
     #local definitions of YTilde vertices
     for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs

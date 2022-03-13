@@ -85,6 +85,7 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,PropsBuffers,Ver
 
         getXFromBubbles!(X,B0,BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
         getVertexFromChannels!(State.Γ,I,X)
+        symmetrizeVertex!(State.Γ,Par)
         
         Tol_Vertex = dist(OldState.Γ,State.Γ)
         

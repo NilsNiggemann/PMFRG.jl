@@ -1,18 +1,36 @@
 """Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
 function test_DimerFRG(Method = OneLoop();kwargs...)
-    Par = Params(System = getPolymer(2),N=24,T=0.75,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
-    SolP,ObsPt = SolveFRG(Par,Method)
+    Par = Params(getPolymer(2),Method,N=24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
+
+    tempFolder = "temp_PMFRG_test"
+    mainFile = joinpath(tempFolder,"temp_main.h5")
+    CheckPoints = joinpath(tempFolder,"Checkpoints.h5")
+    
+    SolP,ObsPt = SolveFRG(Par,MainFile = mainFile,CheckpointDirectory = CheckPoints)
     Γa = SolP.u[end].x[3]
     Γb = SolP.u[end].x[4]
     Γc = SolP.u[end].x[5]
-    println("Testing onsite Γa_ii vertex")
-    test_Gammaa_onsite(Γa;kwargs...)
 
-    println("Testing t ↔ u symmetries")
-    test_tu_symmetries(Γa,Γb,Γc;kwargs...)    
+    @testset verbose = true "Testing frequency symmetries" begin
+        println("Testing onsite Γa_ii vertex")
+        test_Gammaa_onsite(Γa;kwargs...)
+
+        println("Testing t ↔ u symmetries")
+        test_tu_symmetries(Γa,Γb,Γc;kwargs...)    
+    end
 
     println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
     test_Gammab_Dimer(Γb;kwargs...)
+
+    println("cleaning up... deleting ",mainFile, " and ", CheckPoints)
+
+    Chi = ObsPt.saveval[end].Chi
+    @testset "Testing Susceptibility" begin
+        println("χ = ", Chi)
+        @test Chi[1] >0. &&Chi[1]<1.
+        @test Chi[2] <0. &&Chi[1]>-1.
+    end
+    rm(tempFolder,recursive = true)
     return
 end
 

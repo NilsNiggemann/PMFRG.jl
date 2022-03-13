@@ -57,3 +57,10 @@ function setZero!(a::T) where T
     return a
 end
 
+function absmax(x)
+    MaxAndPos = findmax(x)
+    MinAndPos = findmin(x)
+    absvals = (abs(MaxAndPos[1]),abs(MinAndPos[1]))
+    return (MaxAndPos,MinAndPos)[argmax(absvals)]
+end
+strd(x) = string(round(x,digits=3))

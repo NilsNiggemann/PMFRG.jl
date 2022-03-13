@@ -143,48 +143,6 @@ function compute1PartBubble!(Dgamma,Γ::VertexType,Prop,Par)
 end
 
 
-"""Use symmetries and identities to compute the rest of bubble functions"""
-function symmetrizeBubble!(X::BubbleType,Par)
-    @unpack N,Npairs,usesymmetry,NUnique,OnsitePairs = Par 
-    # use the u <--> t symmetry
-    if(usesymmetry)
-        Threads.@threads for it in 1:N
-            for iu in it+1:N, is in 1:N, Rij in 1:Npairs
-                X.a[Rij,is,it,iu] = -X.a[Rij,is,iu,it]
-                X.b[Rij,is,it,iu] = -X.b[Rij,is,iu,it]
-                X.c[Rij,is,it,iu] = (
-                + X.a[Rij,is,it,iu]+
-                - X.b[Rij,is,it,iu]+
-                + X.c[Rij,is,iu,it])
-            end
-        end
-    else
-        s = 0.
-        for it in 1:N, iu in it+1:N, is in 1:N, Rij in 1:Npairs
-            s += abs(X.a[Rij,is,it,iu] +X.a[Rij,is,iu,it])
-            s += abs(X.b[Rij,is,it,iu]  + X.b[Rij,is,iu,it])
-            s += abs(X.c[Rij,is,it,iu]  -(
-            + X.a[Rij,is,it,iu]+
-            - X.b[Rij,is,it,iu]+
-            + X.c[Rij,is,iu,it]))
-        end
-        println("Total Error: ",s)
-    end
-    #local definitions of X.Tilde vertices
-    for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
-        X.Ta[R,is,it,iu] = X.a[R,is,it,iu]
-        X.Tb[R,is,it,iu] = X.b[R,is,it,iu]
-        X.Tc[R,is,it,iu] = X.c[R,is,it,iu]
-        X.Td[R,is,it,iu] = -X.c[R,is,iu,it]
-    end
-    @. X.Td= X.Ta - X.Tb - X.Tc
-end
-
-function symmetrizeVertex!(Γ::VertexType,Par)
-	for iu in 1:N, it in 1:N, is in 1:N, R in Par.OnsitePairs
-		Γ.c[R,is,it,iu] = -Γ.b[R,it,is,iu]
-	end
-end
 
 @inline function convertFreqArgsXT(ns,nt,nu,Nw)
     @assert (ns+nt+nu) %2 != 0 "trying to convert wrong freqs $ns + $nt +  $nu = $(ns+nt+nu)"

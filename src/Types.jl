@@ -1,4 +1,10 @@
-"""Abstract Param struct to dispatch between different PMFRG methods (i.e. Two-Loop or Parquet)"""
+const double = Float64
+"""Abstract Param struct to dispatch between different PMFRG methods (i.e. Two-Loop or Parquet)
+Assumed to have at least the fields:
+System::Geometry
+NumericalParams::NumericalParams
+Options
+"""
 abstract type PMFRGParams end
 
 """
@@ -19,58 +25,52 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1)
 
 """
-@proto struct NumericalParams{F} where {F <: AbstractFloat}
-    T::double # Temperature
+struct NumericalParams{F <: AbstractFloat}
+    T::F # Temperature
     N::Int # Number of positive frequencies
-    Ngamma::Int  # Number of postivei gamma frequencies
+    Ngamma::Int  # Number of positive gamma frequencies
 
-    accuracy::F # convert type to float type
+    accuracy::F # 
     Lam_min::F
     Lam_max::F
     
     lenIntw::Int 
     lenIntw_acc::Int  # more accurate for less demanding sums
-    np_vec::Array{I,1}
-    np_vec_gamma::Array{I,1}
+    np_vec::Array{Int,1}
+    np_vec_gamma::Array{Int,1}
 
-    VDims::NTuple{4,I} # Vertex dimensions
     ex_freq::F
 end
 
 function NumericalParams(;
-    T::F = 0.5, # Temperature
+    T::AbstractFloat = 0.5, # Temperature
     N::Integer = 24,
     Ngamma::Integer = N, #Number of gamma frequencies
-    accuracy::F = F(1e-6), # convert type to float type
-    Lam_min::F = F(0.0),
-    Lam_max::F = F(100.0),
+    accuracy::AbstractFloat = 1e-6, # convert type to float type
+    Lam_min::AbstractFloat = 0.0,
+    Lam_max::AbstractFloat = 100.0,
     lenIntw::Int = N,
     lenIntw_acc::Int = Ngamma, # more accurate for less demanding sums
-    np_vec::Array{I,1} = collect(0:N-1),
-    np_vec_gamma::Array{I,1} = collect(0:Ngamma-1),
-    kwargs...) where F <: AbstractFloat
+    np_vec::Array{Int,1} = collect(0:N-1),
+    np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1),
+    ex_freq = (2*N-1)*pi*T,
+    kwargs...)
     return NumericalParams(
+        T,
         N,
-        Ngamma ,
+        Ngamma,
         accuracy,
         Lam_min,
         Lam_max ,
-        usesymmetry ,
-        MinimalOutput ,
-        lenIntw = N,
-        lenIntw_acc = Ngamma,
+        lenIntw,
+        lenIntw_acc,
         np_vec,
-        np_vec_gammanp_vec,
-        (Npairs,N,N,N), #VDims,
-        ex_freq = (2*N-1)*pi*T,
+        np_vec_gamma,
+        ex_freq,
     )
-
-abstract type AbstractOptions end 
-
-@proto @with_kw struct OptionParams <: AbstractOptions
-    usesymmetry::Bool = true
-    MinimalOutput::Bool = false
 end
+abstract type AbstractOptions end 
+getPMFRGMethod(::Val{1}) = OneLoop()
 
 """Struct containing information about four-point vertices"""
 struct VertexType{T}
@@ -112,7 +112,7 @@ struct BareVertexType{T}
     c::Vector{T}
 end
 
-BareVertexType(Par::Params) = BareVertexType(-Par.couplings)
+BareVertexType(Par::PMFRGParams) = BareVertexType(-Par.System.couplings)
 
 """Struct containing information about the (physical) ODE State, i.e. vertices"""
 struct StateType{T}
@@ -129,7 +129,9 @@ function StateType(NUnique::Int,Ngamma::Int,VDims::Tuple)
     )
 end
 
-StateType(Par::Params) = StateType(Par.NUnique,Par.Ngamma,Par.VDims) 
+StateType(Par::PMFRGParams) = StateType(Par.NumericalParams.NUnique,Par.NumericalParams.Ngamma,Par.NumericalParams.VDims) 
+
+StateType(f_int,γ,Γa,Γb,Γc) = StateType(f_int,γ,VertexType(Γa,Γb,Γc)) 
 
 """Struct storing information about Bubble functions, i.e. rhs derivatives of vertex flow equations."""
 struct BubbleType{T}
@@ -156,8 +158,21 @@ function BubbleType(VDims::Tuple)
     )
 end
 
-BubbleType(Par::Params) = BubbleType(Par.VDims) 
-    
+getVDims(Par::PMFRGParams) = (Par.System.Npairs,Par.NumericalParams.N,Par.NumericalParams.N,Par.NumericalParams.N)
+
+BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par)) 
+
+"""Struct containing the observables that are saved at every step"""
+struct Observables{T}
+    Chi::Vector{T}
+    gamma::Matrix{T}
+    f_int::Vector{T}
+    MaxVa::Vector{T}
+    MaxVb::Vector{T}
+    MaxVc::Vector{T}
+end
+
+
 struct VertexBufferType{T}
 	Va12::Vector{T}
 	Vb12::Vector{T}
@@ -176,3 +191,4 @@ struct BufferType{PropsBuff,VertexBuff}
     Props::Vector{PropsBuff}
     Vertex::Vector{VertexBuff}
 end
+##

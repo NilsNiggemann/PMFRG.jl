@@ -112,17 +112,6 @@ function symmetrizeY!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_
                 + Yc[Rij,is,iu,it])
             end
         end
-    else
-        s = 0.
-        for it in 1:N, iu in it+1:N, is in 1:N, Rij in 1:Npairs
-            s += abs(Ya[Rij,is,it,iu] +Ya[Rij,is,iu,it])
-            s += abs( Yb[Rij,is,it,iu]  + Yb[Rij,is,iu,it])
-            s += abs(Yc[Rij,is,it,iu]  -(
-            + Ya[Rij,is,it,iu]+
-            - Yb[Rij,is,it,iu]+
-            + Yc[Rij,is,iu,it]))
-        end
-        println("Total Error: ",s)
     end
     #local definitions of YTilde vertices
     for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
@@ -156,7 +145,7 @@ end
 end
 
 function XT_(Vertex::AbstractArray, Rj::Integer, ns::Integer,nt::Integer,nu::Integer,Rji::Integer,N::Integer)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
     Rj = ifelse(swapsites,Rji,Rj)
     return @inbounds Vertex[Rj,ns+1,nt+1,nu+1]
@@ -164,7 +153,7 @@ end
 
 @inline function bufferXT_!(Cache, Vertex::AbstractArray, ns::Integer,nt::Integer,nu::Integer,invpairs::AbstractArray,N)
     ns,nt,nu,swapsites = convertFreqArgsXT(ns,nt,nu,N)
-    @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
 
     is,it,iu = ns+1,nt+1,nu+1
     @inbounds begin 
@@ -211,7 +200,7 @@ like addX! but with Y
 @inline function addY!(Workspace::Workspace_Struct,TwoLoopWorkspace::Y_Workspace_Struct, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Par::Params,Buffer)
     @unpack Va,Vb,Vc,XTa,XTb,XTc,XTd  = Workspace 
     @unpack Ya,Yb,Yc = TwoLoopWorkspace 
-    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    @unpack Npairs,Nsum,siteSum,invpairs,N,np_vec = Par
     @unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43,XTa21,XTa43,XTb21,XTb43,XTc21,XTc43,XTd21,XTd43 = Buffer
     ns = np_vec[is]
 	nt = np_vec[it]
@@ -241,10 +230,10 @@ like addX! but with Y
     bufferXT_!(XTd21, XTd , wpw2, ns, wpw1, invpairs, N)
 	bufferXT_!(XTd43, XTd , wmw4, ns, wmw3, invpairs, N)
 
-    S_ki = S.ki
-	S_kj = S.kj
-	S_xk = S.xk
-	S_m = S.m
+    S_ki = siteSum.ki
+	S_kj = siteSum.kj
+	S_xk = siteSum.xk
+	S_m = siteSum.m
 
     @inbounds for Rij in 1:Npairs
         #loop over all left hand side inequivalent pairs Rij

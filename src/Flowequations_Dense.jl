@@ -132,7 +132,7 @@ function mixedFrequencies(ns,nt,nu,nwpr)
     wpw2 = nwpr + nw2+1
     wmw3 = nwpr - nw3
     wmw4 = nwpr - nw4
-	@assert (ns + wmw3 +wmw4)%2 != 0 "error in freq"
+	# @assert (ns + wmw3 +wmw4)%2 != 0 "error in freq"
 	return wpw1,wpw2,wmw3,wmw4
 end
 

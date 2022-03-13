@@ -89,11 +89,15 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,PropsBuffers,Ver
         Tol_Vertex = dist(OldState.Γ,State.Γ)
         
         iterateSDE!(Workspace,Lam,maxitergamma)
+        CurrentObs = getObsFunc(Workspace,Lam)
+        push!(Obs,CurrentObs)
+
         println("iteration $iter:")
+        writeOutput(State,CurrentObs,Lam,Par)
         println("""
-            Tol_Vertex = $Tol_Vertex
+        Tol_Vertex = $Tol_Vertex
         """)
-        push!(Obs,getObsFunc(Workspace,Lam))
+        isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
     end
     return Workspace,Obs
 end
@@ -134,7 +138,6 @@ function iterateSDE!(Workspace,Lam, maxiter)
         end
         iter +=1
         writeTo!(OldState.γ,State.γ)
-        setZero!(State.γ)
         compute1PartBubble!(State.γ,B0,Prop,Par)
         
         # @views println(State.γ[1:5])
@@ -183,3 +186,7 @@ function getChi(State::StateType, Lam::double,Par::Params)
     end
 	return(Chi)
 end
+
+
+# writeOutput(St::StateType,Obs,Lam,Par) = println(Obs)
+writeOutput(St::StateType,Obs,Lam,Par) = writeOutput(St.f_int,St.γ,St.Γ.a,St.Γ.b,St.Γ.c,Obs,Lam,Par)

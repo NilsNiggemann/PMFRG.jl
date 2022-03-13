@@ -103,6 +103,7 @@ Computes a single-particle (i.e. self-energy) bubble. Allows specification of fu
 """
 function _compute1PartBubble!(Dgamma,XT1_::Function,XT2_::Function,Prop,Par)
     @unpack Ngamma,OnsitePairs,invpairs,T,siteSum,lenIntw_acc,np_vec_gamma,Nsum = Par
+    setZero!(Dgamma)
 	Threads.@threads for iw1 in 1:Ngamma
 		nw1 = np_vec_gamma[iw1]
     	for (x,Rx) in enumerate(OnsitePairs)
@@ -260,7 +261,7 @@ end
 VertexBuffer(Npairs) = VertexBuffer((zeros(Npairs) for _ in 1:16)...)
 
 function fillBuffer!(Buffer::VertexBuffer,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params)
-    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    @unpack Npairs,Nsum,siteSum,invpairs,N,np_vec = Par
 
     @unpack Va34,Vb34,Vc34,Vc43,XTa21,XTb21,XTc21,XTd21 = Buffer
     ns = np_vec[is]
@@ -281,7 +282,7 @@ function fillBuffer!(Buffer::VertexBuffer,XL::BubbleType,XR::BubbleType,Γ::Vert
 end
 
 function fillBuffer!(Buffer::VertexBuffer,Γ0::BareVertexType{T},Γ::VertexType{T},is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params) where T
-    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    @unpack Npairs,Nsum,siteSum,invpairs,N,np_vec = Par
 
     @unpack Va34,Vb34,Vc34,Vc43,XTa21,XTb21,XTc21,XTd21 = Buffer
     ns = np_vec[is]
@@ -300,14 +301,14 @@ end
 adds to ResultBubble given the vertex as well as a bubble inserted on the left. Assumes that vertices and bubbles are given pre-computed in VertexBuffer.
 """
 @inline function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params,Props,Buffer::VertexBuffer)
-    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    @unpack Npairs,Nsum,siteSum,invpairs,N,np_vec = Par
     fillBuffer!(Buffer,XL,XR,Γ,is,it,iu,nwpr,Par)
 
     @unpack Va34,Vb34,Vc34,Vc43,XTa21,XTb21,XTc21,XTd21 = Buffer
-    S_ki = S.ki
-	S_kj = S.kj
-	S_xk = S.xk
-	S_m = S.m
+    S_ki = siteSum.ki
+	S_kj = siteSum.kj
+	S_xk = siteSum.xk
+	S_m = siteSum.m
 
     @inbounds for Rij in 1:Npairs
         #loop over all left hand side inequivalent pairs Rij
@@ -351,14 +352,14 @@ adds to ResultBubble given the vertex as well as a bubble inserted on the left. 
 end
 
 @inline function addBL!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::Params,Props,Buffer::VertexBuffer)
-    @unpack Npairs,Nsum,S,invpairs,N,np_vec = Par
+    @unpack Npairs,Nsum,siteSum,invpairs,N,np_vec = Par
     fillBuffer!(Buffer,Γ0,Γ,is,it,iu,nwpr,Par)
     
     @unpack Va34,Vb34,Vc34,Vc43 = Buffer
-    S_ki = S.ki
-	S_kj = S.kj
-	S_xk = S.xk
-	S_m = S.m
+    S_ki = siteSum.ki
+	S_kj = siteSum.kj
+	S_xk = siteSum.xk
+	S_m = siteSum.m
 
     @inbounds for Rij in 1:Npairs
         Bc_sum = 0.

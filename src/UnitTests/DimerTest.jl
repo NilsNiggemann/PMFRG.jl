@@ -7,9 +7,20 @@ function test_DimerFRG(Method = OneLoop();kwargs...)
     CheckPoints = joinpath(tempFolder,"Checkpoints.h5")
     
     SolP,ObsPt = SolveFRG(Par,MainFile = mainFile,CheckpointDirectory = CheckPoints)
+
+    println("cleaning up... deleting ",mainFile, " and ", CheckPoints)
+
+    Chi = ObsPt.saveval[end].Chi
+    @testset "Testing Susceptibility" begin
+        println("χ = ", Chi)
+        @test Chi[1] >0. &&Chi[1]<1.
+        @test Chi[2] <0. &&Chi[1]>-1.
+    end
+    
     Γa = SolP.u[end].x[3]
     Γb = SolP.u[end].x[4]
     Γc = SolP.u[end].x[5]
+    test_nonzero(Γa,Γb,Γc,Par.System.couplings)
 
     @testset verbose = true "Testing frequency symmetries" begin
         println("Testing onsite Γa_ii vertex")
@@ -22,18 +33,24 @@ function test_DimerFRG(Method = OneLoop();kwargs...)
     println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
     test_Gammab_Dimer(Γb;kwargs...)
 
-    println("cleaning up... deleting ",mainFile, " and ", CheckPoints)
 
-    Chi = ObsPt.saveval[end].Chi
-    @testset "Testing Susceptibility" begin
-        println("χ = ", Chi)
-        @test Chi[1] >0. &&Chi[1]<1.
-        @test Chi[2] <0. &&Chi[1]>-1.
-    end
     rm(tempFolder,recursive = true)
     return
 end
 
+function test_nonzero(Γa,Γb,Γc,couplings)
+    @testset "non-trivial Vertices" begin
+        @testset "Γa" begin
+            @test maximum(abs,Γa) >0.
+        end
+        @testset "Γb" begin
+            @test maximum(abs,Γb) > 0.
+        end
+        @testset "Γc" begin
+            @test maximum(abs,Γc) > maximum(abs,couplings)
+        end
+    end
+end
 function test_tu_symmetries(Γa,Γb,Γc;kwargs...)
     test_tu_symmetry_ab(Γa,"Γa";kwargs...)
     test_tu_symmetry_ab(Γb,"Γb";kwargs...)

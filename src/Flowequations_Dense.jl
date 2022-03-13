@@ -1,4 +1,4 @@
-function getDFint!(Workspace::OneLoopWorkspace,Lam::double)
+function getDFint!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack State,Deriv,Par = Workspace 
     @unpack T,lenIntw_acc = Par.NumericalParams 
     NUnique = Par.System.NUnique 
@@ -20,7 +20,7 @@ function getDFint!(Workspace::OneLoopWorkspace,Lam::double)
 end
 
 
-function get_Self_Energy!(Workspace::OneLoopWorkspace,Lam::double)
+function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack State,Deriv,Par = Workspace
 	Dgamma = Workspace.Deriv.γ
     @unpack T,N,lenIntw_acc,np_vec_gamma = Par.NumericalParams
@@ -49,7 +49,7 @@ function get_Self_Energy!(Workspace::OneLoopWorkspace,Lam::double)
 end
 
 
-function getVertexDeriv!(Workspace::OneLoopWorkspace,Lam)
+function getVertexDeriv!(Workspace::PMFRGWorkspace,Lam)
 	Par = Workspace.Par
     @unpack T,N,lenIntw,np_vec = Par.NumericalParams 
     PropsBuffers = Workspace.Buffer.Props 
@@ -105,7 +105,7 @@ end
 """
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
-@inline function addX!(Workspace::OneLoopWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Buffer)
+@inline function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Buffer)
 	@unpack State,X,Par = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
 	@unpack N,np_vec = Par.NumericalParams
@@ -165,7 +165,7 @@ adds part of X functions in Matsubara sum at nwpr containing the site summation 
     return
 end
 ##
-function addXTilde!(Workspace::OneLoopWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props)
+function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props)
 
 	@unpack State,X,Par = Workspace 
 	@unpack N,np_vec = Par.NumericalParams
@@ -244,7 +244,7 @@ end
 """Use symmetries and identities to compute the rest of bubble functions"""
 function symmetrizeBubble!(X::BubbleType,Par::PMFRGParams)
     N = Par.NumericalParams.N
-    OnsitePairs = Par.System.OnsitePairs
+    @unpack Npairs,OnsitePairs = Par.System
     usesymmetry = Par.Options.usesymmetry
     # use the u <--> t symmetry
     if(usesymmetry)
@@ -268,6 +268,18 @@ function symmetrizeBubble!(X::BubbleType,Par::PMFRGParams)
     end
     @. X.Td= X.Ta - X.Tb - X.Tc
 end
+
+function getVertexFromChannels!(Γ::VertexType,X::BubbleType)
+    Threads.@threads for iu in axes(Γ.a,4)
+        for it in axes(Γ.a,3), is in axes(Γ.a,2), Rij in axes(Γ.a,1)
+            Γ.a[Rij,is,it,iu] = X.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
+            Γ.b[Rij,is,it,iu] = X.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
+            Γ.c[Rij,is,it,iu] = X.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
+        end
+    end
+    return Γ
+end
+
 
 function symmetrizeVertex!(Γ::VertexType,Par)
 	N = Par.NumericalParams.N

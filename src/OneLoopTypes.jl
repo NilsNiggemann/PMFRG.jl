@@ -30,14 +30,19 @@ end
 
 ## ______________ State Variables shorthand ______________
 
+struct BufferType{PropsBuff,VertexBuff}
+    Props::Vector{PropsBuff}
+    Vertex::Vector{VertexBuff}
+end
+
 """
 Convenience struct containing references to arrays for vertices and their derivative. This does not allocate any memory and is performant. 
 """
-struct OneLoopWorkspace{F,PropsBuff,VertexBuff,ParType <: OneLoopParams}
+struct OneLoopWorkspace{F,PropsBuff,VertexBuff,ParType <: OneLoopParams} <:PMFRGWorkspace
     State::StateType{F} #Stores the current state
     Deriv::StateType{F} #Stores the derv
     
-    X::BubbleType{F} #Stores the bubble funtion X and XTilde
+    X::BubbleType{F} #Stores the bubble function X and XTilde
 
     Buffer::BufferType{PropsBuff,VertexBuff}
  

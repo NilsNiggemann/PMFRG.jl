@@ -5,7 +5,9 @@ System::Geometry
 NumericalParams::NumericalParams
 Options
 """
+
 abstract type PMFRGParams end
+abstract type PMFRGWorkspace end
 
 """
 Struct to hold all relevant quantities that are needed throughout the computation. 
@@ -186,9 +188,4 @@ struct VertexBufferType{T}
 	Vc43::Vector{T}
 end
 VertexBufferType(Npairs) = VertexBufferType((zeros(Npairs) for _ in 1:8)...)
-
-struct BufferType{PropsBuff,VertexBuff}
-    Props::Vector{PropsBuff}
-    Vertex::Vector{VertexBuff}
-end
 ##

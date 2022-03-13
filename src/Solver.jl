@@ -9,6 +9,8 @@ function getDeriv!(Deriv,State,setup,Lam)
     getVertexDeriv!(Workspace,Lam)
 
     symmetrizeBubble!(Workspace.X,Par)
+
+    getVertexFromChannels!(Workspace.Deriv.Γ,Workspace.X)
     symmetrizeVertex!(Workspace.State.Γ,Par)
     flush(stdout)
     return
@@ -25,12 +27,15 @@ function getDerivVerbose!(Deriv,State,setup,Lam)
     print("getVertexDeriv:\n\t") 
     @time getVertexDeriv!(Workspace,Lam)
     print("Symmetry:\n\t") 
-    @time symmetrizeX!(Workspace)
+    @time begin
+        symmetrizeBubble!(Workspace.X,Par)
+        symmetrizeVertex!(Workspace.State.Γ,Par)
+    end
     flush(stdout)
     return
 end
 
-function InitializeState(Par::OneLoopParams)
+function InitializeState(Par::PMFRGParams)
     @unpack N,Ngamma = Par.NumericalParams
     VDims = getVDims(Par)
     @unpack couplings,NUnique = Par.System
@@ -85,23 +90,26 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     saved_values = SavedValues(double,Observables)
     i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
-    function bareOutput(State,Lam)
+    function bareOutput(State,Lam,integrator)
         i+=1
         i%CheckPointSteps == 0 && setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
     end
     
-    function verboseOutput(State,Lam)
+    function verboseOutput(State,Lam,integrator)
         println("Time taken for output saving: ")
-        @time bareOutput(State,Lam)
+        @time bareOutput(State,Lam,integrator)
         println("") 
         writeOutput(State,saved_values,Lam,Par)
     end
 
-    if Par.Options.MinimalOutput 
-        output_func(State,Lam,integrator) = verboseOutput(State,Lam)
-    else
-        output_func(State,Lam,integrator) = bareOutput(State,Lam)
+    function getOutputfunction(MinimalOutput)
+        if MinimalOutput
+            return bareOutput
+        else
+            return verboseOutput
+        end
     end
+    output_func(State,Lam,integrator) = getOutputfunction(Par.Options.MinimalOutput)
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
     ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)

@@ -5,7 +5,7 @@ struct ParquetWorkspace{T,P <: Params{S,M} where {S,M}}
     Γ0::BareVertexType{T} #Stores the bare vertex
     I::VertexType{T} #Stores the irreducible vertex
     
-    X::BubbleType{T} #Stores the actual bubble funtion X = B0 + BX
+    X::BubbleType{T} #Stores the actual bubble function X = B0 + BX
 
     B0::BubbleType{T} # Bubble involving bare vertex Γ_0 ∘ Γ
     BX::BubbleType{T} # Bubble involving other bubble X ∘ Γ

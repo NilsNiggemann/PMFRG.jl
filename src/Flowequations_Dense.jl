@@ -40,9 +40,9 @@ function getDFint!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack T,lenIntw_acc = Par.NumericalParams 
     NUnique = Par.System.NUnique 
 	
-	@inline γ(x,nw) = gamma_(Deriv.γ,x,nw,Par)
-	@inline iG(x,nw) = iG_(Deriv.γ,x,Lam,nw,Par)
-	@inline iS(x,nw) = iS_(Deriv.γ,x,Lam,nw,Par)
+	@inline γ(x,nw) = gamma_(State.γ,x,nw,Par)
+	@inline iG(x,nw) = iG_(State.γ,x,Lam,nw,Par)
+	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,Par)
 
 	Theta(Lam,w) = w^2/(w^2+Lam^2)
 	
@@ -60,14 +60,14 @@ end
 function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack State,Deriv,Par = Workspace
 	Dgamma = Workspace.Deriv.γ
-    @unpack T,N,lenIntw_acc,np_vec_gamma = Par.NumericalParams
+    @unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma = Par.NumericalParams
     @unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
 	
 	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,Par)
 	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
 	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
 
-	Threads.@threads for iw1 in axes(Dgamma,2)
+	Threads.@threads for iw1 in 1:Ngamma
 		nw1 = np_vec_gamma[iw1]
     	for (x,Rx) in enumerate(OnsitePairs)
 			for nw in -lenIntw_acc: lenIntw_acc-1

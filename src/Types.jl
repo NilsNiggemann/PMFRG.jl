@@ -107,7 +107,7 @@ end
 setToBareVertex!(Γ::VertexType,Par) = setToBareVertex!(Γ,Par.System.couplings)
 
 """Allocates a frequency-dependent vertex type and initializes it with the bare vertex"""
-BareVertex_Freq(Par) = setToBareVertex!(VertexType(Par.VDims),Par.System.couplings)
+BareVertex_Freq(Par) = setToBareVertex!(VertexType(getVDims(Par)),Par.System.couplings)
 
 """Stores all information about the bare vertex (without frequencies)"""
 struct BareVertexType{T}
@@ -131,7 +131,7 @@ function StateType(NUnique::Int,Ngamma::Int,VDims::Tuple)
     )
 end
 
-StateType(Par::PMFRGParams) = StateType(Par.NumericalParams.NUnique,Par.NumericalParams.Ngamma,Par.NumericalParams.VDims) 
+StateType(Par::PMFRGParams) = StateType(Par.System.NUnique,Par.NumericalParams.Ngamma,getVDims(Par)) 
 
 StateType(f_int,γ,Γa,Γb,Γc) = StateType(f_int,γ,VertexType(Γa,Γb,Γc)) 
 

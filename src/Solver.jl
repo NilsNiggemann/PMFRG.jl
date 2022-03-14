@@ -104,12 +104,12 @@ function getObservables(State::ArrayPartition,Lam,Par)
     MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
     return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
 end
-writeOutput(State::ArrayPartition,saved_values,Lam,Par) = writeOutput(State.x...,saved_values,Lam,Par)
+writeOutput(State::ArrayPartition,saved_values,Lam,Par) = writeOutput(State.x...,saved_values.saveval[end],Lam,Par)
 
-function writeOutput(f_int,gamma,Va,Vb,Vc,saved_values,Lam,Par)
+function writeOutput(f_int,gamma,Va,Vb,Vc,obs,Lam,Par)
     @unpack MinimalOutput,usesymmetry = Par.Options
     @unpack N,np_vec,T = Par.NumericalParams
-    chi = saved_values.saveval[end].Chi
+    chi = obs.Chi
     print("T= ",strd(T)," at Lambda step: ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
     for f in f_int
         print(strd(f),",")

@@ -369,7 +369,7 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::double,Par::PMFRGP
 	return(Chi)
 end
 
-function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::double,Par::PMFRGParams)
+function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGParams)
 	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
 	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
 

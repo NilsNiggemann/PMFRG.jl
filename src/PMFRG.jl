@@ -18,9 +18,8 @@ module PMFRG
     # using .TwoLoopPMFRG
     export TwoLoop
     
-    # include("MultiLoop/MultiLoopPMFRG.jl")
-    # using .MultiLoopPMFRG
-    # export MultiLoop,SolveParquet
+    include("MultiLoop/MultiLoopPMFRG.jl")
+    export MultiLoop,Parquet,SolveParquet
 
     include("UnitTests/UnitTests.jl")
     export UnitTests

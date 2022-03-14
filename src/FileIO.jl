@@ -287,7 +287,7 @@ function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::Dif
     # saveParams(Filename,Par,Group)
 end
 
-saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::PMFRGParams,Group::Nothing) = saveMainOutput(Filename,Solution,saved_values,Par,string(Par.T))
+saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::PMFRGParams,Group::Nothing) = saveMainOutput(Filename,Solution,saved_values,Par,string(Par.NumericalParams.T))
 
 function getFilesFromSubDirs(Folder::String)
     allpaths = collect(walkdir(Folder))

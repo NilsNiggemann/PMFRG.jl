@@ -5,16 +5,16 @@ function getDeriv2L!(Deriv,State,setup,Lam)
 
     getDFint!(Workspace,Lam)
     get_Self_Energy!(Workspace,Lam)
-    getVertexDeriv!(Workspace,Lam)
+    getXBubble!(Workspace,Lam)
     symmetrizeBubble!(Workspace.X,Par)
     
-    getVertexFromChannels!(Workspace.Deriv.Γ,Workspace.X)
+    addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
     getTwoLoopDeriv!(Workspace,Lam)
     
     symmetrizeBubble!(Workspace.Y,Par)
-    getVertexFromChannels!(Workspace.Deriv.Γ,Workspace.Y)
+    addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.Y)
 
-    symmetrizeVertex!(Workspace.State.Γ,Par)
+    symmetrizeVertex!(Workspace.Deriv.Γ,Par)
     return
 end
 
@@ -30,7 +30,7 @@ function getDeriv2LVerbose!(Deriv,State,setup,Lam)
     @time get_Self_Energy!(Workspace,Lam)
 
     print("getVertexDeriv:\n\t") 
-    @time getVertexDeriv!(Workspace,Lam)
+    @time getXBubble!(Workspace,Lam)
 
     print("SymmetryX:\n\t") 
     symmetrizeBubble!(Workspace.X,Par)
@@ -222,18 +222,18 @@ function addYTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 	@unpack Npairs,invpairs,PairTypes = Par.System
 
 
-    Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
-    Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
-    Vc_(Rij,s,t,u) = V_(State.Γ.c,Rij,s,t,u,invpairs[Rij],N)
+    @inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
+    @inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
+    @inline Vc_(Rij,s,t,u) = V_(State.Γ.c,Rij,s,t,u,invpairs[Rij],N)
 
-    Xa_(Rij,s,t,u) = V_(X.a,Rij,s,t,u,invpairs[Rij],N)
-    Xb_(Rij,s,t,u) = V_(X.b,Rij,s,t,u,invpairs[Rij],N)
-    Xc_(Rij,s,t,u) = V_(X.c,Rij,s,t,u,invpairs[Rij],N)
+    @inline Xa_(Rij,s,t,u) = V_(X.a,Rij,s,t,u,invpairs[Rij],N)
+    @inline Xb_(Rij,s,t,u) = V_(X.b,Rij,s,t,u,invpairs[Rij],N)
+    @inline Xc_(Rij,s,t,u) = V_(X.c,Rij,s,t,u,invpairs[Rij],N)
 
-    XTa_(Rij,s,t,u) = XT_(X.Ta,Rij,s,t,u,invpairs[Rij],N)
-    XTb_(Rij,s,t,u) = XT_(X.Tb,Rij,s,t,u,invpairs[Rij],N)
-    XTc_(Rij,s,t,u) = XT_(X.Tc,Rij,s,t,u,invpairs[Rij],N)
-    XTd_(Rij,s,t,u) = XT_(X.Td,Rij,s,t,u,invpairs[Rij],N)
+    @inline XTa_(Rij,s,t,u) = XT_(X.Ta,Rij,s,t,u,invpairs[Rij],N)
+    @inline XTb_(Rij,s,t,u) = XT_(X.Tb,Rij,s,t,u,invpairs[Rij],N)
+    @inline XTc_(Rij,s,t,u) = XT_(X.Tc,Rij,s,t,u,invpairs[Rij],N)
+    @inline XTd_(Rij,s,t,u) = XT_(X.Td,Rij,s,t,u,invpairs[Rij],N)
 
 	ns = np_vec[is]
 	nt = np_vec[it]

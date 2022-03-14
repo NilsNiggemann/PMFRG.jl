@@ -1,11 +1,48 @@
+function getDeriv!(Deriv,State,setup,Lam)
+    (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
+
+    getDFint!(Workspace,Lam)
+    get_Self_Energy!(Workspace,Lam)
+    getXBubble!(Workspace,Lam)
+
+    symmetrizeBubble!(Workspace.X,Par)
+
+    addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
+    symmetrizeVertex!(Workspace.Deriv.Γ,Par)
+    flush(stdout)
+    return
+end
+
+function getDerivVerbose!(Deriv,State,setup,Lam)
+    (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    print("Workspace:\n\t") 
+    @time Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
+    print("getDFint:\n\t") 
+    @time getDFint!(Workspace,Lam)
+    print("get_Self_Energy:\n\t") 
+    @time get_Self_Energy!(Workspace,Lam)
+    print("getVertexDeriv:\n\t") 
+    @time getXBubble!(Workspace,Lam)
+    print("Symmetry:\n\t") 
+    @time begin
+        symmetrizeBubble!(Workspace.X,Par)
+        addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
+        symmetrizeVertex!(Workspace.Deriv.Γ,Par)
+    end
+    flush(stdout)
+    return
+end
+
+
 function getDFint!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack State,Deriv,Par = Workspace 
     @unpack T,lenIntw_acc = Par.NumericalParams 
     NUnique = Par.System.NUnique 
 	
-	γ(x,nw) = gamma_(Deriv.γ,x,nw,Par)
-	iG(x,nw) = iG_(Deriv.γ,x,Lam,nw,Par)
-	iS(x,nw) = iS_(Deriv.γ,x,Lam,nw,Par)
+	@inline γ(x,nw) = gamma_(Deriv.γ,x,nw,Par)
+	@inline iG(x,nw) = iG_(Deriv.γ,x,Lam,nw,Par)
+	@inline iS(x,nw) = iS_(Deriv.γ,x,Lam,nw,Par)
 
 	Theta(Lam,w) = w^2/(w^2+Lam^2)
 	
@@ -26,9 +63,9 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack T,N,lenIntw_acc,np_vec_gamma = Par.NumericalParams
     @unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
 	
-	iS(x,nw) = iS_(State.γ,x,Lam,nw,Par)
-	Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
-	Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
+	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,Par)
+	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
+	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
 
 	Threads.@threads for iw1 in axes(Dgamma,2)
 		nw1 = np_vec_gamma[iw1]
@@ -49,7 +86,7 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam::double)
 end
 
 
-function getVertexDeriv!(Workspace::PMFRGWorkspace,Lam)
+function getXBubble!(Workspace::PMFRGWorkspace,Lam)
 	Par = Workspace.Par
     @unpack T,N,lenIntw,np_vec = Par.NumericalParams 
     PropsBuffers = Workspace.Buffer.Props 
@@ -89,7 +126,7 @@ function getVertexDeriv!(Workspace::PMFRGWorkspace,Lam)
 	end
 end
 
-function mixedFrequencies(ns,nt,nu,nwpr)
+@inline function mixedFrequencies(ns,nt,nu,nwpr)
 	nw1=Int((ns+nt+nu-1)/2)
     nw2=Int((ns-nt-nu-1)/2)
     nw3=Int((-ns+nt-nu-1)/2)
@@ -171,11 +208,9 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 	@unpack N,np_vec = Par.NumericalParams
 	@unpack Npairs,invpairs,PairTypes = Par.System
 
-
-
-	Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
-	Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
-	Vc_(Rij,s,t,u) = V_(State.Γ.c,Rij,s,t,u,invpairs[Rij],N)
+	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
+	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
+	@inline Vc_(Rij,s,t,u) = V_(State.Γ.c,Rij,s,t,u,invpairs[Rij],N)
 	ns = np_vec[is]
 	nt = np_vec[it]
 	nu = np_vec[iu]
@@ -269,12 +304,23 @@ function symmetrizeBubble!(X::BubbleType,Par::PMFRGParams)
     @. X.Td= X.Ta - X.Tb - X.Tc
 end
 
-function getVertexFromChannels!(Γ::VertexType,X::BubbleType)
+# function addToVertexFromBubble!(Γ::VertexType,X::BubbleType)
+#     Threads.@threads for iu in axes(Γ.a,4)
+#         for it in axes(Γ.a,3), is in axes(Γ.a,2), Rij in axes(Γ.a,1)
+#             Γ.a[Rij,is,it,iu] = X.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
+#             Γ.b[Rij,is,it,iu] = X.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
+#             Γ.c[Rij,is,it,iu] = X.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
+#         end
+#     end
+#     return Γ
+# end
+
+function addToVertexFromBubble!(Γ::VertexType,X::BubbleType)
     Threads.@threads for iu in axes(Γ.a,4)
         for it in axes(Γ.a,3), is in axes(Γ.a,2), Rij in axes(Γ.a,1)
-            Γ.a[Rij,is,it,iu] = X.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
-            Γ.b[Rij,is,it,iu] = X.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
-            Γ.c[Rij,is,it,iu] = X.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
+            Γ.a[Rij,is,it,iu] += X.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
+            Γ.b[Rij,is,it,iu] += X.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
+            Γ.c[Rij,is,it,iu] += X.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
         end
     end
     return Γ
@@ -295,8 +341,9 @@ getChi(State::ArrayPartition, Lam::double,Par::PMFRGParams) = getChi(State.x[2],
 function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::double,Par::PMFRGParams,Numax)
 	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
 	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
-	iG(x,w) = iG_(gamma,x, Lam,w,Par)
-	Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
+
+	@inline iG(x,w) = iG_(gamma,x, Lam,w,Par)
+	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(Npairs,N)
 
@@ -326,8 +373,8 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::double,Par::PMFRGP
 	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
 	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
 
-	iG(x,w) = iG_(gamma,x, Lam,w,Par)
-	Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
+	@inline iG(x,w) = iG_(gamma,x, Lam,w,Par)
+	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(Npairs)
 

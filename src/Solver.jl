@@ -1,40 +1,5 @@
 Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
-function getDeriv!(Deriv,State,setup,Lam)
-    (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
-
-    getDFint!(Workspace,Lam)
-    get_Self_Energy!(Workspace,Lam)
-    getVertexDeriv!(Workspace,Lam)
-
-    symmetrizeBubble!(Workspace.X,Par)
-
-    getVertexFromChannels!(Workspace.Deriv.Γ,Workspace.X)
-    symmetrizeVertex!(Workspace.State.Γ,Par)
-    flush(stdout)
-    return
-end
-
-function getDerivVerbose!(Deriv,State,setup,Lam)
-    (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    print("Workspace:\n\t") 
-    @time Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
-    print("getDFint:\n\t") 
-    @time getDFint!(Workspace,Lam)
-    print("get_Self_Energy:\n\t") 
-    @time get_Self_Energy!(Workspace,Lam)
-    print("getVertexDeriv:\n\t") 
-    @time getVertexDeriv!(Workspace,Lam)
-    print("Symmetry:\n\t") 
-    @time begin
-        symmetrizeBubble!(Workspace.X,Par)
-        symmetrizeVertex!(Workspace.State.Γ,Par)
-    end
-    flush(stdout)
-    return
-end
-
 function InitializeState(Par::PMFRGParams)
     @unpack N,Ngamma = Par.NumericalParams
     VDims = getVDims(Par)

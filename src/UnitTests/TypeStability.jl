@@ -11,8 +11,8 @@ end
 """Checks wheter vertex derivative has type instabilities"""
 function test_OneLoopAllocations(Par=Params(getPolymer(2)))
     WS = getEmptyWorkspace(Par)
-    # eval("@code_warntype PMFRG.getVertexDeriv!(WS,0.)")
-    # @code_warntype PMFRG.getVertexDeriv!(WS,0.)
+    # eval("@code_warntype PMFRG.getXBubble!(WS,0.)")
+    # @code_warntype PMFRG.getXBubble!(WS,0.)
     aX = @allocated PMFRG.addX!(WS,1,1,2,2,WS.Buffer.Props[1],WS.Buffer.Vertex[1])
     aXT = @allocated PMFRG.addXTilde!(WS,1,1,2,2,WS.Buffer.Props[1])
     test_TypeStability(Par,WS,aX,aXT)

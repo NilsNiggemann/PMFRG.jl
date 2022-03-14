@@ -1,5 +1,5 @@
 """Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
-function test_DimerFRG(Method = OneLoop();kwargs...)
+function test_DimerFRG(Method = OneLoop();Chiacc = 1e-6,kwargs...)
     Par = Params(getPolymer(2),Method,N=24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
 
     tempFolder = "temp_PMFRG_test"
@@ -11,10 +11,11 @@ function test_DimerFRG(Method = OneLoop();kwargs...)
     println("cleaning up... deleting ",mainFile, " and ", CheckPoints)
 
     Chi = ObsPt.saveval[end].Chi
+    Chitest = Chi_Benchmark(Method)
     @testset "Testing Susceptibility" begin
         println("χ = ", Chi)
-        @test Chi[1] >0. &&Chi[1]<1.
-        @test Chi[2] <0. &&Chi[1]>-1.
+        @test Chi[1] ≈ Chitest[1] atol = Chiacc
+        @test Chi[2] ≈ Chitest[2] atol = Chiacc
     end
     
     Γa = SolP.u[end].x[3]
@@ -37,6 +38,10 @@ function test_DimerFRG(Method = OneLoop();kwargs...)
     rm(tempFolder,recursive = true)
     return
 end
+
+Chi_Benchmark(Method::OneLoop) = [0.404474435506230, -0.194804787168400]
+Chi_Benchmark(Method::TwoLoop) = [0.389463381817772, -0.183003404444215]
+Chi_Benchmark(Method) = [0.404474435506230, -0.194804787168400]
 
 function test_nonzero(Γa,Γb,Γc,couplings)
     @testset "non-trivial Vertices" begin

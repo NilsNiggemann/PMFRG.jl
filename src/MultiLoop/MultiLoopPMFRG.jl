@@ -6,7 +6,7 @@ module MultiLoopPMFRG
 
     # export MultiLoop,SolveParquet
 
-    using ..PMFRG: MultiLoop,Params,Workspace_Struct,iG_,V_,getDFint!,get_Self_Energy!,getVertexDeriv!,mixedFrequencies,double,CreateX,Observables,bufferV_!,convertFreqArgs,getChi,launchPMFRG!,launchPMFRG_Checkpoint,InitializeState,readState,getFileParams,PMFRGMethod
+    using ..PMFRG: MultiLoop,Params,Workspace_Struct,iG_,V_,getDFint!,get_Self_Energy!,getXBubble!,mixedFrequencies,double,CreateX,Observables,bufferV_!,convertFreqArgs,getChi,launchPMFRG!,launchPMFRG_Checkpoint,InitializeState,readState,getFileParams,PMFRGMethod
     #functions that are extended
     import ..PMFRG: SolveFRG,SolveFRG_Checkpoint,generateFileName,getChi,writeOutput
     include("Types.jl")

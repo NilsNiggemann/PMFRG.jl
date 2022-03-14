@@ -74,7 +74,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;
             return verboseOutput
         end
     end
-    output_func(State,Lam,integrator) = getOutputfunction(Par.Options.MinimalOutput)
+    output_func = getOutputfunction(Par.Options.MinimalOutput)
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
     ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)

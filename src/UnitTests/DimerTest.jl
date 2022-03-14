@@ -1,23 +1,16 @@
 """Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
-function test_DimerFRG(Method = OneLoop();Chiacc = 1e-6,kwargs...)
-    Par = Params(getPolymer(2),Method,N=24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
+function test_DimerFRG(Method = OneLoop();Obsacc = 1e-6,kwargs...)
+    Par = Params(getPolymer(2),Method,N=24,Ngamma = 24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
 
-    tempFolder = "temp_PMFRG_test"
+    tempFolder = "temp_PMFRG_test2"
     mainFile = joinpath(tempFolder,"temp_main.h5")
     CheckPoints = joinpath(tempFolder,"Checkpoints.h5")
     
     SolP,ObsPt = SolveFRG(Par,MainFile = mainFile,CheckpointDirectory = CheckPoints)
 
     println("cleaning up... deleting ",mainFile, " and ", CheckPoints)
+    rm(tempFolder,recursive = true)
 
-    Chi = ObsPt.saveval[end].Chi
-    Chitest = Chi_Benchmark(Method)
-    @testset "Testing Susceptibility" begin
-        println("χ = ", Chi)
-        @test Chi[1] ≈ Chitest[1] atol = Chiacc
-        @test Chi[2] ≈ Chitest[2] atol = Chiacc
-    end
-    
     Γa = SolP.u[end].x[3]
     Γb = SolP.u[end].x[4]
     Γc = SolP.u[end].x[5]
@@ -34,14 +27,50 @@ function test_DimerFRG(Method = OneLoop();Chiacc = 1e-6,kwargs...)
     println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
     test_Gammab_Dimer(Γb;kwargs...)
 
+    test_Observables(Method,ObsPt.saveval[end],Obsacc = Obsacc)
 
-    rm(tempFolder,recursive = true)
     return
 end
 
-Chi_Benchmark(Method::OneLoop) = [0.404474435506230, -0.194804787168400]
-Chi_Benchmark(Method::TwoLoop) = [0.389463381817772, -0.183003404444215]
-Chi_Benchmark(Method) = [0.404474435506230, -0.194804787168400]
+function test_Observables(Method,Obs;Obsacc=1e-6)
+    obs_ex = example_Obs(Method)
+    function test(ObsName)
+        O1 = getproperty(Obs,ObsName)
+        O2 = getproperty(obs_ex,ObsName)
+        for i in eachindex(O2)
+            @test O1[i] ≈ O2[i] atol = Obsacc
+        end
+    end
+
+    println("Observables: ", Obs)
+    @testset "Testing Susceptibility" begin
+        test(:Chi)
+    end
+    
+    @testset "Testing γ" begin
+        test(:gamma)
+    end
+    
+    @testset "Testing max(Γ)" begin
+        @testset "Γa" begin
+            test(:MaxVa)
+        end
+        @testset "Γb" begin
+            test(:MaxVb)
+        end
+        @testset "Γc" begin
+            test(:MaxVc)
+        end
+    end
+end
+
+function example_Obs(Method::OneLoop)
+    PMFRG.Observables([0.409961674309049, -0.200041163060498], [0.367090761453024 0.128045613399846 0.086744514258760 0.060408397243958 0.046089629935719 0.037224838436830 0.031123238584940 0.026623695820601 0.023146972150518 0.020378546539016 0.018118952133753 0.016242668556776 0.014654076476321 0.013290063763770 0.012095764689258 0.011036461682002 0.010077688811575 0.009199596223172 0.008378589894997 0.007602730223307 0.006854346043725 0.006127144022231 0.005429363295683 0.001190178969660], [-0.095054800124967], [0.035369300845790, 1.789921595488008], [0.755459278321820, 0.755459278321820], [0.755459278321820, 2.689104516815582])
+end
+
+function example_Obs(Method::TwoLoop)
+    PMFRG.Observables([0.384798093987635, -0.180469046203119], [0.482956311303588 0.222352984832864 0.154573855716267 0.109897378628719 0.084917553190298 0.069199964487509 0.058308013987969 0.050266564388793 0.044063205870330 0.039131077027183 0.035112384954753 0.031778170059306 0.028961474004695 0.026549342793794 0.024450131950865 0.022602237011145 0.020950360390247 0.019459109883070 0.018092609825221 0.016830289679813 0.015649404101204 0.014548321178442 0.013659541068861 -0.005699647497969], [-0.100154313528458], [0.222988595275207, 2.111032725409252], [1.106789531343003, 1.106789531371678], [1.106789531343003, 2.660858595690006])
+end
 
 function test_nonzero(Γa,Γb,Γc,couplings)
     @testset "non-trivial Vertices" begin

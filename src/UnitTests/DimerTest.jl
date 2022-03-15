@@ -51,6 +51,7 @@ end
 function test_DimerParquet(;kwargs...)
     Sol,Obs,Par = test_runDimerParquet()
     Γa,Γb,Γc = Sol.State.Γ.a,Sol.State.Γ.b,Sol.State.Γ.c
+    test_BareBubbles(Sol;kwargs...)
     test_BubbleSymmetries(Sol;kwargs...)
     test_DimerResults(Γa,Γb,Γc,Obs,Par;kwargs...)
 end

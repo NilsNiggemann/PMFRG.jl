@@ -124,7 +124,7 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
     end
     if !Par.Options.MinimalOutput
         println("""
-        \t\tSDE step done after $iter / $maxIterSDE iterations """)
+        \t\tSDE step done after $iter / $maxIterSDE iterations (tol = $(SDE_tolerance)""")
     end
     return 
 end

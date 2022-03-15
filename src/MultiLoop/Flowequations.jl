@@ -198,16 +198,10 @@ adds to ResultBubble given the vertex as well as a bubble inserted on the left. 
                 Va34[kj] * XTc21[ki] + 
                 Vb34[kj] * XTc21[ki]
             )* Ptm
-        end
-        #split this into two loops because @turbo randomly allocates memory if expression is too long :(
-        @turbo unroll = 1 for k_spl in 1:Nsum[Rij]
-            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
-            ki,kj,m,xk = S_ki[k_spl,Rij],S_kj[k_spl,Rij],S_m[k_spl,Rij],S_xk[k_spl,Rij]
 
-            Ptm = Props[xk,xk]*m
 
             Bc_sum += (
-                -Vc43[kj] * XTb21[ki] - 
+                -Vc43[kj] * XTb21[ki] + 
                 Vc34[kj] * XTd21[ki]
             )* Ptm
         end
@@ -337,12 +331,12 @@ function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integ
         Props[xi, xj]*2*Vc_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji]
         
         B.Tb[Rij,is,it,iu] += 
-        Props[xj, xi]*(Va_(Rij, wmw4, ns, wmw3) + Vc_(Rij, wmw4, ns, wmw3))*Γ0.c[Rij]
+        Props[xj, xi]*(Va_(Rij, wmw4, ns, wmw3) + Vc_(Rij, wmw4, ns, wmw3))*Γ0.c[Rij] + 
         Props[xi, xj]*(Va_(Rji, wmw3, ns, wmw4) + Vc_(Rji, wmw3, ns, wmw4))*Γ0.c[Rji]
 
         B.Tc[Rij,is,it,iu] += 
         Props[xj, xi]*Vc_(Rij, wmw4, wmw3, ns)*Γ0.c[Rij] +
-        Props[xi, xj]*Vc_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji]
+        Props[xi, xj]*Vc_(Rji, wmw3, wmw4, ns)*Γ0.c[Rji]
     end
 end
 @inline addBLTilde!(B::BubbleType,Γ0L::BareVertexType,Γ0R::BareVertexType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props) = addBLTilde!(B,Γ0L,Γ, is, it, iu, nwpr, Par, Props)

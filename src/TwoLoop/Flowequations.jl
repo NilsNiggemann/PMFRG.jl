@@ -54,7 +54,7 @@ function getTwoLoopDeriv!(Workspace::TwoLoopWorkspace,Lam)
     VertexBuffers = Workspace.Buffer.Vertex
     XBuffers = Workspace.Buffer.X
 
-    iG(x,nw) = iG_(State.γ,x,Lam,nw,Par)
+    iG(x,nw) = iG_(State.γ,x,Lam,nw,T)
 
     function getProp!(BubbleProp,nw1,nw2)
         for i in 1:NUnique, j in 1:NUnique

@@ -1,16 +1,17 @@
 const double = Float64
-"""Abstract Param struct to dispatch between different PMFRG methods (i.e. Two-Loop or Parquet)
+"""
+Abstract Param struct to dispatch between different PMFRG methods (i.e. Two-Loop or Parquet)
 Assumed to have at least the fields:
 System::Geometry
 NumericalParams::NumericalParams
 Options
 """
-
 abstract type PMFRGParams end
 abstract type PMFRGWorkspace end
 
 """
 Struct to hold all relevant quantities that are needed throughout the computation. 
+
     N::Int = 24
     Ngamma::Int = 100 #Number of gamma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
@@ -20,7 +21,6 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     usesymmetry::Bool = true
     MinimalOutput::Bool = false
     ex_freq::double = (2*N-1)*pi*T
-    # lenIntw::Int = floor(Int,  (min(ex_freq,Lam_max)/pi/T-1)/2)
     lenIntw::Int = N
     lenIntw_acc::Int = Ngamma # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1)
@@ -50,7 +50,7 @@ function NumericalParams(;
     Ngamma::Integer = N, #Number of gamma frequencies
     accuracy::AbstractFloat = 1e-6, # convert type to float type
     Lam_min::AbstractFloat = 0.0,
-    Lam_max::AbstractFloat = 100.0,
+    Lam_max::AbstractFloat = 100.0 + 500*T,
     lenIntw::Int = N,
     lenIntw_acc::Int = Ngamma, # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1),

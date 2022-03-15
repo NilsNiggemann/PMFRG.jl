@@ -1,9 +1,35 @@
 # module UnitTests
 using Test
 # using PMFRG,SpinFRGLattices,Parameters,Test
-BechmarkingParams(Method) = Params(getPolymer(2),Method,N=24,Ngamma = 24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
+BechmarkingParams(Method) = Params(
+    getPolymer(2),
+    Method,
+    T=0.5,
+    N = 24,
+    Ngamma = 24,
+    accuracy = 1e-3,
+    Lam_min = 0.0,
+    Lam_max = 100.0,
+    usesymmetry = false,
+    MinimalOutput = true,
+    lenIntw = 60,
+    lenIntw_acc = 24
+)
 
-BechmarkingParams(Method::Parquet) = Params(getPolymer(2),Method,N=24,Ngamma = 24,T=0.8,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
+BechmarkingParams(Method::Parquet) = Params(
+    getPolymer(2),
+    Method,
+    T=0.8,
+    N = 24,
+    Ngamma = 24,
+    accuracy = 1e-3,
+    Lam_min = 0.0,
+    Lam_max = 100.0,
+    usesymmetry = false,
+    MinimalOutput = true,
+    lenIntw = 60,
+    lenIntw_acc = 24
+)
 
 
 Params(getPolymer(2),Parquet(),N=16,T=0.7,lenIntw = 120)

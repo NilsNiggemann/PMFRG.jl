@@ -1,7 +1,7 @@
 """Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
 function runDimerFRG(Method = OneLoop())
-    Par = Params(getPolymer(2),Method,N=24,Ngamma = 24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
-    
+    # Par = Params(getPolymer(2),Method,N=24,Ngamma = 24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
+    Par = BechmarkingParams(Method)
     tempFolder = "temp_PMFRG_test"
     mainFile = joinpath(tempFolder,"temp_main.h5")
     CheckPoints = joinpath(tempFolder,"Checkpoints.h5")

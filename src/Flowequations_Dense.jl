@@ -40,9 +40,9 @@ function getDFint!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack T,lenIntw_acc = Par.NumericalParams 
     NUnique = Par.System.NUnique 
 	
-	@inline γ(x,nw) = gamma_(State.γ,x,nw,Par)
-	@inline iG(x,nw) = iG_(State.γ,x,Lam,nw,Par)
-	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,Par)
+	@inline γ(x,nw) = gamma_(State.γ,x,nw)
+	@inline iG(x,nw) = iG_(State.γ,x,Lam,nw,T)
+	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,T)
 
 	Theta(Lam,w) = w^2/(w^2+Lam^2)
 	
@@ -63,7 +63,7 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma = Par.NumericalParams
     @unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
 	
-	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,Par)
+	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,T)
 	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
 	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
 
@@ -92,8 +92,8 @@ function getXBubble!(Workspace::PMFRGWorkspace,Lam)
     PropsBuffers = Workspace.Buffer.Props 
     VertexBuffers = Workspace.Buffer.Vertex
 	 
-	iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,Par)
-	iSKat(x,nw) = iSKat_(Workspace.State.γ,Workspace.Deriv.γ,x,Lam,nw,Par)
+	iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,T)
+	iSKat(x,nw) = iSKat_(Workspace.State.γ,Workspace.Deriv.γ,x,Lam,nw,T)
 
 	function getKataninProp!(BubbleProp,nw1,nw2)
 		for i in 1:Par.System.NUnique, j in 1:Par.System.NUnique
@@ -343,7 +343,7 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::double,Par::PMFRGP
 	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
 	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
 
-	@inline iG(x,w) = iG_(gamma,x, Lam,w,Par)
+	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(Npairs,N)
@@ -374,7 +374,7 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
 	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
 
-	@inline iG(x,w) = iG_(gamma,x, Lam,w,Par)
+	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(Npairs)

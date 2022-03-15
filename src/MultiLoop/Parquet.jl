@@ -20,15 +20,9 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
 
     Tol_Vertex = 1E16 #Initial tolerance level
 
-    iG(x,nw) = iG_(State.γ,x,Lam,nw,Par)
+    iG(x,nw) = iG_(State.γ,x,Lam,nw,T)
 
-    function getProp!(BubbleProp,nw1,nw2)
-        for i in 1:NUnique, j in 1:NUnique
-            BubbleProp[i,j] = iG(i,nw1) *iG(j,nw2)* Par.NumericalParams.T
-        end
-        return BubbleProp
-    end
-    
+    getProp! = constructPropagatorFunction(Workspace,Lam)
     iter = 0
     while Tol_Vertex > Par.NumericalParams.accuracy 
         iter+=1
@@ -39,17 +33,19 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         end
 
         writeTo!(OldState.Γ,State.Γ)
-
+        
+        # iterateSDE!(Workspace,Lam)
+        
         computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
         computeLeft2PartBubble!(BX,X,X,State.Γ,getProp!,Par,Buffer)
-
+        
         getXFromBubbles!(X,B0,BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
         getVertexFromChannels!(State.Γ,I,X)
         symmetrizeVertex!(State.Γ,Par)
         
+        iterateSDE!(Workspace,Lam)
         Tol_Vertex = dist(OldState.Γ,State.Γ)
         
-        iterateSDE!(Workspace,Lam)
         CurrentObs = getObsFunc(Workspace,Lam)
         push!(Obs,CurrentObs)
 
@@ -67,9 +63,10 @@ end
 
 function constructPropagatorFunction(Workspace::PMFRGWorkspace,Lam)    
     Par = Workspace.Par
+    T= Par.NumericalParams.T
     NUnique = Par.System.NUnique
 
-    @inline iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,Par)
+    @inline iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,T)
 
     function getProp!(BubbleProp,nw1,nw2)
         for i in 1:NUnique, j in 1:NUnique
@@ -104,8 +101,11 @@ end
 
 
 function iterateSDE!(Workspace::ParquetWorkspace,Lam)
-    @unpack OldState,State,I,X,B0,BX,Par = Workspace
-    Prop(x,nw) = -1/6*iG_(OldState.γ,x,Lam,nw,Par)
+    @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
+    @inline Prop(x,nw) = -1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)
+
+    getProp! = constructPropagatorFunction(Workspace,Lam)
+
     maxIterSDE = Par.Options.maxIterSDE
     SDE_tolerance = 1E16
     iter = 0
@@ -116,10 +116,13 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
         end
         iter +=1
         writeTo!(OldState.γ,State.γ)
-        compute1PartBubble!(State.γ,B0,Prop,Par)
+
+        # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
+        # println(getProp!(Buffer.Props[1],1,1))
+        iter < 10 && println(State.γ[1,1:5])
         
-        # @views println(State.γ[1:5])
-        # @views println( Tuple(Prop(1,i) for i in 1:5 ))
+        compute1PartBubble!(State.γ,B0,Prop,Par)
+
         SDE_tolerance = dist(State.γ,OldState.γ)
     end
     if !Par.Options.MinimalOutput

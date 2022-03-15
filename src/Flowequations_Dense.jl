@@ -206,7 +206,7 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 
 	@unpack State,X,Par = Workspace 
 	@unpack N,np_vec = Par.NumericalParams
-	@unpack Npairs,invpairs,PairTypes = Par.System
+	@unpack Npairs,invpairs,PairTypes,OnSitePairs = Par.System
 
 	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
 	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
@@ -216,8 +216,9 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 	nu = np_vec[iu]
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
-	#Xtilde only defined for nonlocal pairs Rij >= 2
-	for Rij in 2:Npairs
+	#Xtilde only defined for nonlocal pairs Rij != Rii
+	for Rij in 1:Npairs
+		Rij in OnsitePairs  && continue
 		#loop over all left hand side inequivalent pairs Rij
 		Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
 		@unpack xi,xj = PairTypes[Rij]

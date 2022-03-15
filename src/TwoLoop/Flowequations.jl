@@ -219,7 +219,7 @@ end
 function addYTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props)
 	@unpack State,X,Y,Par = Workspace
 	@unpack N,np_vec = Par.NumericalParams
-	@unpack Npairs,invpairs,PairTypes = Par.System
+	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
 
 
     @inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
@@ -240,8 +240,9 @@ function addYTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 	nu = np_vec[iu]
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
-    #Ytilde only defined for nonlocal pairs Rij >= 2
-    for Rij in 2:Npairs
+    #Ytilde only defined for nonlocal pairs Rij != Rii
+    for Rij in 1:Npairs
+        Rij in OnsitePairs && continue
         #loop over all left hand side inequivalent pairs Rij
         Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
         @unpack xi,xj = PairTypes[Rij]

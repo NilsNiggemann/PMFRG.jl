@@ -18,10 +18,11 @@ end
 
 function test_DimerFRG(Method = OneLoop();kwargs...)
     Γa,Γb,Γc,Obs,Par = runDimerFRG(Method)
-    test_DimerResults(Γa,Γb,Γc,Obs,Par,Method;kwargs...)
+    test_DimerResults(Γa,Γb,Γc,Obs,Par;kwargs...)
 end
 
-function test_DimerResults(Γa,Γb,Γc,Obs,Par,Method;Obsacc=1e-6,kwargs...)
+function test_DimerResults(Γa,Γb,Γc,Obs,Par;Obsacc=1e-6,kwargs...)
+    Method = PMFRG.getPMFRGMethod(Par)
     test_nonzero(Γa,Γb,Γc,Par.System.couplings)
 
     @testset verbose = true "Testing frequency symmetries" begin
@@ -40,16 +41,18 @@ function test_DimerResults(Γa,Γb,Γc,Obs,Par,Method;Obsacc=1e-6,kwargs...)
     return
 end
 
-function runDimerParquet()
+function test_runDimerParquet()
     ParquetLambda = 0.
-    Par = Params(getPolymer(2),Parquet(),N=24,T=0.75,accuracy = 1e-3,lenIntw = 60,MinimalOutput=true,usesymmetry = false,Lam_min = ParquetLambda)
+    Par = BechmarkingParams(Parquet())
     Sol,Obs = SolveParquet(Par,ParquetLambda)
-    return Sol.State.Γ.a,Sol.State.Γ.b,Sol.State.Γ.c,Obs,Par
+    return Sol,Obs,Par
 end
 
 function test_DimerParquet(;kwargs...)
-    Γa,Γb,Γc,Obs,Par = runDimerParquet()
-    test_DimerResults(Γa,Γb,Γc,Obs,Par,Method;kwargs...)
+    Sol,Obs,Par = test_runDimerParquet()
+    Γa,Γb,Γc = Sol.State.Γ.a,Sol.State.Γ.b,Sol.State.Γ.c
+    test_BubbleSymmetries(Sol;kwargs...)
+    test_DimerResults(Γa,Γb,Γc,Obs,Par;kwargs...)
 end
 
 function test_Observables(Method,Obs;Obsacc=1e-6)
@@ -83,6 +86,8 @@ function test_Observables(Method,Obs;Obsacc=1e-6)
         end
     end
 end
+
+test_Observables(Method::Parquet,Obs;Obsacc=1e-6) = println("Observables check not implemented for parquet")
 
 function test_nonzero(Γa,Γb,Γc,couplings)
     @testset "non-trivial Vertices" begin
@@ -122,8 +127,7 @@ function test_Gammaa_onsite(Γa::AbstractArray,OnsiteBonds=[1];tol = 1e-14)
     @testset "Γa_ii(stu) == -Γa_ii(uts)" begin
         Failures = 0
         for Rij in OnsiteBonds, s in axes(Γa,2), t in axes(Γa,3), u in axes(Γa,4) 
-            va = +Γa[Rij,s,t,u]
-            if !isapprox(va , -Γa[Rij,u,t,s], atol = tol) 
+            if !isapprox(Γa[Rij,s,t,u] , -Γa[Rij,u,t,s], atol = tol) 
                 Failures += 1
             end
         end
@@ -133,8 +137,7 @@ function test_Gammaa_onsite(Γa::AbstractArray,OnsiteBonds=[1];tol = 1e-14)
     @testset "Γa_ii(stu) == Γa_ii(tus)" begin
         Failures = 0
         for Rij in OnsiteBonds, s in axes(Γa,2), t in axes(Γa,3), u in axes(Γa,4) 
-            va = +Γa[Rij,s,t,u]
-            if !isapprox(va , +Γa[Rij,t,u,s], atol = tol) 
+            if !isapprox(Γa[Rij,s,t,u] , +Γa[Rij,t,u,s], atol = tol) 
                 Failures += 1
             end
         end
@@ -156,9 +159,9 @@ function test_tu_symmetry_ab(Γ::AbstractArray,Name;tol = 1e-14)
     end
 end
 
-function test_tu_symmetry_c(Γa::AbstractArray,Γb::AbstractArray,Γc::AbstractArray;tol = 1e-14)
+function test_tu_symmetry_c(Γa::AbstractArray,Γb::AbstractArray,Γc::AbstractArray,V = "Γ";tol = 1e-14)
     Failures = 0
-    @testset "Γc_ij(stu) == (-Γa_ij + Γb_ij + Γc_ij)(sut)" begin
+    @testset "$(V)c_ij(stu) == (-$(V)a_ij + $(V)b_ij + $(V)c_ij)(sut)" begin
         for Rij in axes(Γc,1), s in axes(Γc,2), t in axes(Γc,3), u in axes(Γc,4) 
             if !isapprox(Γc[Rij,s,t,u] , (-Γa[Rij,s,u,t] +Γb[Rij,s,u,t] +Γc[Rij,s,u,t]), atol = tol) 
                 Failures += 1

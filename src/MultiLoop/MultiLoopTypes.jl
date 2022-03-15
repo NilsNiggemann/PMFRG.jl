@@ -43,7 +43,8 @@ Params(System::Geometry,O::Parquet;kwargs...) = ParquetParams(System,NumericalPa
 
 
 getLoopOrder(P::MultiLoopParams) = P.l
-getLoopMethod(P::MultiLoopParams) = MultiLoop(getLoopOrder(P))
+getPMFRGMethod(P::MultiLoopParams) = MultiLoop(getLoopOrder(P))
+getPMFRGMethod(P::ParquetParams) = Parquet()
 
 ## ______________ State Variables shorthand ______________
 
@@ -68,7 +69,7 @@ function MultLoopWorkspace(Deriv::ArrayPartition,State::ArrayPartition,X,Y,Buffe
     error("Todo")
 end
 
-struct ParquetWorkspace{T,Buff,P <: PMFRGParams}
+struct ParquetWorkspace{T,Buff,P <: PMFRGParams} <:PMFRGWorkspace
     State::StateType{T} #Stores the current step of iteration
     OldState::StateType{T} #Stores the last step of iteration
 

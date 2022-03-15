@@ -28,7 +28,7 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         end
         return BubbleProp
     end
-
+    
     iter = 0
     while Tol_Vertex > Par.NumericalParams.accuracy 
         iter+=1
@@ -63,6 +63,21 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
     end
     return Workspace,Obs
+end
+
+function constructPropagatorFunction(Workspace::PMFRGWorkspace,Lam)    
+    Par = Workspace.Par
+    NUnique = Par.System.NUnique
+
+    @inline iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,Par)
+
+    function getProp!(BubbleProp,nw1,nw2)
+        for i in 1:NUnique, j in 1:NUnique
+            BubbleProp[i,j] = iG(i,nw1) *iG(j,nw2)* Par.NumericalParams.T
+        end
+        return BubbleProp
+    end
+    return getProp!
 end
 
 function getXFromBubbles!(X::BubbleType,B0::BubbleType,BX::BubbleType)

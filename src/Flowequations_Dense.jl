@@ -206,7 +206,7 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 
 	@unpack State,X,Par = Workspace 
 	@unpack N,np_vec = Par.NumericalParams
-	@unpack Npairs,invpairs,PairTypes,OnSitePairs = Par.System
+	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
 
 	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
 	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)

@@ -163,6 +163,21 @@ end
 getVDims(Par::PMFRGParams) = (Par.System.Npairs,Par.NumericalParams.N,Par.NumericalParams.N,Par.NumericalParams.N)
 
 BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par)) 
+VertexType(Par::PMFRGParams) = VertexType(getVDims(Par)) 
+
+function constructBubbleFromVertex!(B::BubbleType,Γ::VertexType)
+    B.a .= Γ.a
+    B.b .= Γ.b
+    B.c .= Γ.c
+    for Rij in axes(Γ.a,1), s in axes(Γ.a,2), t in axes(Γ.a,3), u in axes(Γ.a,4) 
+        B.Ta[Rij,s,t,u] = -Γ.a[Rij,t,s,u] 
+        B.Tb[Rij,s,t,u] = -Γ.c[Rij,t,s,u] 
+        B.Tc[Rij,s,t,u] = -Γ.b[Rij,t,s,u]
+        B.Td[Rij,s,t,u] = Γ.c[Rij,t,u,s]
+    end
+    return B
+end
+constructBubbleFromVertex(Γ::VertexType) = constructBubbleFromVertex!(BubbleType(size(Γ.a)),Γ) 
 
 """Struct containing the observables that are saved at every step"""
 struct Observables{T}

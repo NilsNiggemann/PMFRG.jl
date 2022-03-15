@@ -15,7 +15,7 @@ Params(System::Geometry,O::OneLoop=OneLoop();kwargs...) = OneLoopParams(System,N
 
 
 getLoopOrder(P::OneLoopParams) = 1
-getLoopMethod(P::OneLoopParams) = OneLoop()
+getPMFRGMethod(P::OneLoopParams) = OneLoop()
 
 function getAllParamFields(O::Par) where Par #<: PMFRGParams
     fields = Symbol[]

@@ -7,7 +7,7 @@ struct TwoLoopParams{F,G <: Geometry} <: PMFRGParams
 end
 
 getLoopOrder(P::TwoLoopParams) = 2
-getLoopMethod(P::TwoLoopParams) = TwoLoop()
+getPMFRGMethod(P::TwoLoopParams) = TwoLoop()
 
 ## ______________ State Variables shorthand ______________
 

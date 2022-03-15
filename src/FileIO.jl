@@ -117,7 +117,7 @@ readParams(Filename::String,GeometryGenerator::Function;modifyParams...) = readP
 
 function modifyParams(Par;modifyParams...)
     NumParKwargs = Dict((F => getfield(Par.NumericalParams,F) for F in fieldnames(NumericalParams))...)
-    Par = Params(Par.System,getLoopMethod(Par);NumParKwargs...,modifyParams...)
+    Par = Params(Par.System,getPMFRGMethod(Par);NumParKwargs...,modifyParams...)
 end
 
 function setupDirectory(DirPath,Par;overwrite=false)

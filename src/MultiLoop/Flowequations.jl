@@ -118,7 +118,7 @@ end
     end
 end
 
-function fillBuffer!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
+@inline function fillBuffer!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
     invpairs = Par.System.invpairs
     @unpack N,np_vec = Par.NumericalParams
 
@@ -142,7 +142,7 @@ function fillBuffer!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::Bub
     bufferXT_!(XTd21, XR.Td, XL.Td, wpw2, ns, wpw1, invpairs, N)
 end
 
-function fillBuffer!(VBuffer::VertexBufferType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
+@inline function fillBuffer!(VBuffer::VertexBufferType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
     
     invpairs = Par.System.invpairs
     @unpack N,np_vec = Par.NumericalParams
@@ -239,6 +239,7 @@ end
             Ptm = Props[xk,xk]*m
 
             Bc_sum += (
+                Vc43[kj] * Γ0.c[ki]+
                 Vc34[kj] * Γ0.c[ki]
             )* Ptm
         end
@@ -252,7 +253,7 @@ end
 
 function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props)
     
-    @unpack Npairs,invpairs,PairTypes = Par.System
+    @unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
     @unpack N,np_vec = Par.NumericalParams
 
     @inline Va_(Rij,s,t,u) = V_(Γ.a,Rij,s,t,u,invpairs[Rij],N)
@@ -273,8 +274,9 @@ function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,
 	nu = np_vec[iu]
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
-    #Btilde only defined for nonlocal pairs Rij >= 2
-    for Rij in 2:Npairs
+    #Btilde only defined for nonlocal pairs Rij != Rii
+    for Rij in 1:Npairs
+        Rij in OnsitePairs && continue
         #loop over all left hand side inequivalent pairs Rij
         Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
         @unpack xi,xj = PairTypes[Rij]
@@ -310,7 +312,7 @@ end
 
 function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props)
 
-    @unpack Npairs,invpairs,PairTypes = Par.System
+    @unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
     @unpack N,np_vec = Par.NumericalParams
 
 
@@ -323,8 +325,9 @@ function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integ
 	nu = np_vec[iu]
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
-    #Btilde only defined for nonlocal pairs Rij >= 2
-    for Rij in 2:Npairs
+    #Btilde only defined for nonlocal pairs Rij != Rii
+    for Rij in 1:Npairs
+        Rij in OnsitePairs && continue
         #loop over all left hand side inequivalent pairs Rij
         Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
         @unpack xi,xj = PairTypes[Rij]
@@ -334,16 +337,12 @@ function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integ
         Props[xi, xj]*2*Vc_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji]
         
         B.Tb[Rij,is,it,iu] += 
-        Props[xj, xi]*(
-        Va_(Rij, wmw4, ns, wmw3) + 
-        Vc_(Rij, wmw4, ns, wmw3))*Γ0.c[Rij] + 
-        Props[xi, xj]*(
-        Va_(Rji, wmw3, ns, wmw4) + 
-        Vc_(Rji, wmw3, ns, wmw4))*Γ0.c[Rji]
+        Props[xj, xi]*(Va_(Rij, wmw4, ns, wmw3) + Vc_(Rij, wmw4, ns, wmw3))*Γ0.c[Rij]
+        Props[xi, xj]*(Va_(Rji, wmw3, ns, wmw4) + Vc_(Rji, wmw3, ns, wmw4))*Γ0.c[Rji]
 
         B.Tc[Rij,is,it,iu] += 
-        Props[xj, xi]*Vc_(Rij, wmw4, wmw3, ns)*Γ0.c[Rij] + 
-        Props[xi, xj]*Vb_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji]
+        Props[xj, xi]*Vc_(Rij, wmw4, wmw3, ns)*Γ0.c[Rij] +
+        Props[xi, xj]*Vc_(Rji, wmw3, ns, wmw4)*Γ0.c[Rji]
     end
 end
 @inline addBLTilde!(B::BubbleType,Γ0L::BareVertexType,Γ0R::BareVertexType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props) = addBLTilde!(B,Γ0L,Γ, is, it, iu, nwpr, Par, Props)

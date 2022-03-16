@@ -17,7 +17,7 @@ end
 """Computes total difference between two objects of type T by summing up the distance of all elements"""
 function dist(Γ1::T,Γ2::T) where T
     d = 0.
-    for f in fieldnames(VertexType)
+    for f in fieldnames(T)
         a = getfield(Γ1,f)
         b = getfield(Γ2,f)
         d += dist(a,b)
@@ -28,10 +28,12 @@ end
 function dist(a::AbstractArray, b::AbstractArray)
     d = 0.
     for i in eachindex(a,b)
-        d += abs(a[i]-b[i])
+        d += dist(a[i],b[i])
     end
     return d
 end
+
+@inline dist(a::Number, b::Number) = abs(a-b)
 
 function Threadsfill!(Tensor::AbstractArray,val)
     Threads.@threads for i in eachindex(Tensor)

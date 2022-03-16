@@ -1,6 +1,7 @@
+const VertexOrBubble = Union{StateType,BubbleType,VertexType}
 
 """Set two objects equal by recusively setting all their fields to be equal"""
-function writeTo!(A::T,B::T) where T
+function writeTo!(A::T,B::T) where T <: VertexOrBubble
     for f in fieldnames(T)
         a = getfield(A,f)
         b = getfield(B,f)
@@ -15,25 +16,47 @@ function writeTo!(A::AbstractArray,B::AbstractArray)
 end
 
 """Computes total difference between two objects of type T by summing up the distance of all elements"""
-function dist(Γ1::T,Γ2::T) where T
+function squareDist(Γ1::T,Γ2::T) where T <: VertexOrBubble
     d = 0.
     for f in fieldnames(T)
         a = getfield(Γ1,f)
         b = getfield(Γ2,f)
-        d += dist(a,b)
+        d += squareDist(a,b)
     end
     return d
 end
 
-function dist(a::AbstractArray, b::AbstractArray)
+function squareDist(a::AbstractArray, b::AbstractArray)
     d = 0.
     for i in eachindex(a,b)
-        d += dist(a[i],b[i])
+        d += squareDist(a[i],b[i])
     end
     return d
 end
 
-@inline dist(a::Number, b::Number) = abs(a-b)
+@inline squareDist(a::Number, b::Number) = abs2(a-b)
+@inline dist(a, b) = sqrt(squareDist(a,b))
+
+@inline reldist(A,B) = dist(A,B)/max(norm(A),norm(B))
+
+import SpinFRGLattices.squareNorm
+
+function squareNorm(A::T) where T <: VertexOrBubble
+    s = 0.
+    for f in fieldnames(T)
+        a = getfield(A,f)
+        s+= SpinFRGLattices.squareNorm(a)
+    end
+    return s
+end
+
+function norm(A)
+    return sqrt(squareNorm(A))
+end
+
+
+@inline squareNorm(A::AbstractArray) = sum(squareNorm,A)
+
 
 function Threadsfill!(Tensor::AbstractArray,val)
     Threads.@threads for i in eachindex(Tensor)
@@ -52,7 +75,7 @@ end
 
 
 """Recursively sets structure to zero"""
-function setZero!(a::T) where T
+function setZero!(a::T) where T <: VertexOrBubble
     for f in fieldnames(T)
         setZero!( getfield(a,f))
     end

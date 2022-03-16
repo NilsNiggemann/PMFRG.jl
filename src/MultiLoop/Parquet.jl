@@ -3,10 +3,12 @@
 TODO: Save output to file"""
 function SolveParquet(Par::ParquetParams,Lam::Real,getObsFunc::Function = getObservables;kwargs...)
     Workspace = SetupParquet(Par)
-    
-    ObsType = typeof(getObsFunc(Workspace,Lam))
-    Obs = StructArray(ObsType[])
+    SolveParquet(Workspace,Lam,getObsFunc;kwargs...)
+end
 
+function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function = getObservables;kwargs...)
+    ObsType = typeof(getObservables(Workspace,Lam))
+    Obs = StructArray(ObsType[])
     @time iterateSolution!(Workspace,Lam,Obs,getObsFunc)
 end
 
@@ -15,7 +17,6 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
     @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
     
     maxIterBSE = Par.Options.maxIterBSE
-    NUnique = Par.System.NUnique
 
 
     Tol_Vertex = 1E16 #Initial tolerance level
@@ -44,7 +45,7 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         symmetrizeVertex!(State.Γ,Par)
         
         iterateSDE!(Workspace,Lam)
-        Tol_Vertex = dist(OldState.Γ,State.Γ)
+        Tol_Vertex = reldist(OldState.Γ,State.Γ)
         
         CurrentObs = getObsFunc(Workspace,Lam)
         push!(Obs,CurrentObs)
@@ -102,7 +103,7 @@ end
 
 function iterateSDE!(Workspace::ParquetWorkspace,Lam)
     @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
-    @inline Prop(x,nw) = -1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)
+    @inline Prop(x,nw) = -1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)#*3
 
     getProp! = constructPropagatorFunction(Workspace,Lam)
 
@@ -119,11 +120,11 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
 
         # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
         # println(getProp!(Buffer.Props[1],1,1))
-        iter < 10 && println(State.γ[1,1:5])
+        # iter < 10 && println(State.γ[1,1:5])
         
         compute1PartBubble!(State.γ,B0,Prop,Par)
 
-        SDE_tolerance = dist(State.γ,OldState.γ)
+        SDE_tolerance = reldist(State.γ,OldState.γ)
     end
     if !Par.Options.MinimalOutput
         println("""
@@ -146,3 +147,10 @@ end
 
 # writeOutput(St::StateType,Obs,Lam,Par) = println(Obs)
 writeOutput(St::StateType,Obs,Lam,Par) = writeOutput(St.f_int,St.γ,St.Γ.a,St.Γ.b,St.Γ.c,Obs,Lam,Par)
+
+function modifyWorkspace(Workspace::ParquetWorkspace;kwargs...)
+    NewPar = modifyParams(Workspace.Par;kwargs...)
+    newWorkspace = SetupParquet(NewPar)
+    writeTo!(newWorkspace.State,Workspace.State)
+    return newWorkspace
+end

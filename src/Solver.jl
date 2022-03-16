@@ -38,7 +38,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     Group =string(setup[end].NumericalParams.T),
     CheckpointDirectory = nothing,
     method = DP5(),
-    MaxVal = 50*maximum(abs,
+    MaxVal = 100*maximum(abs,
     setup[end].System.couplings),
     ObsSaveat = nothing,
     VertexCheckpoints = [],

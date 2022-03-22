@@ -1,5 +1,3 @@
-const VertexOrBubble = Union{StateType,BubbleType,VertexType}
-
 """Set two objects equal by recusively setting all their fields to be equal"""
 function writeTo!(A::T,B::T) where T <: VertexOrBubble
     for f in fieldnames(T)
@@ -39,7 +37,7 @@ end
 
 @inline reldist(A,B) = dist(A,B)/max(norm(A),norm(B))
 
-import SpinFRGLattices.squareNorm
+import SpinFRGLattices: squareNorm,norm
 
 function squareNorm(A::T) where T <: VertexOrBubble
     s = 0.
@@ -53,10 +51,6 @@ end
 function norm(A)
     return sqrt(squareNorm(A))
 end
-
-
-@inline squareNorm(A::AbstractArray) = sum(squareNorm,A)
-
 
 function Threadsfill!(Tensor::AbstractArray,val)
     Threads.@threads for i in eachindex(Tensor)

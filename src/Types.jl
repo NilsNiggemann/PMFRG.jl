@@ -1,4 +1,5 @@
 const double = Float64
+
 """
 Abstract Param struct to dispatch between different PMFRG methods (i.e. Two-Loop or Parquet)
 Assumed to have at least the fields:
@@ -159,6 +160,8 @@ function BubbleType(VDims::Tuple)
         zeros(VDims)
     )
 end
+
+const VertexOrBubble = Union{StateType,BubbleType,VertexType}
 
 getVDims(Par::PMFRGParams) = (Par.System.Npairs,Par.NumericalParams.N,Par.NumericalParams.N,Par.NumericalParams.N)
 

@@ -4,6 +4,7 @@ includes MultiLoop corrections to PMFRG.
 
 include("MultiLoopTypes.jl")
 include("Flowequations.jl")
+include("Bubbles.jl")
 include("Parquet.jl")
 
 export SolveParquet

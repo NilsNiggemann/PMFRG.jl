@@ -8,7 +8,7 @@ function getEmptyWorkspace(Par::PMFRG.OneLoopParams)
     PMFRG.OneLoopWorkspace(Deriv,State,X,Buffs,Par)
 end
 
-"""Checks wheter vertex derivative has type instabilities"""
+"""Checks whether vertex derivative has type instabilities"""
 function test_OneLoopAllocations(Par=Params(getPolymer(2)))
     WS = getEmptyWorkspace(Par)
     # eval("@code_warntype PMFRG.getXBubble!(WS,0.)")

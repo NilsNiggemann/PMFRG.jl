@@ -46,7 +46,7 @@ include("TypeStability.jl")
 export test_OneLoopAllocations
 
 
-function test_all(;Obsacc = 1e-6 )
+function test_all(;Obsacc = 1e-14 )
     test_OneLoopAllocations()
     test_DimerFRG(Obsacc = Obsacc)
     test_DimerFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-6) # accuracy of symmetries is finite, given by length of Matsubara sum

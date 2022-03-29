@@ -21,7 +21,7 @@ function test_DimerFRG(Method = OneLoop();kwargs...)
     test_DimerResults(Γa,Γb,Γc,Obs,Par;kwargs...)
 end
 
-function test_DimerResults(Γa,Γb,Γc,Obs,Par;Obsacc=1e-6,kwargs...)
+function test_DimerResults(Γa,Γb,Γc,Obs,Par;Obsacc=1e-14,kwargs...)
     Method = PMFRG.getPMFRGMethod(Par)
     test_nonzero(Γa,Γb,Γc,Par.System.couplings)
 
@@ -56,7 +56,7 @@ function test_DimerParquet(;kwargs...)
     test_DimerResults(Γa,Γb,Γc,Obs,Par;kwargs...)
 end
 
-function test_Observables(Method,Obs;Obsacc=1e-6)
+function test_Observables(Method,Obs;Obsacc=1e-14)
     obs_ex = example_Obs(Method)
     function test(ObsName)
         O1 = getproperty(Obs,ObsName)
@@ -88,7 +88,7 @@ function test_Observables(Method,Obs;Obsacc=1e-6)
     end
 end
 
-test_Observables(Method::Parquet,Obs;Obsacc=1e-6) = println("Observables check not implemented for parquet")
+test_Observables(Method::Parquet,Obs;Obsacc=1e-14) = println("Observables check not implemented for parquet")
 
 function test_nonzero(Γa,Γb,Γc,couplings)
     @testset "non-trivial Vertices" begin

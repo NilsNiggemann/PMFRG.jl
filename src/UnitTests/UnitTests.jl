@@ -1,8 +1,8 @@
 # module UnitTests
 using Test
 # using PMFRG,SpinFRGLattices,Parameters,Test
-BechmarkingParams(Method) = Params(
-    getPolymer(2),
+BenchmarkingParams(Method,System = getPolymer(2)) = Params(
+    System,
     Method,
     T=0.5,
     N = 24,
@@ -16,8 +16,8 @@ BechmarkingParams(Method) = Params(
     lenIntw_acc = 24
 )
 
-BechmarkingParams(Method::Parquet) = Params(
-    getPolymer(2),
+BenchmarkingParams(Method::Parquet,System = getPolymer(2)) = Params(
+    System,
     Method,
     T=0.8,
     N = 24,
@@ -49,6 +49,7 @@ export test_OneLoopAllocations
 function test_all(;Obsacc = 1e-14 )
     test_OneLoopAllocations()
     test_DimerFRG(Obsacc = Obsacc)
+    test_SquagomeFRG() # accuracy of symmetries is finite, given by length of Matsubara sum
     test_DimerFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-6) # accuracy of symmetries is finite, given by length of Matsubara sum
     test_DimerParquet(tol = 1e-6) # accuracy of symmetries is finite, given by length of Matsubara sum
 end

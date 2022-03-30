@@ -1,7 +1,7 @@
 """Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
-function runDimerFRG(Method = OneLoop())
+function test_runFRG(Method = OneLoop(),System = getPolymer(2))
     # Par = Params(getPolymer(2),Method,N=24,Ngamma = 24,T=0.5,accuracy = 1e-3,usesymmetry = false,Lam_min = 0.,MinimalOutput = true,lenIntw = 60)
-    Par = BechmarkingParams(Method)
+    Par = BenchmarkingParams(Method,System)
     tempFolder = "temp_PMFRG_test"
     mainFile = joinpath(tempFolder,"temp_main.h5")
     CheckPoints = joinpath(tempFolder,"Checkpoints.h5")
@@ -16,13 +16,24 @@ function runDimerFRG(Method = OneLoop())
     return Γa,Γb,Γc,ObsPt.saveval[end],Par
 end
 
-function test_DimerFRG(Method = OneLoop();kwargs...)
-    Γa,Γb,Γc,Obs,Par = runDimerFRG(Method)
-    test_DimerResults(Γa,Γb,Γc,Obs,Par;kwargs...)
+
+function test_DimerFRG(Method = OneLoop();Obsacc = 1e-14,kwargs...)
+    Γa,Γb,Γc,Obs,Par = test_runFRG(Method,getPolymer(2))
+    test_FRGResults(Γa,Γb,Γc,Obs,Par;Obsacc = Obsacc,kwargs...)
+    
+    println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
+    test_Gammab_Dimer(Γb;kwargs...)
+
 end
 
-function test_DimerResults(Γa,Γb,Γc,Obs,Par;Obsacc=1e-14,kwargs...)
-    Method = PMFRG.getPMFRGMethod(Par)
+function test_SquagomeFRG(Method = OneLoop();Obsacc = 1e-14,kwargs...)
+    SysFunc = SquareKagome.getMirrorSquareKagome
+    Γa,Γb,Γc,Obs,Par = test_runFRG(Method,SysFunc(4,1,0.2))
+    test_FRGResults(Γa,Γb,Γc,Obs,Par,(Method,SysFunc);Obsacc = Obsacc,kwargs...)
+    
+end
+
+function test_FRGResults(Γa,Γb,Γc,Obs,Par,Method = PMFRG.getPMFRGMethod(Par);Obsacc=1e-14,kwargs...)
     test_nonzero(Γa,Γb,Γc,Par.System.couplings)
 
     @testset verbose = true "Testing frequency symmetries" begin
@@ -33,9 +44,6 @@ function test_DimerResults(Γa,Γb,Γc,Obs,Par;Obsacc=1e-14,kwargs...)
         test_tu_symmetries(Γa,Γb,Γc;kwargs...)    
     end
 
-    println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
-    test_Gammab_Dimer(Γb;kwargs...)
-
     test_Observables(Method,Obs,Obsacc = Obsacc)
 
     return
@@ -43,7 +51,7 @@ end
 
 function test_runDimerParquet()
     ParquetLambda = 0.
-    Par = BechmarkingParams(Parquet())
+    Par = BenchmarkingParams(Parquet())
     Sol,Obs = SolveParquet(Par,ParquetLambda)
     return Sol,Obs,Par
 end
@@ -53,7 +61,7 @@ function test_DimerParquet(;kwargs...)
     Γa,Γb,Γc = Sol.State.Γ.a,Sol.State.Γ.b,Sol.State.Γ.c
     test_BareBubbles(Sol;kwargs...)
     test_BubbleSymmetries(Sol;kwargs...)
-    test_DimerResults(Γa,Γb,Γc,Obs,Par;kwargs...)
+    test_FRGResults(Γa,Γb,Γc,Obs,Par;kwargs...)
 end
 
 function test_Observables(Method,Obs;Obsacc=1e-14)

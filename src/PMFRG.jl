@@ -1,5 +1,5 @@
 module PMFRG
-    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5
+    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5,H5Zblosc
     export SolveFRG,Params,double,BS3,Vern7,DP5,version,getChi,OneLoop
     version() = """v.2.0.3"""
     # Essentials

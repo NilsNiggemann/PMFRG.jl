@@ -17,8 +17,8 @@ function test_computeBubbles(Par)
     @unpack State,Γ0,X,B0,BX,Par,Buffer = Workspace
     getProp! = constructPropagatorFunction(Workspace,1.)
 
-    computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
-    computeLeft2PartBubble!(BX,X,X,State.Γ,getProp!,Par,Buffer)
+    addToLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
+    addToLeft2PartBubble!(BX,X,X,State.Γ,getProp!,Par,Buffer)
     return Workspace
 end
 

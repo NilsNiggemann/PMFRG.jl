@@ -47,11 +47,33 @@ export test_OneLoopAllocations
 
 
 function test_all(;Obsacc = 1e-14 )
-    test_OneLoopAllocations()
-    test_DimerFRG(Obsacc = Obsacc)
-    test_DimerFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8) # accuracy of symmetries is finite, given by length of Matsubara sum
-    test_SquagomeFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8)
-    test_DimerParquet(tol = 1e-6) 
+    @testset "OneLoop" verbose = true begin
+        @testset "Allocations" verbose = true begin
+            test_OneLoopAllocations()
+        end
+        @testset "Dimer" verbose = true begin
+            test_DimerFRG(Obsacc = Obsacc)
+        end
+        @testset "Squagome" verbose = true begin
+            test_SquagomeFRG(OneLoop(),Obsacc = Obsacc,tol = 1e-8)
+        end
+    end
+    
+    @testset "TwoLoop" verbose = true begin
+        @testset "Allocations" verbose = true begin
+            test_TwoLoopAllocations()
+        end
+        @testset "Dimer" verbose = true begin
+            test_DimerFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8) # accuracy of symmetries is finite, given by length of Matsubara sum
+        end
+        @testset "Squagome" verbose = true begin
+            test_SquagomeFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8)
+        end
+    end
+    @testset "Parquet" verbose = true begin
+        test_DimerParquet(tol = 1e-6) 
+    end
+
 end
 
 # end

@@ -1,41 +1,4 @@
 
-"""
-Computes a two-particle bubble in the s-Channel given two four-point functions (i.e. vertices or other bubbles).
-Γ is assumed to be a vertex.
-To allow the computation using just the left part of a bubble, specification of the transpose is needed i.e. Transpose(X_L) = X_R and Transpose(X) = X, where X = XL + XR is the full bubble.
-"""
-function compute2PartBubble!(ResultBubble::BubbleType,X,XTransp,Γ::VertexType,getProp!::Function,addBTilde!::Function,addB!::Function,Par,Buffer)
-    @unpack T,N,lenIntw,np_vec = Par.NumericalParams
-    setZero!(ResultBubble)
-    @sync begin
-		for is in 1:N,it in 1:N
-			Threads.@spawn begin
-				BubbleProp = Buffer.Props[Threads.threadid()] # get pre-allocated thread-safe buffers
-				VBuffer = Buffer.Vertex[Threads.threadid()]
-				XBuffer = Buffer.X[Threads.threadid()]
-				ns = np_vec[is]
-				nt = np_vec[it]
-				for iu in 1:N
-					nu = np_vec[iu]
-					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
-						continue
-					end
-					for nw in -lenIntw:lenIntw-1 # Matsubara sum
-                        sprop = getProp!(BubbleProp,nw,nw+ns)
-                        addBLTilde!(ResultBubble,X,XTransp,Γ, is,it,iu,nw,Par,sprop)
-                        if(!Par.Options.usesymmetry || nu<=nt)
-                            addBL!(ResultBubble,X,XTransp,Γ,is,it,iu,nw,Par,sprop,VBuffer,XBuffer)
-                        end
-					end
-				end
-			end
-		end
-	end
-    symmetrizeBubble!(ResultBubble,Par)
-    return ResultBubble
-end
-
-@inline computeLeft2PartBubble!(ResultBubble::BubbleType,X,XTransp,Γ::VertexType,getProp!::Function,Par,Buffer) = compute2PartBubble!(ResultBubble,X,XTransp,Γ,getProp!,addBLTilde!,addBL!,Par,Buffer)
 
 """
 Computes a single-particle (i.e. self-energy) bubble. Allows specification of function type, i.e. what vertices are used since this is different if a bubble function is inserted as opposed to a vertex.
@@ -144,6 +107,32 @@ end
     bufferXT_!(XTd21, XR.Td, XL.Td, wpw2, ns, wpw1, invpairs, N)
 end
 
+
+@inline function fillBufferR_new!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
+    invpairs = Par.System.invpairs
+    @unpack N,np_vec = Par.NumericalParams
+
+    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
+    @unpack XTa21,XTb21,XTc21,XTd21 = XBuffer
+
+    ns = np_vec[is]
+	nt = np_vec[it]
+	nu = np_vec[iu]
+	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
+    wpw1,wpw2,wmw3,wmw4 = wmw3,wmw4,wpw1,wpw2 #swap frequencies for right bubble
+
+	bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
+	bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
+	bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
+	
+	bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
+
+    bufferXT_!(XTa21, XR.Ta, XL.Ta, wpw2, ns, wpw1, invpairs, N)
+    bufferXT_!(XTb21, XR.Tb, XL.Tb, wpw2, ns, wpw1, invpairs, N)
+    bufferXT_!(XTc21, XR.Tc, XL.Tc, wpw2, ns, wpw1, invpairs, N)
+    bufferXT_!(XTd21, XR.Td, XL.Td, wpw2, ns, wpw1, invpairs, N)
+end
+
 @inline function fillBufferR!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
     invpairs = Par.System.invpairs
     @unpack N,np_vec = Par.NumericalParams
@@ -157,11 +146,11 @@ end
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
 
 
-    bufferV_!(Va12, State.Γ.a , ns, wpw1, wpw2, invpairs, N)
-	bufferV_!(Vb12, State.Γ.b , ns, wpw1, wpw2, invpairs, N)
-	bufferV_!(Vc12, State.Γ.c , ns, wpw1, wpw2, invpairs, N)
+    bufferV_!(Va12, Γ.a , ns, wpw1, wpw2, invpairs, N)
+	bufferV_!(Vb12, Γ.b , ns, wpw1, wpw2, invpairs, N)
+	bufferV_!(Vc12, Γ.c , ns, wpw1, wpw2, invpairs, N)
 
-	bufferV_!(Vc21, State.Γ.c , ns, wpw2, wpw1, invpairs, N)
+	bufferV_!(Vc21, Γ.c , ns, wpw2, wpw1, invpairs, N)
 
 	bufferXT_!(XTa43,XL.Ta,XR.Ta , wmw4, ns, wmw3, invpairs, N) # Caution check whether XR and XL do not need to be swapped
 	bufferXT_!(XTb43,XL.Tb,XR.Tb , wmw4, ns, wmw3, invpairs, N) # Caution check whether XR and XL do not need to be swapped

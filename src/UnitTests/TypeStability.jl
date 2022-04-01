@@ -49,8 +49,25 @@ function test_TwoLoopAllocations(Par=Params(getPolymer(2),TwoLoop()))
     VB = WS.Buffer.Vertex[1]
     XB =  WS.Buffer.X[1]
 
-    aX = @allocated PMFRG.addY!(WS,1,1,2,2,PropB,VB,XB)
-    aXT = @allocated PMFRG.addYTilde!(WS,1,1,2,2,PropB)
+    Npairs =Par.System.Npairs
+    N = Par.NumericalParams.N
+
+    WS.X.a .= rand(1:0.1:10, Npairs,N,N,N)
+    WS.X.b .= rand(1:0.1:10, Npairs,N,N,N)
+    WS.X.c .= rand(1:0.1:10, Npairs,N,N,N)
+    WS.X.Ta .= rand(1:0.1:10, Npairs,N,N,N)
+    WS.X.Ta .= rand(1:0.1:10, Npairs,N,N,N)
+    WS.X.Ta .= rand(1:0.1:10, Npairs,N,N,N)
+
+    WS.State.Γ.a .= rand(1:0.1:10, Npairs,N,N,N)
+    WS.State.Γ.b .= rand(1:0.1:10, Npairs,N,N,N)
+    WS.State.Γ.c .= rand(1:0.1:10, Npairs,N,N,N)
+    PropB .= 1.
+
+    aX = @allocated PMFRG.addBL!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB)
+    aX += @allocated PMFRG.addBR!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB)
+    aXT = @allocated PMFRG.addBLTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB)
+    aXT += @allocated PMFRG.addBRTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB)
 
     test_TypeStability(Par,WS,aX,aXT)
 end

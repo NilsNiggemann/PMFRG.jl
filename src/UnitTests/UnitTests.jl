@@ -5,15 +5,15 @@ BenchmarkingParams(Method,System = getPolymer(2)) = Params(
     System,
     Method,
     T=0.5,
-    N = 24,
-    Ngamma = 24,
+    N = 10,
+    Ngamma = 10,
     accuracy = 1e-3,
     Lam_min = 0.0,
     Lam_max = 100.0,
     usesymmetry = false,
     MinimalOutput = true,
     lenIntw = 60,
-    lenIntw_acc = 24
+    lenIntw_acc = 60
 )
 
 BenchmarkingParams(Method::Parquet,System = getPolymer(2)) = Params(
@@ -49,9 +49,9 @@ export test_OneLoopAllocations
 function test_all(;Obsacc = 1e-14 )
     test_OneLoopAllocations()
     test_DimerFRG(Obsacc = Obsacc)
-    test_DimerFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-6) # accuracy of symmetries is finite, given by length of Matsubara sum
-    test_SquagomeFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-6)
-    test_DimerParquet(tol = 1e-6) # accuracy of symmetries is finite, given by length of Matsubara sum
+    test_DimerFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8) # accuracy of symmetries is finite, given by length of Matsubara sum
+    test_SquagomeFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8)
+    test_DimerParquet(tol = 1e-6) 
 end
 
 # end

@@ -18,14 +18,14 @@ function InitializeState(Par::PMFRGParams)
     return State
 end
 
-function AllocateSetup(Par::OneLoopParams)
+function AllocateSetup(Par::OneLoopParams,::Val{NUnique} = Val(Par.System.NUnique)) where NUnique
     @unpack N,Ngamma = Par.NumericalParams
 
-    @unpack couplings,NUnique,Npairs = Par.System
+    @unpack couplings,Npairs = Par.System
     println("One Loop: T= ",Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
-    PropsBuffers = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
+    PropsBuffers = [SpinFRGLattices.MMatrix{NUnique,NUnique,double,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
 	VertexBuffers = [VertexBufferType(Npairs) for _ in 1:Threads.nthreads()]
     Buffs = BufferType(PropsBuffers,VertexBuffers) 
     return (X,Buffs,Par)

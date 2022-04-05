@@ -49,7 +49,8 @@ export test_OneLoopAllocations
 function test_all(;Obsacc = 1e-14 )
     @testset "OneLoop" verbose = true begin
         @testset "Allocations" verbose = true begin
-            test_OneLoopAllocations()
+            test_OneLoopAllocations(Params(getPolymer(2)))
+            test_OneLoopAllocations(Params(SquareKagome.getSquareKagome(4)))
         end
         @testset "Dimer" verbose = true begin
             test_DimerFRG(Obsacc = Obsacc)
@@ -61,7 +62,8 @@ function test_all(;Obsacc = 1e-14 )
     
     @testset "TwoLoop" verbose = true begin
         @testset "Allocations" verbose = true begin
-            test_TwoLoopAllocations()
+            test_TwoLoopAllocations(Params(getPolymer(2),TwoLoop()))
+            test_TwoLoopAllocations(Params(SquareKagome.getSquareKagome(4),TwoLoop()))
         end
         @testset "Dimer" verbose = true begin
             test_DimerFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8) # accuracy of symmetries is finite, given by length of Matsubara sum

@@ -4,12 +4,12 @@ function test_runFRG(Method = OneLoop(),System = getPolymer(2))
     test_runFRG(Par)
 end
 
-function test_runFRG(Par::PMFRGParams)
+function test_runFRG(Par::PMFRGParams;kwargs...)
     tempFolder = "temp_PMFRG_test"
     mainFile = joinpath(tempFolder,"temp_main.h5")
     CheckPoints = joinpath(tempFolder,"Checkpoints.h5")
     
-    SolP,ObsPt = SolveFRG(Par,MainFile = mainFile,CheckpointDirectory = CheckPoints)
+    SolP,ObsPt = SolveFRG(Par,MainFile = mainFile,CheckpointDirectory = CheckPoints;kwargs...)
     
     println("cleaning up... deleting ",mainFile, " and ", CheckPoints)
     rm(tempFolder,recursive = true)

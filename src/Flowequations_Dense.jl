@@ -4,6 +4,7 @@ function getDeriv!(Deriv,State,setup,Lam)
 
     getDFint!(Workspace,Lam)
     get_Self_Energy!(Workspace,Lam)
+
     getXBubble!(Workspace,Lam)
 
     symmetrizeBubble!(Workspace.X,Par)
@@ -56,16 +57,13 @@ function getDFint!(Workspace::PMFRGWorkspace,Lam::double)
 	end
 end
 
+"""
+Computes a single-particle (i.e. self-energy) bubble. Allows specification of function type, i.e. what vertices are used since this is different if a bubble function is inserted as opposed to a vertex.
+"""
+function addTo1PartBubble!(Dgamma::AbstractArray,XT1_::Function,XT2_::Function,Prop,Par)
 
-function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam::double)
-    @unpack State,Deriv,Par = Workspace
-	Dgamma = Workspace.Deriv.γ
     @unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma = Par.NumericalParams
     @unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
-	
-	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,T)
-	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
-	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
 
 	Threads.@threads for iw1 in 1:Ngamma
 		nw1 = np_vec_gamma[iw1]
@@ -76,15 +74,44 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam::double)
 				w1mw = nw1-nw
 				for k_spl in 1:Nsum[Rx]
 					@unpack m,ki,xk = siteSum[k_spl,Rx]
-					ik = invpairs[ki] # pair ik is inversed relative to pre-generated site summation in X (ki)!
-					jsum += (Va_(ik,0,w1pw,w1mw)+2*Vb_(ik,0,w1pw,w1mw))*iS(xk,nw)*m
+					jsum += (XT1_(ki,w1pw,0,w1mw)+2*XT2_(ki,w1pw,0,w1mw))*Prop(xk,nw)*m
 				end
-				Dgamma[x,iw1] += T/2 *jsum
+				Dgamma[x,iw1] += -T *jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
 			end
 		end
 	end
+    return Dgamma
 end
 
+"""
+Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
+"""
+function addTo1PartBubble!(Dgamma::AbstractArray,X::BubbleType,Prop,Par)
+	@inline XTa_(Rij,s,t,u) = XT_(X.a,X.a,Rij,s,t,u,Par.System.invpairs[Rij],Par.NumericalParams.N)
+	@inline XTc_(Rij,s,t,u) = XT_(X.c,X.b,Rij,s,t,u,Par.System.invpairs[Rij],Par.NumericalParams.N)
+    addTo1PartBubble!(Dgamma,XTa_,XTc_,Prop,Par)
+end
+
+"""
+Computes a single-particle (i.e. self-energy) bubble. Can only be used if argument is a vertex
+"""
+function addTo1PartBubble!(Dgamma::AbstractArray,Γ::VertexType,Prop,Par)
+    invpairs = Par.System.invpairs
+    # @warn "addTo1PartBubble! for vertices is not tested yet!"
+	@inline Γa_(Rij,s,t,u) = V_(Γ.a,invpairs[Rij],t,u,s,Rij,Par.NumericalParams.N) # Tilde-type can be obtained by permutation of vertices
+	@inline Γb_(Rij,s,t,u) = V_(Γ.b,invpairs[Rij],t,u,s,Rij,Par.NumericalParams.N) # cTilde corresponds to b type vertex!
+    addTo1PartBubble!(Dgamma,Γa_,Γb_,Prop,Par)
+end
+
+function compute1PartBubble!(Dgamma::AbstractArray,ΓorX,Prop,Par)
+	setZero!(Dgamma)
+    addTo1PartBubble!(Dgamma,ΓorX,Prop,Par)
+end
+function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam) 
+	Par = Workspace.Par
+	@inline iS(x,nw) = iS_(Workspace.State.γ,x,Lam,nw,Par.NumericalParams.T)/2
+	compute1PartBubble!(Workspace.Deriv.γ,Workspace.State.Γ,iS,Par)
+end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
 function getXBubble!(Workspace::PMFRGWorkspace,Lam)

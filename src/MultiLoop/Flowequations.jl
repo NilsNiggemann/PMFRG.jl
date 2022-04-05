@@ -1,52 +1,5 @@
 
 
-"""
-Computes a single-particle (i.e. self-energy) bubble. Allows specification of function type, i.e. what vertices are used since this is different if a bubble function is inserted as opposed to a vertex.
-"""
-function _compute1PartBubble!(Dgamma,XT1_::Function,XT2_::Function,Prop,Par)
-
-    @unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma = Par.NumericalParams
-    @unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
-
-    setZero!(Dgamma)
-	Threads.@threads for iw1 in 1:Ngamma
-		nw1 = np_vec_gamma[iw1]
-    	for (x,Rx) in enumerate(OnsitePairs)
-			for nw in -lenIntw_acc: lenIntw_acc-1
-				jsum = 0.
-				w1pw = nw1+nw+1 #w1 + w: Adding two Matsubara frequencies gives a +1
-				w1mw = nw1-nw
-				for k_spl in 1:Nsum[Rx]
-					@unpack m,ki,xk = siteSum[k_spl,Rx]
-					ik = invpairs[ki] # pair ik is inversed relative to pre-generated site summation in X (ki)!
-					jsum += (XT1_(ik,w1pw,0,w1mw)+2*XT2_(ik,w1pw,0,w1mw))*Prop(xk,nw)*m
-				end
-				Dgamma[x,iw1] += T *jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
-			end
-		end
-	end
-    return Dgamma
-end
-
-"""
-Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
-"""
-function compute1PartBubble!(Dgamma,X::BubbleType,Prop,Par)
-	XTa_(Rij,s,t,u) = XT_(X.a,X.a,Rij,s,t,u,Par.System.invpairs[Rij],Par.NumericalParams.N)
-	XTc_(Rij,s,t,u) = XT_(X.c,X.b,Rij,s,t,u,Par.System.invpairs[Rij],Par.NumericalParams.N)
-    _compute1PartBubble!(Dgamma,XTa_,XTc_,Prop,Par)
-end
-
-"""
-Computes a single-particle (i.e. self-energy) bubble. Can only be used if argument is a vertex
-"""
-function compute1PartBubble!(Dgamma,Γ::VertexType,Prop,Par)
-    @warn "compute1PartBubble! for vertices is not tested yet!"
-	ΓTa_(Rij,s,t,u) = V_(Γ.a,Rij,t,u,s,Par.System.invpairs[Rij],Par.NumericalParams.N) # Tilde-type can be obtained by permutation of vertices
-	ΓTc_(Rij,s,t,u) = V_(Γ.b,Rij,t,u,s,Par.System.invpairs[Rij],Par.NumericalParams.N) # cTilde corresponds to b type vertex!
-    _compute1PartBubble!(Dgamma,Γa_,Γb_,Prop,Par)
-end
-
 @inline function X_(X::AbstractArray,XTransp::AbstractArray, Rj::Integer, ns::Integer,nt::Integer,nu::Integer,Rji::Integer,N::Integer)
     # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
     ns,nt,nu,swapsites = convertFreqArgs(ns,nt,nu,N)

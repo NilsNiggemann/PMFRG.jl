@@ -103,7 +103,7 @@ end
 
 function iterateSDE!(Workspace::ParquetWorkspace,Lam)
     @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
-    @inline Prop(x,nw) = -1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)#*3
+    @inline Prop(x,nw) = 1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)#*3
 
     getProp! = constructPropagatorFunction(Workspace,Lam)
 

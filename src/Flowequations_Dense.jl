@@ -307,6 +307,7 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 		)
     end
 end
+const SingleElementMatrix = Union{SpinFRGLattices.SMatrix{1,1},SpinFRGLattices.MMatrix{1,1}}
 
 """Use multiple dispatch to treat the comming special case in which the propagator does not depend on site indices to increase performance"""
 function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)
@@ -382,7 +383,6 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
     end
 end
 
-const SingleElementMatrix = Union{SpinFRGLattices.SMatrix{1,1},SpinFRGLattices.MMatrix{1,1}}
 
 """Use multiple dispatch to treat the comming special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)

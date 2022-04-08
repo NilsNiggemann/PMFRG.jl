@@ -3,7 +3,7 @@
 adds to ResultBubble given the vertex as well as a bubble inserted on the left. Assumes that vertices and bubbles are given pre-computed in VertexBuffer. Providing the appropriate functions BufferFiller! and SiteIndex allows for computation of right insertions instead, since these are shown to only swap site and frequency indices.
 """
 
-@inline function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props,VBuffer::VertexBufferType,XBuffer::BubbleBufferType,BufferFiller!::Func1 = fillBufferL!,SiteIndex::Func2 = identity) where {Func1 <: Function ,Func2 <: Function }
+function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props,VBuffer::VertexBufferType,XBuffer::BubbleBufferType,BufferFiller!::Func1 = fillBufferL!,SiteIndex::Func2 = identity) where {Func1 <: Function ,Func2 <: Function }
 
     @unpack N,np_vec = Par.NumericalParams
     @unpack Npairs,Nsum,siteSum,invpairs = Par.System
@@ -112,7 +112,7 @@ function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,
     end
 end
 
-@inline function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props::SingleElementMatrix,VBuffer::VertexBufferType,XBuffer::BubbleBufferType,BufferFiller!::Func1 = fillBufferL!,SiteIndex::Func2 = identity) where {Func1 <: Function ,Func2 <: Function }
+function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props::SingleElementMatrix,VBuffer::VertexBufferType,XBuffer::BubbleBufferType,BufferFiller!::Func1 = fillBufferL!,SiteIndex::Func2 = identity) where {Func1 <: Function ,Func2 <: Function }
 
     @unpack N,np_vec = Par.NumericalParams
     @unpack Npairs,Nsum,siteSum,invpairs = Par.System
@@ -231,7 +231,7 @@ end
 end
 ##
 
-@inline function addBL!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props,Buffer::VertexBufferType)
+function addBL!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props,Buffer::VertexBufferType)
     @unpack N,np_vec = Par.NumericalParams
     @unpack Npairs,Nsum,siteSum,invpairs = Par.System
 

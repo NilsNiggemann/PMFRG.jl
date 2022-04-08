@@ -172,7 +172,7 @@ end
 """
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
-@inline function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Buffer)
+function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Buffer)
 	@unpack State,X,Par = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
 	@unpack N,np_vec = Par.NumericalParams
@@ -385,7 +385,7 @@ end
 
 
 """Use multiple dispatch to treat the comming special case in which the propagator does not depend on site indices to increase performance"""
-@inline function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
+function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
 	@unpack State,X,Par = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
 	@unpack N,np_vec = Par.NumericalParams

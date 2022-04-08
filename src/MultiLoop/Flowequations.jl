@@ -37,16 +37,21 @@ end
 end
 
 @inline function fillBufferL!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
-    invpairs = Par.System.invpairs
-    @unpack N,np_vec = Par.NumericalParams
-
-    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
-    @unpack XTa21,XTb21,XTc21,XTd21 = XBuffer
-
+    np_vec = Par.NumericalParams.np_vec
     ns = np_vec[is]
 	nt = np_vec[it]
 	nu = np_vec[iu]
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
+
+    fillBufferL_mixedFreq!(VBuffer,XBuffer,XL,XR,Γ,ns,wpw1,wpw2,wmw3,wmw4,Par)
+end
+
+@inline function fillBufferL_mixedFreq!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,ns::Integer,wpw1::Integer,wpw2::Integer,wmw3::Integer,wmw4::Integer,Par::PMFRGParams)
+    invpairs = Par.System.invpairs
+    N= Par.NumericalParams.N
+
+    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
+    @unpack XTa21,XTb21,XTc21,XTd21 = XBuffer
 
 	bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
 	bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
@@ -61,12 +66,9 @@ end
 end
 
 
-@inline function fillBufferR_new!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
-    invpairs = Par.System.invpairs
-    @unpack N,np_vec = Par.NumericalParams
-
-    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
-    @unpack XTa21,XTb21,XTc21,XTd21 = XBuffer
+@inline function fillBufferR!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
+    
+    np_vec = Par.NumericalParams.np_vec
 
     ns = np_vec[is]
 	nt = np_vec[it]
@@ -74,41 +76,7 @@ end
 	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
     wpw1,wpw2,wmw3,wmw4 = wmw3,wmw4,wpw1,wpw2 #swap frequencies for right bubble
 
-	bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
-	bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
-	bufferV_!(Vc34, Γ.c, ns, wmw3, wmw4, invpairs, N)
-	
-	bufferV_!(Vc43, Γ.c, ns, wmw4, wmw3, invpairs, N)
-
-    bufferXT_!(XTa21, XR.Ta, XL.Ta, wpw2, ns, wpw1, invpairs, N)
-    bufferXT_!(XTb21, XR.Tb, XL.Tb, wpw2, ns, wpw1, invpairs, N)
-    bufferXT_!(XTc21, XR.Tc, XL.Tc, wpw2, ns, wpw1, invpairs, N)
-    bufferXT_!(XTd21, XR.Td, XL.Td, wpw2, ns, wpw1, invpairs, N)
-end
-
-@inline function fillBufferR!(VBuffer::VertexBufferType,XBuffer::BubbleBufferType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
-    invpairs = Par.System.invpairs
-    @unpack N,np_vec = Par.NumericalParams
-
-    @unpack Va12,Vb12,Vc12,Vc21 = VBuffer
-    @unpack XTa43,XTb43,XTc43,XTd43 = XBuffer
-
-    ns = np_vec[is]
-	nt = np_vec[it]
-	nu = np_vec[iu]
-	wpw1,wpw2,wmw3,wmw4 = mixedFrequencies(ns,nt,nu,nwpr)
-
-
-    bufferV_!(Va12, Γ.a , ns, wpw1, wpw2, invpairs, N)
-	bufferV_!(Vb12, Γ.b , ns, wpw1, wpw2, invpairs, N)
-	bufferV_!(Vc12, Γ.c , ns, wpw1, wpw2, invpairs, N)
-
-	bufferV_!(Vc21, Γ.c , ns, wpw2, wpw1, invpairs, N)
-
-	bufferXT_!(XTa43,XL.Ta,XR.Ta , wmw4, ns, wmw3, invpairs, N) # Caution check whether XR and XL do not need to be swapped
-	bufferXT_!(XTb43,XL.Tb,XR.Tb , wmw4, ns, wmw3, invpairs, N) # Caution check whether XR and XL do not need to be swapped
-	bufferXT_!(XTc43,XL.Tc,XR.Tc , wmw4, ns, wmw3, invpairs, N) # Caution check whether XR and XL do not need to be swapped
-	bufferXT_!(XTd43,XL.Td,XR.Td , wmw4, ns, wmw3, invpairs, N) # Caution check whether XR and XL do not need to be swapped
+    fillBufferL_mixedFreq!(VBuffer,XBuffer,XL,XR,Γ,ns,wpw1,wpw2,wmw3,wmw4,Par)
 end
 
 @inline function fillBufferL!(VBuffer::VertexBufferType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)

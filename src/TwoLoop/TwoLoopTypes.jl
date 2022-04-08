@@ -42,18 +42,14 @@ end
 
 struct BubbleBufferType{T}
     XTa21::Vector{T}
-    XTa43::Vector{T}
 
     XTb21::Vector{T}
-    XTb43::Vector{T}
 
     XTc21::Vector{T}
-    XTc43::Vector{T}
 
     XTd21::Vector{T}
-    XTd43::Vector{T}
 end
-BubbleBufferType(Npairs) = BubbleBufferType((zeros(Npairs) for _ in 1:8)...)
+BubbleBufferType(Npairs) = BubbleBufferType((zeros(Npairs) for _ in 1:4)...)
 
 struct BufferTypeTwoLoop{PropsBuff,VertexBuff,XBuff}
     Props::Vector{PropsBuff}

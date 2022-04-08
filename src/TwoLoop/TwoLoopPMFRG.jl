@@ -18,6 +18,8 @@ function AllocateSetup(Par::TwoLoopParams)
     Buffs = BufferTypeTwoLoop(PropsBuffers,VertexBuffers,BubbleBuffers) 
     return (X,Y,Buffs,Par)
 end
+include("Buffers.jl")
+include("Bubbles.jl")
 include("Flowequations.jl")
 
 Params(System::Geometry,O::TwoLoop;kwargs...) = TwoLoopParams(System,NumericalParams(;kwargs...),OptionParams(;kwargs...))

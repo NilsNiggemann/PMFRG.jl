@@ -1,5 +1,6 @@
 function test_saving(FileDirectory,Method=OneLoop(),GeometryGenerator = SquareKagome.getSquareKagome)
     FileDirectory = UniqueDirName(FileDirectory)
+    mkpath(FileDirectory)
     Par = BenchmarkingParams(Method,GeometryGenerator(4))
     State = InitializeState(Par)
     Lam = Par.NumericalParams.Lam_min+0.01
@@ -14,8 +15,8 @@ function test_saving(FileDirectory,Method=OneLoop(),GeometryGenerator = SquareKa
     push!(saved_values.t,Lam)
     push!(saved_values.saveval,obs2)
     
-    saveCurrentState(FileDirectory,State,saved_values,Lam,Par)
-    return FileDirectory
+    Filename = saveCurrentState(FileDirectory,State,saved_values,Lam,Par)
+    return Filename
 end
 
 function test_loading(Filename::String,GeometryGenerator::Function = SquareKagome.getSquareKagome;kwargs...)
@@ -27,9 +28,15 @@ function test_loading(Filename::String,GeometryGenerator::Function = SquareKagom
 end
 
 function test_IO(Method=OneLoop(),GeometryGenerator = SquareKagome.getSquareKagome)
-    tempFolder = "temp_PMFRG_test/Checkpoints"
-    test_saving(tempFolder,Method,GeometryGenerator)
-    test_loading(joinpath(tempFolder,"CurrentState.h5"),GeometryGenerator)
+    tempFolder = joinpath("temp_PMFRG_test")
+    CheckpointDir = joinpath("temp_PMFRG_test","Checkpoints")
+    Filename = test_saving(CheckpointDir,Method,GeometryGenerator)
+
+    Par = readParams(Filename,GeometryGenerator)
+    @testset "Testing loopOrder from Params" begin
+        @test getPMFRGMethod(Par) == Method
+    end
+    test_loading(Filename,GeometryGenerator)
     rm(tempFolder,recursive = true)
     println("cleaned up... deleted ",tempFolder)
 end

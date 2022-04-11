@@ -2,6 +2,7 @@
 This file contains functions used for reading and writing FRG data to disc.
 Stored data can be used to re-launch an incomplete FRG calculation.
 """
+joinGroup(args...) = join(args,"/")
 
 """Saves Vertices to a compressed HDF5 file in a Group "Lam"."""
 function saveState(Filename::String,State::ArrayPartition,Lam,mode = "cw")
@@ -79,20 +80,20 @@ EssentialParamFields() = (
 function saveNumericalParams(Filename,Par::PMFRGParams,Group = "")
     Fields = EssentialParamFields()
     for F in Fields
-        h5write(Filename,joinpath(Group,"Params/$F"),getfield(Par.NumericalParams,F))
+        h5write(Filename,joinGroup(Group,"Params/$F"),getfield(Par.NumericalParams,F))
     end
 end
 
 """Saves important information about Geometry parameters so that they can be reconstructed"""
 function saveGeometryParams(Filename,Par::PMFRGParams,Group = "")
-    h5write(Filename,joinpath(Group,"Geometry/Name"),Par.System.Name)
-    h5write(Filename,joinpath(Group,"Geometry/NLen"),Par.System.NLen)
-    h5write(Filename,joinpath(Group,"Geometry/couplings"),Par.System.couplings)
-    h5write(Filename,joinpath(Group,"Geometry/Npairs"),Par.System.Npairs)
+    h5write(Filename,joinGroup(Group,"Geometry/Name"),Par.System.Name)
+    h5write(Filename,joinGroup(Group,"Geometry/NLen"),Par.System.NLen)
+    h5write(Filename,joinGroup(Group,"Geometry/couplings"),Par.System.couplings)
+    h5write(Filename,joinGroup(Group,"Geometry/Npairs"),Par.System.Npairs)
 end
 
 function saveMethodParams(Filename,Par::PMFRGParams,Group = "")
-    h5write(Filename,joinpath(Group,"Params/looporder"),1)
+    h5write(Filename,joinGroup(Group,"Params/looporder"),getLoopOrder(Par))
 end
 readLoopOrder(Filename,Group="") = h5read(Filename,string(Group,"/Params/looporder"))
 
@@ -108,7 +109,7 @@ end
 function readParams(Filename::String,Geometry::SpinFRGLattices.Geometry;modifyParams...)
     Fields = EssentialParamFields()
     Kwargs = Dict((F => h5read(Filename,"Params/$F") for F in Fields)...)
-    Method = getPMFRGMethod(Val(readLoopOrder(Filename)))
+    Method = getPMFRGMethod(readLoopOrder(Filename))
     Par = Params(Geometry,Method;Kwargs...,modifyParams...)
     return Par
 end
@@ -130,9 +131,11 @@ function setupDirectory(DirPath,Par;overwrite=false)
 end
 
 function saveCurrentState(DirPath::String,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,Lam::Real,Par::PMFRGParams)
-    saveState(joinpath(DirPath,"CurrentState.h5"),State,Lam,"w")
-    saveParams(joinpath(DirPath,"CurrentState.h5"),Par)
-    saveObs(joinpath(DirPath,"CurrentState.h5"),saved_Values,"Observables")
+    Filename = joinpath(DirPath,"CurrentState.h5")
+    saveState(Filename,State,Lam,"w")
+    saveParams(Filename,Par)
+    saveObs(Filename,saved_Values,"Observables")
+    Filename
 end
 saveCurrentState(DirPath::Nothing,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,Lam::Real,Par::PMFRGParams) = nothing
 
@@ -203,6 +206,7 @@ end
 # Todo: provide SpinFRGLattices.getGeometryGenerator that takes Name string and returns correct method
 SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par=nothing;kwargs...) = launchPMFRG_Checkpoint(Filename,Geometry,AllocateSetup,getDeriv!,Par;kwargs...)
 
+
 function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,kwargs...)
     State = readState(Filename)
     Old_Lam_max = h5read(Filename,"Params/Lam_max")
@@ -211,8 +215,8 @@ function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geome
     setup = AllocatorFunction(Par)
     CheckPointfolder = dirname(Filename)
     FilePath = dirname(CheckPointfolder)
-    ObsSaveat = getLambdaMesh(nothing,Par.Lam_min,Old_Lam_max)
-    filter!(x-> x<Par.Lam_max,ObsSaveat)
+    ObsSaveat = getLambdaMesh(nothing,Par.NumericalParams.Lam_min,Old_Lam_max)
+    filter!(x-> x<Par.NumericalParams.Lam_max,ObsSaveat)
     sol,saved_values = launchPMFRG!(State,setup,Derivative;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat,kwargs...,MainFile = nothing) #launch PMFRG but do not save output yet
     append!(saved_values_full.t,saved_values.t)
     append!(saved_values_full.saveval,saved_values.saveval)
@@ -230,9 +234,9 @@ function saveObs(Filename,saved_values::DiffEqCallbacks.SavedValues,Group = "")
     ObsArr = StructArray(saved_values.saveval)
     for F in Fields
         arr = convertToArray(getproperty(ObsArr,F))
-        h5write(Filename,joinpath(Group,string(F)),arr)
+        h5write(Filename,joinGroup(Group,string(F)),arr)
     end
-    h5write(Filename,joinpath(Group,"Lambda"),saved_values.t)
+    h5write(Filename,joinGroup(Group,"Lambda"),saved_values.t)
 end
 
 function convertToArray(VecOfArray::AbstractVector{VT}) where {N,VT <: AbstractArray{T,N} where T}

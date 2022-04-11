@@ -27,8 +27,6 @@ Params(System::Geometry,O::TwoLoop;kwargs...) = TwoLoopParams(System,NumericalPa
 """
 Solves FRG as specified for parameters
 """
-SolveFRG(Par::TwoLoopParams;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv2L!; kwargs...)
-
-SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Method::TwoLoop,Par=nothing;kwargs...)= launchPMFRG_Checkpoint(Filename,Geometry,AllocateSetup,getDeriv2L!,Par;kwargs...)
+SolveFRG(Par::TwoLoopParams;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv; kwargs...)
 
 generateFileName(Par::TwoLoopParams,Method::TwoLoop,arg::String = "") = generateFileName(Par,"_l2"*arg)

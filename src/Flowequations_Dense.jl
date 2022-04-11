@@ -1,4 +1,4 @@
-function getDeriv!(Deriv,State,setup,Lam)
+function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) where T
     (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
 

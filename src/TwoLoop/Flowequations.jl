@@ -1,4 +1,4 @@
-function getDeriv2L!(Deriv,State,setup,Lam)
+function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},Lam) where T
         
     X,Y,Buffs,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = TwoLoopWorkspace(Deriv,State,X,Y,Buffs,Par)
@@ -18,7 +18,7 @@ function getDeriv2L!(Deriv,State,setup,Lam)
     return
 end
 
-function getDeriv2LVerbose!(Deriv,State,setup,Lam)
+function getDerivVerbose!(Deriv,State,setup,Lam)
     X,Y,Buffs,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
     print("Workspace:\n\t") 
     @time Workspace = TwoLoopWorkspace(Deriv,State,X,Y,Buffs,Par)

@@ -74,6 +74,9 @@ function NumericalParams(;
 end
 abstract type AbstractOptions end 
 getPMFRGMethod(::Val{1}) = OneLoop()
+getPMFRGMethod(::Val{2}) = TwoLoop()
+getPMFRGMethod(::Val{n}) where n = MultiLoop(n)
+getPMFRGMethod(n::Int) = getPMFRGMethod(Val(n))
 
 """Struct containing information about four-point vertices"""
 struct VertexType{T}

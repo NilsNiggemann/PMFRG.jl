@@ -18,10 +18,9 @@ function InitializeState(Par::PMFRGParams)
     return State
 end
 
-function AllocateSetup(Par::OneLoopParams,::Val{NUnique} = Val(Par.System.NUnique)) where NUnique
+function AllocateSetup(Par::OneLoopParams)
     @unpack N,Ngamma = Par.NumericalParams
-
-    @unpack couplings,Npairs = Par.System
+    @unpack couplings,Npairs,NUnique = Par.System
     println("One Loop: T= ",Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)

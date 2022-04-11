@@ -45,6 +45,8 @@ export test_BubbleSymmetries
 include("TypeStability.jl")
 export test_OneLoopAllocations
 
+include("IOTests.jl")
+
 
 function test_all(;Obsacc = 1e-14 )
     @testset "OneLoop" verbose = true begin
@@ -76,6 +78,9 @@ function test_all(;Obsacc = 1e-14 )
         test_DimerParquet(tol = 1e-6) 
     end
 
+    @testset "FileIO" begin
+        test_IO()
+    end
 end
 
 # end

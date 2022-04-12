@@ -21,7 +21,7 @@ end
 
 function test_loading(Filename::String,GeometryGenerator::Function = SquareKagome.getSquareKagome;kwargs...)
     Obs = readObservables(Filename)
-    Sol,saved_values = SolveFRG_Checkpoint(Filename,readGeometry(Filename,GeometryGenerator);kwargs...)
+    Sol,saved_values = SolveFRG_Checkpoint(Filename,readGeometry(Filename,GeometryGenerator);Params = (MinimalOutput = true,),kwargs...)
     @testset "Observables extended" begin 
         @test issubset(Obs.t,saved_values.t)
     end

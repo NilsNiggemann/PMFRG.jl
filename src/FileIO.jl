@@ -199,18 +199,18 @@ function getFileParams(Filename,Geometry,Par::PMFRGParams)
     return Par
 end
 
-function getFileParams(Filename,Geometry,Par::Nothing)
+function getFileParams(Filename,Geometry,Par::Nothing;kwargs...)
     Lam = readLam(Filename)
-    return readParams(Filename,Geometry;Lam_max = Lam)
+    return readParams(Filename,Geometry;Lam_max = Lam,kwargs...)
 end
 # Todo: provide SpinFRGLattices.getGeometryGenerator that takes Name string and returns correct method
 SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par=nothing;kwargs...) = launchPMFRG_Checkpoint(Filename,Geometry,AllocateSetup,getDeriv!,Par;kwargs...)
 
 
-function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,kwargs...)
+function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,Params=(),kwargs...)
     State = readState(Filename)
     Old_Lam_max = h5read(Filename,"Params/Lam_max")
-    Par = getFileParams(Filename,Geometry,Par)
+    Par = getFileParams(Filename,Geometry,Par;Params...)
     saved_values_full = readObservables(Filename)
     setup = AllocatorFunction(Par)
     CheckPointfolder = dirname(Filename)

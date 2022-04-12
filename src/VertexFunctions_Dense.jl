@@ -6,8 +6,8 @@ function get_sign_iw(nw::Integer,N::Integer)
 end
 
 """Returns self energy evaluated at the appropriate frequency"""
-function gamma_(gamma::AbstractArray, x::Integer, nw::Integer,Par::Params)
-    @unpack Ngamma = Par
+function gamma_(gamma::AbstractArray, x::Integer, nw::Integer)
+    Ngamma = size(gamma,2)
     s = 1
     if nw<0
         nw = -nw -1

@@ -1,9 +1,15 @@
 module PMFRG
     using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5,H5Zblosc
-    export SolveFRG,Params,double,BS3,Vern7,DP5,version,getChi,OneLoop
-    version() = """v.2.0.3"""
+
+    using SpinFRGLattices.StaticArrays
+
+    export SolveFRG,Params,OneLoopParams,double,BS3,Vern7,DP5,version,getChi,OneLoop
+    version() = """v.2.1.1"""
     # Essentials
-    include("Globals.jl")
+    include("Types.jl")
+    include("OneLoopTypes.jl")
+    include("VertexUtils.jl")
+
     include("VertexFunctions_Dense.jl")
     include("Propagators.jl")
     include("Flowequations_Dense.jl")
@@ -11,12 +17,16 @@ module PMFRG
     include("Solver.jl")
     export saveState, readState, readLam, saveParams, readParams, setupDirectory, saveCurrentState, UniqueDirName, generateName, setupFromCheckpoint, SolveFRG_Checkpoint,readGeometry, readObservables,getUnfinishedJobs,generateFileName
     
+    
     include("TwoLoop/TwoLoopPMFRG.jl")
-    using .TwoLoopPMFRG
+    # using .TwoLoopPMFRG
     export TwoLoop
     
+    include("MultiLoop/MultiLoopPMFRG.jl")
+    export MultiLoop,Parquet,SolveParquet
+
     include("UnitTests/UnitTests.jl")
-    export UnitTests
+    # export UnitTests
 
     #Precompilation
     # include("precompile.jl")

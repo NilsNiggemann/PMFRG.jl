@@ -112,5 +112,6 @@ function SetupParquet(Par::ParquetParams)
         Par
         )
     setToBareVertex!(Workspace.OldState.Γ,Par)
+    setToBareVertex!(Workspace.State.Γ,Par)
     return Workspace
 end

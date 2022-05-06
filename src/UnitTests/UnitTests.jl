@@ -46,6 +46,7 @@ include("TypeStability.jl")
 export test_OneLoopAllocations
 
 include("IOTests.jl")
+include("ParquetTest.jl")
 
 
 function test_all(;Obsacc = 1e-14 )

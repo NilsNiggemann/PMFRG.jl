@@ -4,7 +4,7 @@ module PMFRG
     using SpinFRGLattices.StaticArrays
 
     export SolveFRG,Params,OneLoopParams,double,BS3,Vern7,DP5,version,getChi,OneLoop
-    version() = """v.2.1.1"""
+    version() = """v.2.1.2"""
     # Essentials
     include("Types.jl")
     include("OneLoopTypes.jl")
@@ -21,6 +21,8 @@ module PMFRG
     include("TwoLoop/TwoLoopPMFRG.jl")
     # using .TwoLoopPMFRG
     export TwoLoop
+    
+    using FixedPoint
     
     include("MultiLoop/MultiLoopPMFRG.jl")
     export MultiLoop,Parquet,SolveParquet

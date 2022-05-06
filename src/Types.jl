@@ -210,3 +210,6 @@ struct VertexBufferType{T}
 end
 VertexBufferType(Npairs) = VertexBufferType((zeros(Npairs) for _ in 1:8)...)
 ##
+import RecursiveArrayTools:ArrayPartition
+
+ArrayPartition(x::StateType) = ArrayPartition(x.f_int,x.γ,x.Γ.a,x.Γ.b,x.Γ.c) 

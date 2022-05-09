@@ -70,11 +70,11 @@ function addTo1PartBubble!(Dgamma::AbstractArray,XT1_::Function,XT2_::Function,P
     	for (x,Rx) in enumerate(OnsitePairs)
 			for nw in -lenIntw_acc: lenIntw_acc-1
 				jsum = 0.
-				w1pw = nw1+nw+1 #w1 + w: Adding two Matsubara frequencies gives a +1
-				w1mw = nw1-nw
+				wpw1 = nw1+nw+1 #w + w1: Adding two fermionic Matsubara frequencies gives a +1 for the bosonic index
+				wmw1 = nw-nw1
 				for k_spl in 1:Nsum[Rx]
 					@unpack m,ki,xk = siteSum[k_spl,Rx]
-					jsum += (XT1_(ki,w1pw,0,w1mw)+2*XT2_(ki,w1pw,0,w1mw))*Prop(xk,nw)*m
+					jsum += (XT1_(ki,wpw1,0,wmw1)+2*XT2_(ki,wpw1,0,wmw1))*Prop(xk,nw)*m
 				end
 				Dgamma[x,iw1] += -T *jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
 			end
@@ -99,8 +99,8 @@ Computes a single-particle (i.e. self-energy) bubble. Can only be used if argume
 function addTo1PartBubble!(Dgamma::AbstractArray,Γ::VertexType,Prop,Par)
     invpairs = Par.System.invpairs
     # @warn "addTo1PartBubble! for vertices is not tested yet!"
-	@inline Γa_(Rij,s,t,u) = V_(Γ.a,invpairs[Rij],t,u,s,Rij,Par.NumericalParams.N) # Tilde-type can be obtained by permutation of vertices
-	@inline Γb_(Rij,s,t,u) = V_(Γ.b,invpairs[Rij],t,u,s,Rij,Par.NumericalParams.N) # cTilde corresponds to b type vertex!
+	@inline Γa_(Rij,s,t,u) = V_(Γ.a,Rij,t,u,s,invpairs[Rij],Par.NumericalParams.N) # Tilde-type can be obtained by permutation of vertices
+	@inline Γb_(Rij,s,t,u) = V_(Γ.b,Rij,t,u,s,invpairs[Rij],Par.NumericalParams.N) # cTilde corresponds to b type vertex!
     addTo1PartBubble!(Dgamma,Γa_,Γb_,Prop,Par)
 end
 

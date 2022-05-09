@@ -77,6 +77,7 @@ function test_all(;Obsacc = 1e-14 )
     end
     @testset "Parquet" verbose = true begin
         test_DimerParquet(tol = 1e-6) 
+        test_SDE() 
     end
 
     @testset "FileIO" begin

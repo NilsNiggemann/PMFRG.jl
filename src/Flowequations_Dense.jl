@@ -87,8 +87,9 @@ end
 Computes a single-particle (i.e. self-energy) bubble. Can only be used if B is a bubble function
 """
 function addTo1PartBubble!(Dgamma::AbstractArray,X::BubbleType,Prop,Par)
-	@inline XTa_(Rij,s,t,u) = XT_(X.a,X.a,Rij,s,t,u,Par.System.invpairs[Rij],Par.NumericalParams.N)
-	@inline XTc_(Rij,s,t,u) = XT_(X.c,X.b,Rij,s,t,u,Par.System.invpairs[Rij],Par.NumericalParams.N)
+	invpairs = Par.System.invpairs
+	@inline XTa_(Rij,s,t,u) = XT_(X.Ta,X.Ta,Rij,s,t,u,invpairs[Rij],Par.NumericalParams.N)
+	@inline XTc_(Rij,s,t,u) = XT_(X.Tc,X.Tc,Rij,s,t,u,invpairs[Rij],Par.NumericalParams.N)
     addTo1PartBubble!(Dgamma,XTa_,XTc_,Prop,Par)
 end
 

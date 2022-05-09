@@ -140,7 +140,7 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam;SDECheatfactor = 1)
 end
 function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
     @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
-    
+    T = Par.NumericalParams.T
     maxIterBSE = Par.Options.maxIterBSE
 
     OldStateArr,StateArr = ArrayPartition.((OldState,State))
@@ -162,7 +162,8 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
         
         
         # iterateSDE_FP!(Workspace,Lam) #Todo: underlying function takes Old state as an input, but not the new state computed here?
-        iterateSDE_FP!(State.γ,State.Γ,Γ0,Lam,Par)
+        # iterateSDE_FP!(State.γ,State.Γ,Γ0,Lam,Par)
+        iterateSDE_FP!(State.γ,State.Γ,B0,Γ0,Lam,Par,Buffer)
         WS_State = ArrayPartition(Workspace.State)
         WS_State .= State_Arr
         CurrentObs = getObsFunc(Workspace,Lam)
@@ -174,59 +175,32 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
         return State_Arr
     end
     
-    s = afps!(FixedPointFunction!,OldStateArr,iters = maxIterBSE,vel = 0.0,ep = .3,tol = Par.Options.SDE_tolerance)
+    s = afps!(FixedPointFunction!,OldStateArr,iters = maxIterBSE,vel = 0.0,ep = getEpsilon(T),tol = Par.Options.SDE_tolerance)
     StateArr .= s.x
-    if !Par.Options.MinimalOutput
-        println("""
-        \t\tBSE done after  $(s.iters) / $maxIterBSE iterations (tol = $(s.error))""")
-        anyisnan(StateArr) && @warn "NaN detected... Aborted"
-    end
-    # isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
+    println("""
+    \t\tBSE done after  $(s.iters) / $maxIterBSE iterations (tol = $(s.error))""")
+    anyisnan(StateArr) && @warn "NaN detected... Aborted"
     return Workspace,Obs
 end
 
 anyisnan(A::ArrayPartition) = any((any(isnan,i) for i in A.x))
 
-function iterateSDE_FP!(Workspace,Lam)
-    @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
+
+function iterateSDE_FP!(γ,Γ,B0,Γ0,Lam,Par,Buffer)
     maxIterSDE = Par.Options.maxIterSDE
-    
+    T = Par.NumericalParams.T
     function FixedPointFunction!(gamma,gammaOld)
-        @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,Par.NumericalParams.T)#*3
+        @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,T)#*3
 
         getProp! = constructPropagatorFunction(gammaOld,Lam,Par)
 
-        # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
-        # compute1PartBubble!(gamma,B0,Prop,Par)
-        compute1PartBubble_BS!(gamma,State.Γ,Γ0,Prop,Par)
+        # computeLeft2PartBubble!(B0,Γ0,Γ0,Γ,getProp!,Par,Buffer)
+        compute1PartBubble!(gamma,B0,Prop,Par)
+        # compute1PartBubble_BS!(gamma,Γ,Γ0,Prop,Par)
         return gamma
     end
 
-    s = afps!(FixedPointFunction!,State.γ,iters = maxIterSDE,vel = 0.0,ep = 1.,tol = Par.Options.SDE_tolerance)
-    State.γ .= s.x
-    # FixedPointFunction!(State.γ,OldState.γ)
-
-    if !Par.Options.MinimalOutput
-        println("""
-        \t\tSDE step done after  $(s.iters) / $maxIterSDE iterations (tol = $(s.error))""")
-    end
-end
-
-function iterateSDE_FP!(γ,Γ,Γ0,Lam,Par)
-    maxIterSDE = Par.Options.maxIterSDE
-    
-    function FixedPointFunction!(gamma,gammaOld)
-        @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,Par.NumericalParams.T)#*3
-
-        getProp! = constructPropagatorFunction(gammaOld,Lam,Par)
-
-        # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
-        # compute1PartBubble!(gamma,B0,Prop,Par)
-        compute1PartBubble_BS!(gamma,Γ,Γ0,Prop,Par)
-        return gamma
-    end
-
-    s = afps!(FixedPointFunction!,γ,iters = maxIterSDE,vel = 0.0,ep = 1.,tol = Par.Options.SDE_tolerance)
+    s = afps!(FixedPointFunction!,γ,iters = maxIterSDE,vel = 0.2,ep = getEpsilon(T),tol = Par.Options.SDE_tolerance)
     γ .= s.x
     # FixedPointFunction!(State.γ,OldState.γ)
     # println(maximum(γ))
@@ -237,7 +211,9 @@ function iterateSDE_FP!(γ,Γ,Γ0,Lam,Par)
     end
 end
 
-
+function getEpsilon(T)
+    min(T/2,1.)
+end
 
 getChi(State::StateType, Lam::Real,Par::ParquetParams) = getChi(State.γ,State.Γ.c, Lam,Par)
 getChi(State::StateType, Lam::Real,Par::ParquetParams,Numax) = getChi(State.γ,State.Γ.c, Lam,Par,Numax)

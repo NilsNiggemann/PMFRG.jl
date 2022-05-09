@@ -10,18 +10,17 @@ function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function
     ObsType = typeof(getObservables(Workspace,Lam))
     Obs = StructArray(ObsType[])
     @time iterateSolution_FP!(Workspace,Lam,Obs,getObsFunc)
+    # @time iterateSolution!(Workspace,Lam,Obs,getObsFunc)
 end
 
 """Obtains a solution to Bethe-Salpeter and Schwinger-Dyson equations by iteration until convergence is reached up to accuracy specified by accuracy in Params"""
-function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
+function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function;SDECheatfactor = 1)
     @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
     
     maxIterBSE = Par.Options.maxIterBSE
 
 
     Tol_Vertex = 1E16 #Initial tolerance level
-
-    iG(x,nw) = iG_(State.γ,x,Lam,nw,T)
 
     getProp! = constructPropagatorFunction(Workspace,Lam)
     iter = 0
@@ -44,8 +43,8 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         getVertexFromChannels!(State.Γ,I,X)
         symmetrizeVertex!(State.Γ,Par)
         
-        iterateSDE!(Workspace,Lam)
-        # iterateSDE_FP!(Workspace,Lam)
+        # iterateSDE!(Workspace,Lam,SDECheatfactor = SDECheatfactor)
+        iterateSDE_FP!(Workspace,Lam)
         Tol_Vertex = reldist(OldState.Γ,State.Γ)
         
         CurrentObs = getObsFunc(Workspace,Lam)
@@ -106,10 +105,10 @@ function getVertexFromChannels!(Γ::VertexType,I::VertexType,X::BubbleType)
     return Γ
 end
 
-
-function iterateSDE!(Workspace::ParquetWorkspace,Lam)
+"""Self-consistently iterates SDE until convergence is reached. SDECheatfactor only to be used for debugging purposes. Setting it to 3 seems to reproduce PMFRG for some reason."""
+function iterateSDE!(Workspace::ParquetWorkspace,Lam;SDECheatfactor = 1)
     @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
-    @inline Prop(x,nw) = 1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)#*3
+    @inline Prop(x,nw) = 1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)*SDECheatfactor
 
     getProp! = constructPropagatorFunction(Workspace,Lam)
 
@@ -129,6 +128,7 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
         # iter < 10 && println(State.γ[1,1:5])
         
         compute1PartBubble!(State.γ,B0,Prop,Par)
+        # compute1PartBubble_BS!(State.γ,State.Γ,Γ0,Prop,Par)
 
         SDE_tolerance = reldist(State.γ,OldState.γ)
     end
@@ -144,11 +144,11 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
     maxIterBSE = Par.Options.maxIterBSE
 
     OldStateArr,StateArr = ArrayPartition.((OldState,State))
-    
+        
     function FixedPointFunction!(State_Arr,OldState_Arr)
+        anyisnan(OldState_Arr) && return State_Arr
         gamma = OldState_Arr.x[2]
-        iG(x,nw) = iG_(gamma,x,Lam,nw,T)
-        containsnan(OldState_Arr) && return State_Arr
+
         State = StateType(State_Arr.x...)
         OldState = StateType(OldState_Arr.x...)
         getProp! = constructPropagatorFunction(gamma,Lam,Par)
@@ -160,53 +160,84 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
         getVertexFromChannels!(State.Γ,I,X)
         symmetrizeVertex!(State.Γ,Par)
         
-        iterateSDE_FP!(Workspace,Lam)
+        
+        # iterateSDE_FP!(Workspace,Lam) #Todo: underlying function takes Old state as an input, but not the new state computed here?
+        iterateSDE_FP!(State.γ,State.Γ,Γ0,Lam,Par)
+        WS_State = ArrayPartition(Workspace.State)
+        WS_State .= State_Arr
         CurrentObs = getObsFunc(Workspace,Lam)
         push!(Obs,CurrentObs)
         if !Par.Options.MinimalOutput
             writeOutput(State,CurrentObs,Lam,Par)
         end
+        # OldState_Arr .= State_Arr
         return State_Arr
     end
     
-    s = afps!(FixedPointFunction!,OldStateArr,iters = maxIterBSE,vel = 0.,ep = .3,tol = Par.Options.SDE_tolerance)
-    State_Arr = s.x
+    s = afps!(FixedPointFunction!,OldStateArr,iters = maxIterBSE,vel = 0.0,ep = .3,tol = Par.Options.SDE_tolerance)
+    StateArr .= s.x
     if !Par.Options.MinimalOutput
         println("""
         \t\tBSE done after  $(s.iters) / $maxIterBSE iterations (tol = $(s.error))""")
-        containsnan(State_Arr) && @warn "NaN detected... Aborted"
+        anyisnan(StateArr) && @warn "NaN detected... Aborted"
     end
     # isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
     return Workspace,Obs
 end
 
-function containsnan(x)
-    for i in x
-        isnan(i) && return true
-    end
-    return false
-end
+anyisnan(A::ArrayPartition) = any((any(isnan,i) for i in A.x))
 
 function iterateSDE_FP!(Workspace,Lam)
     @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
     maxIterSDE = Par.Options.maxIterSDE
-    # getProp! = constructPropagatorFunction(Workspace,Lam)
     
     function FixedPointFunction!(gamma,gammaOld)
         @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,Par.NumericalParams.T)#*3
 
-        compute1PartBubble!(gamma,B0,Prop,Par)
+        getProp! = constructPropagatorFunction(gammaOld,Lam,Par)
+
+        # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
+        # compute1PartBubble!(gamma,B0,Prop,Par)
+        compute1PartBubble_BS!(gamma,State.Γ,Γ0,Prop,Par)
         return gamma
     end
 
-    s = afps!(FixedPointFunction!,OldState.γ,iters = maxIterSDE,vel = 0.,ep = 1.,tol = Par.Options.SDE_tolerance)
+    s = afps!(FixedPointFunction!,State.γ,iters = maxIterSDE,vel = 0.0,ep = 1.,tol = Par.Options.SDE_tolerance)
     State.γ .= s.x
+    # FixedPointFunction!(State.γ,OldState.γ)
 
     if !Par.Options.MinimalOutput
         println("""
         \t\tSDE step done after  $(s.iters) / $maxIterSDE iterations (tol = $(s.error))""")
     end
 end
+
+function iterateSDE_FP!(γ,Γ,Γ0,Lam,Par)
+    maxIterSDE = Par.Options.maxIterSDE
+    
+    function FixedPointFunction!(gamma,gammaOld)
+        @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,Par.NumericalParams.T)#*3
+
+        getProp! = constructPropagatorFunction(gammaOld,Lam,Par)
+
+        # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
+        # compute1PartBubble!(gamma,B0,Prop,Par)
+        compute1PartBubble_BS!(gamma,Γ,Γ0,Prop,Par)
+        return gamma
+    end
+
+    s = afps!(FixedPointFunction!,γ,iters = maxIterSDE,vel = 0.0,ep = 1.,tol = Par.Options.SDE_tolerance)
+    γ .= s.x
+    # FixedPointFunction!(State.γ,OldState.γ)
+    # println(maximum(γ))
+    # println(maximum(ArrayPartition(Γ.a,Γ.b,Γ.c)))
+    if !Par.Options.MinimalOutput
+        println("""
+        \t\tSDE step done after  $(s.iters) / $maxIterSDE iterations (tol = $(s.error))""")
+    end
+end
+
+
 
 getChi(State::StateType, Lam::Real,Par::ParquetParams) = getChi(State.γ,State.Γ.c, Lam,Par)
 getChi(State::StateType, Lam::Real,Par::ParquetParams,Numax) = getChi(State.γ,State.Γ.c, Lam,Par,Numax)

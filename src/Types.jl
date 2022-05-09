@@ -18,12 +18,12 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
     accuracy::double = 1e-6
     Lam_min::double = 0.0
-    Lam_max::double = 100.0
+    Lam_max::double = 100.0 + 500*T,
     usesymmetry::Bool = true
     MinimalOutput::Bool = false
     ex_freq::double = (2*N-1)*pi*T
     lenIntw::Int = N
-    lenIntw_acc::Int = Ngamma # more accurate for less demanding sums
+    lenIntw_acc::Int = 2*maximum((N,Ngamma,lenIntw)) # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1)
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1)
 
@@ -53,7 +53,7 @@ function NumericalParams(;
     Lam_min::AbstractFloat = 0.0,
     Lam_max::AbstractFloat = 100.0 + 500*T,
     lenIntw::Int = N,
-    lenIntw_acc::Int = Ngamma, # more accurate for less demanding sums
+    lenIntw_acc::Int = 2*maximum((N,Ngamma,lenIntw)), # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1),
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1),
     ex_freq = (2*N-1)*pi*T,

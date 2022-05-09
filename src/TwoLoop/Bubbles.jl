@@ -300,3 +300,38 @@ function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integ
     end
 end
 @inline addBLTilde!(B::BubbleType,Γ0L::BareVertexType,Γ0R::BareVertexType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props) = addBLTilde!(B,Γ0L,Γ, is, it, iu, nwpr, Par, Props)
+
+function compute1PartBubble_BS!(Dgamma::AbstractArray,Γ,Gamma0,Prop,Par)
+	setZero!(Dgamma)
+
+	@unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma = Par.NumericalParams
+	@unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
+
+	@inline Γc_(Rij,s,t,u) = V_(Γ.c,Rij,s,t,u,invpairs[Rij],Par.NumericalParams.N) # cTilde corresponds to b type vertex!
+
+
+	Threads.@threads for iw1 in 1:Ngamma
+		nw1 = np_vec_gamma[iw1]
+		for (x,Rx) in enumerate(OnsitePairs)
+			jsum = 0.
+			for k_spl in 1:Nsum[Rx]
+				@unpack m,ki,xk = siteSum[k_spl,Rx]
+				ik = invpairs[ki]
+				fac = ifelse(ik in OnsitePairs,1,3)
+				for nw in -lenIntw_acc: lenIntw_acc-1
+					for nwpr in -lenIntw_acc: lenIntw_acc-1
+
+						wpwpr = nw+nwpr+1
+						w1mw = nw1-nw
+						w1mwpr = nw1-nwpr
+
+						jsum += fac*4*Γc_(ik,wpwpr,w1mw,w1mwpr)*Gamma0.c[ik]*Prop(xk,nw)*Prop(xk,nwpr)*Prop(x,w1mw-nwpr-1)*m
+					end
+				end
+			end
+			Dgamma[x,iw1] += -T^2 *jsum *6^2 #6^2 since each Prop contains factor of 1/6
+		end
+	end
+	return Dgamma
+end
+

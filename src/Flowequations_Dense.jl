@@ -309,7 +309,7 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 end
 const SingleElementMatrix = Union{SpinFRGLattices.SMatrix{1,1},SpinFRGLattices.MMatrix{1,1}}
 
-"""Use multiple dispatch to treat the comming special case in which the propagator does not depend on site indices to increase performance"""
+"""Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)
 
 	@unpack State,X,Par = Workspace 
@@ -384,7 +384,7 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 end
 
 
-"""Use multiple dispatch to treat the comming special case in which the propagator does not depend on site indices to increase performance"""
+"""Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
 	@unpack State,X,Par = Workspace 
 	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
@@ -473,17 +473,6 @@ function symmetrizeBubble!(X::BubbleType,Par::PMFRGParams)
     end
     @. X.Td= X.Ta - X.Tb - X.Tc
 end
-
-# function addToVertexFromBubble!(Γ::VertexType,X::BubbleType)
-#     Threads.@threads for iu in axes(Γ.a,4)
-#         for it in axes(Γ.a,3), is in axes(Γ.a,2), Rij in axes(Γ.a,1)
-#             Γ.a[Rij,is,it,iu] = X.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
-#             Γ.b[Rij,is,it,iu] = X.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
-#             Γ.c[Rij,is,it,iu] = X.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
-#         end
-#     end
-#     return Γ
-# end
 
 function addToVertexFromBubble!(Γ::VertexType,X::BubbleType)
     Threads.@threads for iu in axes(Γ.a,4)

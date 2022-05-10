@@ -12,10 +12,14 @@ struct MultiLoopParams{F,G <: Geometry} <: PMFRGParams
     l::Int
 end
 
-struct ParquetOptions{F} <: AbstractOptions
+struct ParquetOptions{F <:AbstractFloat} <: AbstractOptions
     maxIterBSE::Int
     maxIterSDE::Int
     SDE_tolerance::F
+    BSE_epsilon::F
+    SDE_epsilon::F
+    BSE_vel::F
+    SDE_vel::F
     usesymmetry::Bool
     MinimalOutput::Bool
 end
@@ -24,10 +28,16 @@ function ParquetOptions(;
     maxIterBSE::Int = 40,
     maxIterSDE::Int = 1000,
     SDE_tolerance::AbstractFloat = 1e-9,
+
+    BSE_epsilon::AbstractFloat = 1.,
+    SDE_epsilon::AbstractFloat = 1.,
+    BSE_vel::AbstractFloat = 0.,
+    SDE_vel::AbstractFloat = 0.,
+
     usesymmetry::Bool = true,
     MinimalOutput::Bool = false,
     kwargs...) 
-    return ParquetOptions(maxIterBSE,maxIterSDE,SDE_tolerance,usesymmetry,MinimalOutput)
+    return ParquetOptions(maxIterBSE,maxIterSDE,SDE_tolerance,BSE_epsilon,SDE_epsilon,BSE_vel,SDE_vel,usesymmetry,MinimalOutput)
 end
 
 struct ParquetParams{F,G <: Geometry} <: PMFRGParams
@@ -39,8 +49,15 @@ end
 """Todo: make this error when an unknown kwarg is given!"""
 Params(System::Geometry,O::MultiLoop;kwargs...) = MultiLoopParams(System,NumericalParams(;kwargs...),OptionParams(;kwargs...),O.l)
 
-Params(System::Geometry,O::Parquet;kwargs...) = ParquetParams(System,NumericalParams(;kwargs...),ParquetOptions(;kwargs...))
+function Params(System::Geometry,O::Parquet;eps = nothing,vel = 0.,kwargs...) 
+    eps === nothing && (eps = getEpsilon(kwargs[:T]))
+    PO = ParquetOptions(;BSE_epsilon = eps,SDE_epsilon = eps,BSE_vel = vel, SDE_vel = vel, kwargs...)
+    ParquetParams(System,NumericalParams(;kwargs...),PO)
+end
 
+function getEpsilon(T)
+    min(T/2,1.)
+end
 
 getLoopOrder(P::MultiLoopParams) = P.l
 getPMFRGMethod(P::MultiLoopParams) = MultiLoop(getLoopOrder(P))

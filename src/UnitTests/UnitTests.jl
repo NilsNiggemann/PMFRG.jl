@@ -28,7 +28,7 @@ BenchmarkingParams(Method::Parquet,System = getPolymer(2)) = Params(
     usesymmetry = false,
     MinimalOutput = true,
     lenIntw = 60,
-    lenIntw_acc = 24
+    lenIntw_acc = 60
 )
 
 

@@ -674,11 +674,11 @@ version = "2.1.4"
 
 [[deps.SpinFRGLattices]]
 deps = ["Parameters", "StaticArrays", "StructArrays", "Test"]
-git-tree-sha1 = "9be92f8c07eba3ca6260200103a824323a2d6594"
+git-tree-sha1 = "ab475438a0b5dd41150ea05b4bdc8bcb02515729"
 repo-rev = "master"
 repo-url = "git@gitlabph.physik.fu-berlin.de:niggeni/spinfrglattices.jl.git"
 uuid = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
-version = "0.3.8"
+version = "0.3.9"
 
 [[deps.Static]]
 deps = ["IfElse"]

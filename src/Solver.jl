@@ -30,11 +30,34 @@ function AllocateSetup(Par::OneLoopParams)
     return (X,Buffs,Par)
 end
 
+"""
+Given a set of Parameters (currently, oneß and twoloop are implemented), solves the set of differential flow equations and returns the ODE solution object along with an array of Observables at each lambda step.
+Allowed keyword arguments (with default values):
+
+    MainFile = nothing,                             # Specifies name of main output file as a string.
+                                                    # Defaults to 'nothing', in which case no output file is produced.
+    Group = string(setup[end].NumericalParams.T),   # Specifies the name of the subgroup of the main files HDF5 group to which the output data is written. 
+                                                    # Defaults to the value of temperature to allow temperature sweeps to be written to the same file.
+    CheckpointDirectory = nothing,                  # Directory in which the current ODE state is written in regular intervals during the integration. 
+                                                    # Default 'nothing' will not produce any backup!
+    method = DP5(),                                 # ODE integration method. Standard is set to OrdinaryDiffEq.DP5(). 
+                                                    # See OrdinaryDiffEq package for further options.
+    MaxVal = 100*maximum(abs,Par.System.couplings)  # Terminates the ODE solution, when any absolute value of the Solution reaches MaxVal.
+    ObsSaveat = nothing,                            # Specifies a vector of Λ values at which Observables are computed.
+    VertexCheckpoints = [],                         # Specifies a vector of Λ values at which vertices shall be saved permanently without being overwritten. 
+                                                    # Empty means only the current state will be saved. Requires CheckpointDir ≠ nothing !
+    overwrite_Checkpoints = false::Bool,            # Specifies whether CheckpointDirectory is to be overwritten if it exists. 
+                                                    # Defaults to false, in which case an unused name is generated.
+    CheckPointSteps = 1,                            # Number of skipped steps before Checkpoint data is saved to reduce time spent on IO operations.
+    kwargs...                                       # Additional keyword arguments are passed to OrdinaryDiffEq.solve.
+                                                    # See the OrdinaryDiffEq documentation for further details.
+
+"""
 SolveFRG(Par;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)
 
 function launchPMFRG!(State,setup,Deriv!::Function;
-    MainFile= nothing,
-    Group =string(setup[end].NumericalParams.T),
+    MainFile = nothing,
+    Group = string(setup[end].NumericalParams.T),
     CheckpointDirectory = nothing,
     method = DP5(),
     MaxVal = 100*maximum(abs,

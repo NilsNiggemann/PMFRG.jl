@@ -4,7 +4,7 @@ struct OptionParams <: AbstractOptions
     MinimalOutput::Bool
 end
 OptionParams(;usesymmetry::Bool = true,MinimalOutput::Bool = false,kwargs...) = OptionParams(usesymmetry,MinimalOutput)
-struct OneLoopParams{F,G <: Geometry} <: PMFRGParams
+struct OneLoopParams{F<:AbstractFloat,G <: Geometry} <: PMFRGParams
     System::G
     NumericalParams::NumericalParams{F}
     Options::OptionParams

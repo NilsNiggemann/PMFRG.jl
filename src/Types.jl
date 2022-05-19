@@ -195,7 +195,6 @@ struct Observables{T}
     MaxVc::Vector{T}
 end
 
-
 struct VertexBufferType{T}
 	Va12::Vector{T}
 	Vb12::Vector{T}
@@ -210,4 +209,5 @@ struct VertexBufferType{T}
 end
 VertexBufferType(Npairs) = VertexBufferType((zeros(Npairs) for _ in 1:8)...)
 ##
-RecursiveArrayTools.ArrayPartition(x::StateType) = ArrayPartition(x.f_int,x.γ,x.Γ.a,x.Γ.b,x.Γ.c) 
+RecursiveArrayTools.ArrayPartition(x::StateType) = ArrayPartition(x.f_int,x.γ,x.Γ.a,x.Γ.b,x.Γ.c)
+StateType(Arr::ArrayPartition) = StateType(Arr.x...)

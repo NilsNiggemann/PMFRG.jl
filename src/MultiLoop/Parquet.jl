@@ -11,18 +11,18 @@ function SolveParquet(State::StateType,Par::ParquetParams,Lam::Real,getObsFunc::
     SolveParquet(Workspace,Lam,getObsFunc;kwargs...)
 end
 
-function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function = getObservables;iterator! = iterateSolution_FP!,kwargs...)
+function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function = getObservables;iterator = iterateSolution_FP!,kwargs...)
     ObsType = typeof(getObservables(Workspace,Lam))
     Obs = StructArray(ObsType[])
     # @time iterateSolution_FP!(Workspace,Lam,Obs,getObsFunc)
-    @time iterator!(Workspace,Lam,Obs,getObsFunc;kwargs...)
+    @time iterator(Workspace,Lam,Obs,getObsFunc;kwargs...)
 end
 
 """Obtains a solution to Bethe-Salpeter and Schwinger-Dyson equations by iteration until convergence is reached up to accuracy specified by accuracy in Params"""
 function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
     @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
     
-    maxIterBSE = Par.Options.maxIterBSE
+    BSE_iters = Par.Options.BSE_iters
 
 
     Tol_Vertex = 1E16 #Initial tolerance level
@@ -32,8 +32,8 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
     while Tol_Vertex > Par.NumericalParams.accuracy 
         iter+=1
         
-        if iter > maxIterBSE
-            @warn("BSE: No convergence found after $maxIterBSE iterations, Tol = $Tol_Vertex")
+        if iter >= BSE_iters
+            @warn("BSE: No convergence found after $BSE_iters iterations, tol = $Tol_Vertex")
             break
         end
 
@@ -49,8 +49,11 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         symmetrizeVertex!(State.Γ,Par)
         
         iterateSDE!(Workspace,Lam)
+        # iterateSDE_FP!(State.γ,State.Γ,B0,Γ0,Lam,Par,Buffer)
         Tol_Vertex = reldist(OldState.Γ,State.Γ)
-        
+
+        dampen!(State,OldState,Par.Options.BSE_epsilon)
+
         CurrentObs = getObsFunc(Workspace,Lam)
         push!(Obs,CurrentObs)
 
@@ -63,9 +66,21 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         end
         isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
     end
+    println("""
+    \t\tBSE done after  $(iter) / $BSE_iters iterations (tol = $(Tol_Vertex))""")
+
     return Workspace,Obs
 end
 
+function dampen!(State,OldState,epsilon)
+    StateArr = ArrayPartition(State)
+    OldStateArr = ArrayPartition(OldState)
+    dampen!(StateArr,OldStateArr,epsilon)
+end
+
+function dampen!(StateArr::AbstractArray,OldStateArr::AbstractArray,epsilon::Real)
+    @. StateArr = (1-epsilon) * OldStateArr + epsilon * StateArr
+end
 
 function constructPropagatorFunction(γ, Lam,Par)    
     T= Par.NumericalParams.T
@@ -116,35 +131,35 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
 
     getProp! = constructPropagatorFunction(Workspace,Lam)
 
-    maxIterSDE = Par.Options.maxIterSDE
+    SDE_iters = Par.Options.SDE_iters
     SDE_tolerance = 1E16
     iter = 0
     while SDE_tolerance > Par.Options.SDE_tolerance
-        if iter >= maxIterSDE
+        if iter >= SDE_iters
             # @warn("SDE: No convergence found after $maxIter iterations\nremaining Tol: $SDE_tolerance")
             break
         end
         iter +=1
         writeTo!(OldState.γ,State.γ)
 
-        # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
+        computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
         # println(getProp!(Buffer.Props[1],1,1))
         # iter < 10 && println(State.γ[1,1:5])
         
-        compute1PartBubble!(State.γ,B0,Prop,Par)
-        # compute1PartBubble_BS!(State.γ,State.Γ,Γ0,Prop,Par)
-
+        # compute1PartBubble!(State.γ,B0,Prop,Par)
+        compute1PartBubble_BS!(State.γ,State.Γ,Γ0,Prop,Par)
+        dampen!(State.γ,OldState.γ,Par.Options.SDE_epsilon)
         SDE_tolerance = reldist(State.γ,OldState.γ)
     end
     if !Par.Options.MinimalOutput
         println("""
-        \t\tSDE step done after $iter / $maxIterSDE iterations (tol = $(SDE_tolerance)""")
+        \t\tSDE step done after $iter / $SDE_iters iterations (tol = $(SDE_tolerance)""")
     end
     return 
 end
 function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
     @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
-    @unpack maxIterBSE,BSE_epsilon,BSE_vel = Par.Options
+    @unpack BSE_iters,BSE_epsilon,BSE_vel = Par.Options
     @unpack T, accuracy = Par.NumericalParams
 
     OldStateArr,StateArr = ArrayPartition.((OldState,State))
@@ -175,10 +190,10 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
         return State_Arr
     end
     
-    s = afps!(FixedPointFunction!,OldStateArr,iters = maxIterBSE,vel = BSE_vel ,ep = BSE_epsilon,tol = accuracy)
+    s = afps!(FixedPointFunction!,OldStateArr,iters = BSE_iters,vel = BSE_vel ,ep = BSE_epsilon,tol = accuracy)
     StateArr .= s.x
     println("""
-    \t\tBSE done after  $(length(Obs)) / $maxIterBSE iterations (tol = $(s.error))""")
+    \t\tBSE done after  $(length(Obs)) / $BSE_iters iterations (tol = $(s.error))""")
     if anyisnan(StateArr) 
         @warn "NaN detected... Aborted"
     elseif s.error > accuracy
@@ -191,10 +206,10 @@ anyisnan(A::ArrayPartition) = any((any(isnan,i) for i in A.x))
 
 
 function iterateSDE_FP!(γ,Γ,B0,Γ0,Lam,Par,Buffer)
-    @unpack maxIterSDE,SDE_vel,SDE_epsilon = Par.Options
+    @unpack SDE_iters,SDE_vel,SDE_epsilon = Par.Options
     T = Par.NumericalParams.T
     function FixedPointFunction!(gamma,gammaOld)
-        @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,T)#*3
+        @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,T)
 
         getProp! = constructPropagatorFunction(gammaOld,Lam,Par)
 
@@ -204,14 +219,14 @@ function iterateSDE_FP!(γ,Γ,B0,Γ0,Lam,Par,Buffer)
         return gamma
     end
 
-    s = afps!(FixedPointFunction!,γ,iters = maxIterSDE,vel =SDE_vel,ep = SDE_epsilon,tol = Par.Options.SDE_tolerance)
+    s = afps!(FixedPointFunction!,γ,iters = SDE_iters,vel =SDE_vel,ep = SDE_epsilon,tol = Par.Options.SDE_tolerance)
     γ .= s.x
     # FixedPointFunction!(State.γ,OldState.γ)
     # println(maximum(γ))
     # println(maximum(ArrayPartition(Γ.a,Γ.b,Γ.c)))
     if !Par.Options.MinimalOutput
         println("""
-        \t\tSDE step done after  $(s.iters) / $maxIterSDE iterations (tol = $(s.error))""")
+        \t\tSDE step done after  $(s.iters) / $SDE_iters iterations (tol = $(s.error))""")
     end
 end
 

@@ -13,8 +13,8 @@ struct MultiLoopParams{F,G <: Geometry} <: PMFRGParams
 end
 
 struct ParquetOptions{F <:AbstractFloat} <: AbstractOptions
-    maxIterBSE::Int
-    maxIterSDE::Int
+    BSE_iters::Int
+    SDE_iters::Int
     SDE_tolerance::F
     BSE_epsilon::F
     SDE_epsilon::F
@@ -25,8 +25,8 @@ struct ParquetOptions{F <:AbstractFloat} <: AbstractOptions
 end
 
 function ParquetOptions(;
-    maxIterBSE::Int = 40,
-    maxIterSDE::Int = 1000,
+    BSE_iters::Int = 40,
+    SDE_iters::Int = 1000,
     SDE_tolerance::AbstractFloat = 1e-9,
 
     BSE_epsilon::AbstractFloat = 1.,
@@ -37,7 +37,7 @@ function ParquetOptions(;
     usesymmetry::Bool = true,
     MinimalOutput::Bool = false,
     kwargs...) 
-    return ParquetOptions(maxIterBSE,maxIterSDE,SDE_tolerance,BSE_epsilon,SDE_epsilon,BSE_vel,SDE_vel,usesymmetry,MinimalOutput)
+    return ParquetOptions(BSE_iters,SDE_iters,SDE_tolerance,BSE_epsilon,SDE_epsilon,BSE_vel,SDE_vel,usesymmetry,MinimalOutput)
 end
 
 struct ParquetParams{F,G <: Geometry} <: PMFRGParams

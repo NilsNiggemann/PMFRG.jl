@@ -54,8 +54,17 @@ end
 
 function test_runDimerParquet()
     ParquetLambda = 0.
+    tempFolder = "temp_PMFRG_test"
+
+    MainFile = joinpath(tempFolder,"temp_main.h5")
+
+    CheckpointDirectory = joinpath(tempFolder,"Checkpoints.h5")
+
+    
     Par = BenchmarkingParams(Parquet())
-    Sol,Obs = SolveParquet(Par,ParquetLambda)
+    Sol,Obs = SolveParquet(Par,ParquetLambda;MainFile,CheckpointDirectory)
+    println("cleaning up... deleting ",MainFile, " and ", CheckpointDirectory)
+    rm(tempFolder,recursive = true)
     return Sol,Obs,Par
 end
 

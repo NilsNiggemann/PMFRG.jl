@@ -250,6 +250,7 @@ function saveMainOutput(Filename::String,saved_values::DiffEqCallbacks.SavedValu
     mkpath(dirname(Filename))
     saveObs(Filename,saved_values,Group)
 end
+saveMainOutput(::Nothing,args...) = nothing
 
 
 function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointList)

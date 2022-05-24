@@ -29,4 +29,4 @@ Solves FRG as specified for parameters
 """
 SolveFRG(Par::TwoLoopParams;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)
 
-generateFileName(Par::TwoLoopParams,Method::TwoLoop,arg::String = "") = generateFileName(Par,"_l2"*arg)
+generateFileName(Par::TwoLoopParams,Method::TwoLoop,arg::String = "") = _generateFileName(Par,"_l2"*arg)

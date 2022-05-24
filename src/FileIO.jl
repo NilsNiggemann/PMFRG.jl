@@ -174,13 +174,15 @@ end
 generateUniqueName(Directory::String,Par::PMFRGParams) = UniqueDirName(generateName_verbose(Directory,Par))
 
 
-function generateFileName(Par::PMFRGParams,arg::String = "")
-    @unpack Name,N = Par
-    Name = "$(Name)_N=$(N)$arg.h5"
-    return Name
-end
+function _generateFileName(Par::PMFRGParams,arg::String = "")
+    Name = Par.System.Name
+    N = Par.NumericalParams.N
 
-generateFileName(Par::OneLoopParams,arg::String = "") = generateFileName(Par,"_l1"*arg)
+    FName = "$(Name)_N=$(N)$arg.h5"
+    return FName
+end
+generateFileName(Par::PMFRGParams,arg::String = "") = _generateFileName(Par,arg)
+generateFileName(Par::OneLoopParams,arg::String = "") = _generateFileName(Par,"_l1"*arg)
 
 function ParamsCompatible(Par1,Par2)
     Fields = (:Npairs,:N,:Ngamma,:Lam_max,:System) 

@@ -183,6 +183,9 @@ function _generateFileName(Par::PMFRGParams,arg::String = "")
 end
 generateFileName(Par::PMFRGParams,arg::String = "") = _generateFileName(Par,arg)
 generateFileName(Par::OneLoopParams,arg::String = "") = _generateFileName(Par,"_l1"*arg)
+generateFileName(Par::TwoLoopParams,arg::String = "") = _generateFileName(Par,"_l2"*arg)
+generateFileName(Par::MultiLoopParams,arg::String = "") = _generateFileName(Par,"_l$(Par.l)"*arg)
+generateFileName(Par::ParquetParams,arg::String = "") = _generateFileName(Par,"_p"*arg)
 
 function ParamsCompatible(Par1,Par2)
     Fields = (:Npairs,:N,:Ngamma,:Lam_max,:System) 

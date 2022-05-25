@@ -232,24 +232,30 @@ SolveFRG_Checkpoint(Filename::String,GeometryGenerator::Function,Par = nothing;k
 
 """Saves Observables"""
 function saveObs(Filename,saved_values::DiffEqCallbacks.SavedValues,Group = "")
-    Fields = fieldnames(eltype(saved_values.saveval))
     ObsArr = StructArray(saved_values.saveval)
-    for F in Fields
-        arr = convertToArray(getproperty(ObsArr,F))
-        h5write(Filename,joinGroup(Group,string(F)),arr)
-    end
+    saveObs(Filename,ObsArr,Group)
     h5write(Filename,joinGroup(Group,"Lambda"),saved_values.t)
 end
+
+function saveObs(Filename::String,Obs::StructArray{<:Observables},Group::String)
+    Fields = fieldnames(Observables)
+    for F in Fields
+        arr = convertToArray(getproperty(Obs,F))
+        h5write(Filename,joinGroup(Group,string(F)),arr)
+    end
+end
+
 
 function convertToArray(VecOfArray::AbstractVector{VT}) where {N,VT <: AbstractArray{T,N} where T}
     cat(VecOfArray...,dims = N+1)
 end
 
-function saveMainOutput(Filename::String,saved_values::DiffEqCallbacks.SavedValues,Group::String)
+function saveMainOutput(Filename::String,saved_values,Group::String)
     println("Saving Main output to ", Filename)
     mkpath(dirname(Filename))
     saveObs(Filename,saved_values,Group)
 end
+saveMainOutput(::Nothing,args...) = nothing
 
 
 function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointList)
@@ -270,18 +276,23 @@ function setCheckpoint(Directory::Nothing,State,saved_values,Lam,Par,checkPointL
     return
 end
 
-function saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::PMFRGParams,Group::String)
+function saveExtraFields(Filename::String,State,Lambda::Real,Par::PMFRGParams,Group::String)
     @unpack T,N = Par.NumericalParams
     @unpack Name,NUnique,Npairs,NLen = Par.System
-    Lambda = saved_values.t
+    Chi_nu = getChi(State,Lambda,Par,N)
+    h5write(Filename,"$Group/T",T)
+    h5write(Filename,"$Group/N",N)
+    h5write(Filename,"$Group/NUnique",NUnique)
+    h5write(Filename,"$Group/NLen",NLen)
+    h5write(Filename,"$Group/Chi_nu",Chi_nu)
+end
+
+saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::PMFRGParams,Group::String) = saveMainOutput(Filename,Solution[end],saved_values,saved_values.t[end],Par,Group)
+
+function saveMainOutput(Filename::String,State,saved_values,Lambda::Real,Par::PMFRGParams,Group::String)
     function save(name)
         saveMainOutput(name,saved_values,Group)
-        Chi_nu = getChi(Solution[end],Lambda[end],Par,N)
-        h5write(name,"$Group/T",T)
-        h5write(name,"$Group/N",N)
-        h5write(name,"$Group/NUnique",NUnique)
-        h5write(name,"$Group/NLen",NLen)
-        h5write(name,"$Group/Chi_nu",Chi_nu)
+        saveExtraFields(name,State,Lambda,Par,Group)
     end
     try
         save(Filename)

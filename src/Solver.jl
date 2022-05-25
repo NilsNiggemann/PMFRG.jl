@@ -36,7 +36,7 @@ Allowed keyword arguments (with default values):
 
     MainFile = nothing,                             # Specifies name of main output file as a string.
                                                     # Defaults to 'nothing', in which case no output file is produced.
-    Group = string(setup[end].NumericalParams.T),   # Specifies the name of the subgroup of the main files HDF5 group to which the output data is written. 
+    Group = DefaultGroup(setup[end]),               # Specifies the name of the subgroup of the main files HDF5 group to which the output data is written. 
                                                     # Defaults to the value of temperature to allow temperature sweeps to be written to the same file.
     CheckpointDirectory = nothing,                  # Directory in which the current ODE state is written in regular intervals during the integration. 
                                                     # Default 'nothing' will not produce any backup!
@@ -57,7 +57,7 @@ SolveFRG(Par;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),g
 
 function launchPMFRG!(State,setup,Deriv!::Function;
     MainFile = nothing,
-    Group = string(setup[end].NumericalParams.T),
+    Group = DefaultGroup(setup[end]),
     CheckpointDirectory = nothing,
     method = DP5(),
     MaxVal = 100*maximum(abs,
@@ -111,12 +111,13 @@ function launchPMFRG!(State,setup,Deriv!::Function;
         println(sol.destats)
     end
     saveCurrentState(CheckpointDirectory,sol[end],saved_values,sol.t[end],Par)
-    if MainFile !== nothing
-        saveMainOutput(MainFile,sol,saved_values,Par,Group)
-    end
+    saveMainOutput(MainFile,sol,saved_values,Par,Group)
+
     SetCompletionCheckmark(CheckpointDirectory)
     return sol,saved_values
 end
+
+DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 
 function getObservables(State::ArrayPartition,Lam,Par)
     f_int,gamma,Va,Vb,Vc = State.x

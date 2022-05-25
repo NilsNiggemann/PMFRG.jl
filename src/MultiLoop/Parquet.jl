@@ -11,11 +11,12 @@ function SolveParquet(State::StateType,Par::ParquetParams,Lam::Real,getObsFunc::
     SolveParquet(Workspace,Lam,getObsFunc;kwargs...)
 end
 
-function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function = getObservables;iterator = iterateSolution_FP!,kwargs...)
+function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function = getObservables;iterator = iterateSolution_FP!,MainFile=nothing,Group = DefaultGroup(Workspace.Par),CheckpointDirectory = nothing,kwargs...)
     ObsType = typeof(getObservables(Workspace,Lam))
     Obs = StructArray(ObsType[])
-    # @time iterateSolution_FP!(Workspace,Lam,Obs,getObsFunc)
-    @time iterator(Workspace,Lam,Obs,getObsFunc;kwargs...)
+    @time Workspace,Obs = iterator(Workspace,Lam,Obs,getObsFunc)
+    saveMainOutput(MainFile,Workspace.State,Obs,Lam,Workspace.Par,Group)
+    return Workspace,Obs
 end
 
 """Obtains a solution to Bethe-Salpeter and Schwinger-Dyson equations by iteration until convergence is reached up to accuracy specified by accuracy in Params"""

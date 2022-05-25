@@ -8,6 +8,9 @@ end
 
 getLoopOrder(P::TwoLoopParams) = 2
 getPMFRGMethod(P::TwoLoopParams) = TwoLoop()
+generateFileName(Par::TwoLoopParams,arg::String = "") = _generateFileName(Par,"_l2"*arg)
+
+
 
 ## ______________ State Variables shorthand ______________
 

@@ -45,6 +45,8 @@ Params(System::Geometry,O::Parquet;kwargs...) = ParquetParams(System,NumericalPa
 getLoopOrder(P::MultiLoopParams) = P.l
 getPMFRGMethod(P::MultiLoopParams) = MultiLoop(getLoopOrder(P))
 getPMFRGMethod(P::ParquetParams) = Parquet()
+generateFileName(Par::MultiLoopParams,arg::String = "") = _generateFileName(Par,"_l$(Par.l)"*arg)
+generateFileName(Par::ParquetParams,arg::String = "") = _generateFileName(Par,"_p"*arg)
 
 ## ______________ State Variables shorthand ______________
 

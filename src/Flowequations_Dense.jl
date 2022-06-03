@@ -1,7 +1,8 @@
-function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) where T
+function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},t) where T
     (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
 
+	Lam = exp(t)
     getDFint!(Workspace,Lam)
     get_Self_Energy!(Workspace,Lam)
 
@@ -11,28 +12,13 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) whe
 
     addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
     symmetrizeVertex!(Workspace.Deriv.Γ,Par)
+	adjust_tSubstitution!(Deriv,Lam)
     flush(stdout)
     return
 end
 
-function getDerivVerbose!(Deriv,State,setup,Lam)
-    (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    print("Workspace:\n\t") 
-    @time Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
-    print("getDFint:\n\t") 
-    @time getDFint!(Workspace,Lam)
-    print("get_Self_Energy:\n\t") 
-    @time get_Self_Energy!(Workspace,Lam)
-    print("getVertexDeriv:\n\t") 
-    @time getXBubble!(Workspace,Lam)
-    print("Symmetry:\n\t") 
-    @time begin
-        symmetrizeBubble!(Workspace.X,Par)
-        addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
-        symmetrizeVertex!(Workspace.Deriv.Γ,Par)
-    end
-    flush(stdout)
-    return
+function adjust_tSubstitution!(Deriv::AbstractArray,Lam)
+	Deriv .*= Lam
 end
 
 
@@ -555,3 +541,5 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
     end
 	return(Chi)
 end
+
+getChi_t(gamma::AbstractArray,Γc::AbstractArray, t::double,args...) = getChi(gamma,Γc,exp(t),args...)

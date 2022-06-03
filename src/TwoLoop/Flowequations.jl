@@ -1,5 +1,5 @@
-function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},Lam) where T
-        
+function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},t) where T
+    Lam = exp(t)
     X,Y,Buffs,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = TwoLoopWorkspace(Deriv,State,X,Y,Buffs,Par)
 
@@ -15,33 +15,7 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParam
     addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.Y)
 
     symmetrizeVertex!(Workspace.Deriv.Γ,Par)
-    return
-end
-
-function getDerivVerbose!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},Lam) where T
-    X,Y,Buffs,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    print("Workspace:\n\t") 
-    @time Workspace = TwoLoopWorkspace(Deriv,State,X,Y,Buffs,Par)
-
-    print("getDFint:\n\t") 
-    @time getDFint!(Workspace,Lam)
-
-    print("get_Self_Energy:\n\t") 
-    @time get_Self_Energy!(Workspace,Lam)
-
-    print("getVertexDeriv:\n\t") 
-    @time getXBubble!(Workspace,Lam)
-
-    print("SymmetryX:\n\t") 
-    symmetrizeBubble!(Workspace.X,Par)
-
-    print("TwoLoop:\n\t") 
-    @time getTwoLoopDeriv!(Workspace,Lam)
-    
-    print("SymmetryY:\n\t") 
-    @time symmetrizeBubble!(Workspace.Y,Par)
-    
-    symmetrizeVertex!(Workspace.State.Γ,Par)
+	adjust_tSubstitution!(Deriv,Lam)
     return
 end
 

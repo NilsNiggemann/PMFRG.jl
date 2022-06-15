@@ -19,6 +19,25 @@ function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function
     return Workspace,Obs
 end
 
+
+"""Performs single BSE iteration. Specify State explicitly to make fixed point libraries compatible (even though it may point to the same memory location as Workspace.State) """
+function BSE_iteration!(State::StateType,Workspace::ParquetWorkspace,Lam::Real)
+    @unpack OldState,I,Γ0,X,B0,BX,Par,Buffer = Workspace
+    @unpack BSE_iters,BSE_epsilon,BSE_vel = Par.Options
+    @unpack T, accuracy = Par.NumericalParams
+    
+    getProp! = constructPropagatorFunction(OldState.γ,Lam,Par)
+    computeLeft2PartBubble!(B0,Γ0,Γ0,OldState.Γ,getProp!,Par,Buffer)
+    computeLeft2PartBubble!(BX,X,X,OldState.Γ,getProp!,Par,Buffer)
+    
+    getXFromBubbles!(X,B0,BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
+    getVertexFromChannels!(State.Γ,I,X)
+    symmetrizeVertex!(State.Γ,Par)
+    
+
+    return State
+end
+
 """Obtains a solution to Bethe-Salpeter and Schwinger-Dyson equations by iteration until convergence is reached up to accuracy specified by accuracy in Params"""
 function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
     @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
@@ -28,7 +47,6 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
 
     Tol_Vertex = 1E16 #Initial tolerance level
 
-    getProp! = constructPropagatorFunction(Workspace,Lam)
     iter = 0
     while Tol_Vertex > Par.NumericalParams.accuracy 
         iter+=1
@@ -39,20 +57,11 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
         end
 
         writeTo!(OldState.Γ,State.Γ)
-        
-        # iterateSDE!(Workspace,Lam)
-        
-        computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
-        computeLeft2PartBubble!(BX,X,X,State.Γ,getProp!,Par,Buffer)
-        
-        getXFromBubbles!(X,B0,BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
-        getVertexFromChannels!(State.Γ,I,X)
-        symmetrizeVertex!(State.Γ,Par)
-        
-        iterateSDE!(Workspace,Lam)
+        BSE_iteration!(Workspace.State,Workspace,Lam)
         # iterateSDE_FP!(State.γ,State.Γ,B0,Γ0,Lam,Par,Buffer)
         Tol_Vertex = reldist(OldState.Γ,State.Γ)
-
+                
+        iterateSDE!(Workspace,Lam)
         dampen!(State,OldState,Par.Options.BSE_epsilon)
 
         CurrentObs = getObsFunc(Workspace,Lam)
@@ -101,8 +110,6 @@ end
 constructPropagatorFunction(Workspace::PMFRGWorkspace,Lam) = constructPropagatorFunction(Workspace.State.γ,Lam,Workspace.Par) 
 
 
-
-
 function getXFromBubbles!(X::BubbleType,B0::BubbleType,BX::BubbleType)
     for f in fieldnames(BubbleType)
         Xf,B0f,BXf = getfield(X,f),getfield(B0,f),getfield(BX,f)
@@ -130,7 +137,7 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
     @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
     @inline Prop(x,nw) = 1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)
 
-    getProp! = constructPropagatorFunction(Workspace,Lam)
+    # getProp! = constructPropagatorFunction(Workspace,Lam)
 
     SDE_iters = Par.Options.SDE_iters
     SDE_tolerance = 1E16
@@ -143,12 +150,10 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
         iter +=1
         writeTo!(OldState.γ,State.γ)
 
-        computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
-        # println(getProp!(Buffer.Props[1],1,1))
-        # iter < 10 && println(State.γ[1,1:5])
+        # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
         
-        # compute1PartBubble!(State.γ,B0,Prop,Par)
-        compute1PartBubble_BS!(State.γ,State.Γ,Γ0,Prop,Par)
+        compute1PartBubble!(State.γ,B0,Prop,Par)
+        # compute1PartBubble_BS!(State.γ,State.Γ,Γ0,Prop,Par)
         dampen!(State.γ,OldState.γ,Par.Options.SDE_epsilon)
         SDE_tolerance = reldist(State.γ,OldState.γ)
     end
@@ -158,30 +163,22 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
     end
     return 
 end
+
+
+
 function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
     @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
     @unpack BSE_iters,BSE_epsilon,BSE_vel = Par.Options
     @unpack T, accuracy = Par.NumericalParams
 
     OldStateArr,StateArr = ArrayPartition.((OldState,State))
-        
+    
     function FixedPointFunction!(State_Arr,OldState_Arr)
         anyisnan(OldState_Arr) && return State_Arr
-        gamma = OldState_Arr.x[2]
-
         State = StateType(State_Arr.x...)
-        OldState = StateType(OldState_Arr.x...)
-        getProp! = constructPropagatorFunction(gamma,Lam,Par)
-        computeLeft2PartBubble!(B0,Γ0,Γ0,OldState.Γ,getProp!,Par,Buffer)
-        computeLeft2PartBubble!(BX,X,X,OldState.Γ,getProp!,Par,Buffer)
-        
-        getXFromBubbles!(X,B0,BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
-        getVertexFromChannels!(State.Γ,I,X)
-        symmetrizeVertex!(State.Γ,Par)
-        
+        BSE_iteration!(State,Workspace,Lam)
         iterateSDE_FP!(State.γ,State.Γ,B0,Γ0,Lam,Par,Buffer)
-        WS_State = ArrayPartition(Workspace.State)
-        WS_State .= State_Arr
+
         CurrentObs = getObsFunc(Workspace,Lam)
         push!(Obs,CurrentObs)
         if !Par.Options.MinimalOutput
@@ -190,7 +187,7 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
         # OldState_Arr .= State_Arr
         return State_Arr
     end
-    
+
     s = afps!(FixedPointFunction!,OldStateArr,iters = BSE_iters,vel = BSE_vel ,ep = BSE_epsilon,tol = accuracy)
     StateArr .= s.x
     println("""

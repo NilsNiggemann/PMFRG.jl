@@ -5,12 +5,12 @@ function writeTo!(A::T,B::T) where T <: VertexOrBubble
         b = getfield(B,f)
         writeTo!(a,b)
     end
-    return
+    return A
 end
 
 function writeTo!(A::AbstractArray,B::AbstractArray)
     A .= B
-    return
+    return A
 end
 
 """Computes total difference between two objects of type T by summing up the distance of all elements"""

@@ -252,9 +252,9 @@ function addBL!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it
             Ptm = Props[xk,xk]*m
 
             Bc_sum += (
-                Vc43[kj] * Γ0.c[ki]+
-                Vc34[kj] * Γ0.c[ki]
-            )* Ptm
+                Vc43[kj]+
+                Vc34[kj]
+            )* Ptm* Γ0.c[ki]
         end
         B.c[Rij,is,it,iu] += Bc_sum
     end

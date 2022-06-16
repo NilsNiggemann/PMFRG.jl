@@ -179,6 +179,8 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
         BSE_iteration!(State,Workspace,Lam)
         iterateSDE_FP!(State.γ,State.Γ,B0,Γ0,Lam,Par,Buffer)
 
+        writeTo!(Workspace.State,State) # need to do this since State is not equal to Workspace.State anymore!
+
         CurrentObs = getObsFunc(Workspace,Lam)
         push!(Obs,CurrentObs)
         if !Par.Options.MinimalOutput

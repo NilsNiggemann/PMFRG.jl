@@ -13,16 +13,17 @@ function test_runFRG(Par::PMFRGParams;kwargs...)
     
     println("cleaning up... deleting ",mainFile, " and ", CheckPoints)
     rm(tempFolder,recursive = true)
+    γ = SolP.u[end].x[2]
     Γa = SolP.u[end].x[3]
     Γb = SolP.u[end].x[4]
     Γc = SolP.u[end].x[5]
-    return Γa,Γb,Γc,ObsPt.saveval[end],Par
+    return γ,Γa,Γb,Γc,ObsPt.saveval[end],Par
 end
 
 
 function test_DimerFRG(Method = OneLoop();Obsacc = 1e-14,kwargs...)
-    Γa,Γb,Γc,Obs,Par = test_runFRG(Method,getPolymer(2))
-    test_FRGResults(Γa,Γb,Γc,Obs,Par;Obsacc = Obsacc,kwargs...)
+    γ,Γa,Γb,Γc,Obs,Par = test_runFRG(Method,getPolymer(2))
+    test_FRGResults(γ,Γa,Γb,Γc,Obs,Par;Obsacc = Obsacc,kwargs...)
     
     println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
     test_Gammab_Dimer(Γb;kwargs...)
@@ -31,13 +32,13 @@ end
 
 function test_SquagomeFRG(Method = OneLoop();Obsacc = 1e-14,kwargs...)
     SysFunc = SquareKagome.getMirrorSquareKagome
-    Γa,Γb,Γc,Obs,Par = test_runFRG(Method,SysFunc(4,1,0.2))
-    test_FRGResults(Γa,Γb,Γc,Obs,Par,(Method,SysFunc);Obsacc = Obsacc,kwargs...)
+    γ,Γa,Γb,Γc,Obs,Par = test_runFRG(Method,SysFunc(4,1,0.2))
+    test_FRGResults(γ,Γa,Γb,Γc,Obs,Par,(Method,SysFunc);Obsacc = Obsacc,kwargs...)
     
 end
 
-function test_FRGResults(Γa,Γb,Γc,Obs,Par,Method = PMFRG.getPMFRGMethod(Par);Obsacc=1e-14,kwargs...)
-    test_nonzero(Γa,Γb,Γc,Par.System.couplings)
+function test_FRGResults(γ,Γa,Γb,Γc,Obs,Par,Method = PMFRG.getPMFRGMethod(Par);Obsacc=1e-14,kwargs...)
+    test_nonzero(γ,Γa,Γb,Γc,Par.System.couplings)
 
     @testset verbose = true "Testing frequency symmetries" begin
         println("Testing onsite Γa_ii vertex")
@@ -73,7 +74,7 @@ function test_DimerParquet(;kwargs...)
     Γa,Γb,Γc = Sol.State.Γ.a,Sol.State.Γ.b,Sol.State.Γ.c
     test_BareBubbles(Sol;kwargs...)
     test_BubbleSymmetries(Sol;kwargs...)
-    test_FRGResults(Γa,Γb,Γc,Obs,Par;kwargs...)
+    test_FRGResults(Sol.State.γ,Γa,Γb,Γc,Obs,Par;kwargs...)
 end
 
 function test_Observables(Method,Obs;Obsacc=1e-14)
@@ -110,8 +111,11 @@ end
 
 test_Observables(Method::Parquet,Obs;Obsacc=1e-14) = println("Observables check not implemented for parquet")
 
-function test_nonzero(Γa,Γb,Γc,couplings)
+function test_nonzero(γ,Γa,Γb,Γc,couplings)
     @testset "non-trivial Vertices" begin
+        @testset "γ" begin
+            @test maximum(abs,γ) >0.
+        end
         @testset "Γa" begin
             @test maximum(abs,Γa) >0.
         end
@@ -123,6 +127,7 @@ function test_nonzero(Γa,Γb,Γc,couplings)
         end
     end
 end
+
 
 function test_tu_symmetries(Γa,Γb,Γc;kwargs...)
     test_tu_symmetry_ab(Γa,"Γa";kwargs...)

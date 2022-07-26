@@ -142,25 +142,54 @@ saveCurrentState(DirPath::Nothing,State::AbstractArray,saved_Values::DiffEqCallb
 """Rename CurrentState to FinalState as indicator that Job is finished"""
 function SetCompletionCheckmark(DirPath::String)
     CurrState = joinpath(DirPath,"CurrentState.h5")
-    FinState = UniqueDirName(joinpath(DirPath,"FinalState.h5"))
+    FinState = UniqueFileName(joinpath(DirPath,"FinalState.h5"))
     if ispath(CurrState)
         mv(CurrState,FinState)
     end
 end
 SetCompletionCheckmark(DirPath::Nothing) = nothing
-function UniqueDirName(FullPath)
-    newpath = FullPath
-    versionPath(index) = string(FullPath,"(v_",index,")")
-    while ispath(newpath)
-        it = findfirst("(v_",newpath)
-        if it !== nothing
-            currindex = parse(Int,newpath[it[end]+1:end-1])
-            newpath =versionPath(currindex+1)
-        else
-            newpath =versionPath(1)
+
+file_extension_pos(file::String) = findlast('.', file)
+function file_extension(file::String)
+    pos = file_extension_pos(file)
+    pos === nothing && return nothing
+    return file[pos+1:end]
+end
+
+function getVersionNumber(Path)
+    it = findlast("(v_",Path)
+    if it === nothing
+        return 0
+    else
+        it_1 = last(it)
+        brackindex = findlast(')',Path)
+        try
+            return parse(Int,Path[it_1+1:brackindex-1])
+            
+        catch e
+            println(Path, Path[it_1+1:brackindex-1])
+            throw(e)
         end
     end
-    return newpath
+end
+
+versionString(versNum) = "(v_$versNum)"
+
+function UniqueFileName(Path,versNum = getVersionNumber(Path))
+    ispath(Path) || return Path
+    ending = "."*file_extension(Path)
+    if versNum == 0
+        replace(Path,ending  => versionString(versNum+1)*ending)
+    end
+    replace(Path,versionString(versNum)  => versionString(versNum+1))
+end
+
+function UniqueDirName(Path,versNum = getVersionNumber(Path))
+    ispath(Path) || return Path
+    if versNum == 0
+        return Path * versionString(versNum+1)
+    end
+    return replace(Path, versionString(versNum)  => versionString(versNum+1))
 end
 
 function generateName_verbose(Directory::String,Par::PMFRGParams)
@@ -263,7 +292,7 @@ function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointLi
     if !isempty(checkPointList)
         if Lam < last(checkPointList) 
             Checkpoint = pop!(checkPointList)
-            CheckpointFile = UniqueDirName("$Directory/$(strd(Lam)).h5")
+            CheckpointFile = UniqueFileName("$Directory/$(strd(Lam)).h5")
             println("\nsaving Checkpoint Lam ≤ $Checkpoint at ",Lam)
             println("in file ", CheckpointFile)
             println("")

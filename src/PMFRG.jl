@@ -15,7 +15,7 @@ module PMFRG
     include("Flowequations_Dense.jl")
     include("FileIO.jl")
     include("Solver.jl")
-    export saveState, readState, readLam, saveParams, readParams, setupDirectory, saveCurrentState, UniqueDirName, generateName, setupFromCheckpoint, SolveFRG_Checkpoint,readGeometry, readObservables,getUnfinishedJobs,generateFileName
+    export saveState, readState, readLam, saveParams, readParams, setupDirectory, saveCurrentState, UniqueDirName,UniqueFileName, generateName, setupFromCheckpoint, SolveFRG_Checkpoint,readGeometry, readObservables,getUnfinishedJobs,generateFileName
     
     
     include("TwoLoop/TwoLoopPMFRG.jl")

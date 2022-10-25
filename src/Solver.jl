@@ -36,7 +36,7 @@ Allowed keyword arguments (with default values):
 
     MainFile = nothing,                             # Specifies name of main output file as a string.
                                                     # Defaults to 'nothing', in which case no output file is produced.
-    Group = DefaultGroup(setup[end]),               # Specifies the name of the subgroup of the main files HDF5 group to which the output data is written. 
+    Group = DefaultGroup(Par),               # Specifies the name of the subgroup of the main files HDF5 group to which the output data is written. Defaults to temperature
                                                     # Defaults to the value of temperature to allow temperature sweeps to be written to the same file.
     CheckpointDirectory = nothing,                  # Directory in which the current ODE state is written in regular intervals during the integration. 
                                                     # Default 'nothing' will not produce any backup!

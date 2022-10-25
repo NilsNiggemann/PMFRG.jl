@@ -30,6 +30,11 @@ function AllocateSetup(Par::OneLoopParams)
     return (X,Buffs,Par)
 end
 
+"""Converts t step used for integrator to Λ. Inverse of Lam_to_t."""
+t_to_Lam(t) = exp(t)
+"""Converts physical cutoff Λ to t (integrator step). Inverse of t_to_Lam."""
+Lam_to_t(t) = log(t)
+
 """
 Given a set of Parameters (currently, oneß and twoloop are implemented), solves the set of differential flow equations and returns the ODE solution object along with an array of Observables at each lambda step.
 Allowed keyword arguments (with default values):
@@ -114,14 +119,13 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     if !Par.Options.MinimalOutput
         println(sol.destats)
     end
+    saved_values.t .= t_to_Lam.(saved_values.t)
     saveCurrentState(CheckpointDirectory,sol[end],saved_values,t_to_Lam(sol.t[end]),Par)
     saveMainOutput(MainFile,sol,saved_values,Par,Group)
 
     SetCompletionCheckmark(CheckpointDirectory)
     return sol,saved_values
 end
-t_to_Lam(t) = exp(t)
-Lam_to_t(t) = Lam_to_t(t)
 
 get_t_min(Lam) = max(Lam_to_t(Lam),-20.)
 

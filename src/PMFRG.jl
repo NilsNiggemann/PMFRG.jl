@@ -27,7 +27,6 @@ module PMFRG
     include("MultiLoop/MultiLoopPMFRG.jl")
     export MultiLoop,Parquet,SolveParquet
 
-    include("UnitTests/UnitTests.jl")
     # export UnitTests
 
     #Precompilation

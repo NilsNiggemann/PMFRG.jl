@@ -1,6 +1,3 @@
-# module UnitTests
-using Test
-# using PMFRG,SpinFRGLattices,Parameters,Test
 BenchmarkingParams(Method,System = getPolymer(2)) = Params(
     System,
     Method,
@@ -37,19 +34,15 @@ Params(getPolymer(2),Parquet(),N=16,T=0.7,lenIntw = 120)
 
 include("ExampleObservables.jl")
 include("DimerTest.jl")
-export test_DimerFRG,test_Gammab_Dimer,test_Gammaa_onsite,test_tu_symmetries,test_DimerParquet
 
 include("BubbleTest.jl")
-export test_BubbleSymmetries
 
 include("TypeStability.jl")
-export test_OneLoopAllocations
 
 include("IOTests.jl")
 include("ParquetTest.jl")
 
-
-function test_all(;Obsacc = 1e-14 )
+function testOneLoop(Obsacc = 1e-14)
     @testset "OneLoop" verbose = true begin
         @testset "Allocations" verbose = true begin
             test_OneLoopAllocations(Params(getPolymer(2)))
@@ -62,7 +55,9 @@ function test_all(;Obsacc = 1e-14 )
             test_SquagomeFRG(OneLoop(),Obsacc = Obsacc,tol = 1e-8)
         end
     end
-    
+end
+
+function testTwoLoop(Obsacc = 1e-14)
     @testset "TwoLoop" verbose = true begin
         @testset "Allocations" verbose = true begin
             test_TwoLoopAllocations(Params(getPolymer(2),TwoLoop()))
@@ -75,14 +70,11 @@ function test_all(;Obsacc = 1e-14 )
             test_SquagomeFRG(TwoLoop(),Obsacc = Obsacc,tol = 1e-8)
         end
     end
+end
+
+function testParquet()
     @testset "Parquet" verbose = true begin
         test_DimerParquet(tol = 1e-6) 
         test_SDE() 
     end
-
-    @testset "FileIO" begin
-        test_IO()
-    end
 end
-
-# end

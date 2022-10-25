@@ -8,7 +8,7 @@ function getEmptyWorkspace(Par::PMFRG.OneLoopParams)
     PMFRG.OneLoopWorkspace(Deriv,State,X,Buffs,Par)
 end
 
-convertToSMatrix(M::MMatrix{N,N,T,NN}) where {N,T,NN} = SMatrix{N,N,T,NN}(M)
+convertToSMatrix(M::PMFRG.MMatrix{N,N,T,NN}) where {N,T,NN} = PMFRG.SMatrix{N,N,T,NN}(M)
 
 """Checks whether vertex derivative has type instabilities"""
 function test_OneLoopAllocations(Par=Params(getPolymer(2)))
@@ -21,11 +21,11 @@ function test_OneLoopAllocations(Par=Params(getPolymer(2)))
     test_OneLoopAllocations(Par,WS,SProps,VBuff)
 end
 function test_OneLoopAllocations(Par,WS,SProps,VBuff)
-    addX!(WS,1,1,2,2,SProps,VBuff) # compile functions
-    addXTilde!(WS,1,1,2,2,SProps) # compile functions
+    PMFRG.addX!(WS,1,1,2,2,SProps,VBuff) # compile functions
+    PMFRG.addXTilde!(WS,1,1,2,2,SProps) # compile functions
 
-    aX = @allocated addX!(WS,1,1,2,2,SProps,VBuff)
-    aXT = @allocated addXTilde!(WS,1,1,2,2,SProps)
+    aX = @allocated PMFRG.addX!(WS,1,1,2,2,SProps,VBuff)
+    aXT = @allocated PMFRG.addXTilde!(WS,1,1,2,2,SProps)
     test_TypeStability(Par,WS,aX,aXT)
 end
 
@@ -64,15 +64,15 @@ function test_TwoLoopAllocations(Par=Params(getPolymer(2),TwoLoop()))
     test_TwoLoopAllocations(Par,WS,PropB,VB,XB)
 end
 function test_TwoLoopAllocations(Par,WS,PropB,VB,XB)
-    addBL!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB) #compile functions
-    addBR!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB) #compile functions
-    addBLTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB) #compile functions
-    addBRTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB) #compile functions
+    PMFRG.addBL!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB) #compile functions
+    PMFRG.addBR!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB) #compile functions
+    PMFRG.addBLTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB) #compile functions
+    PMFRG.addBRTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB) #compile functions
     
-    aX = @allocated addBL!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB)
-    aX += @allocated addBR!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB)
-    aXT = @allocated addBLTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB)
-    aXT += @allocated addBRTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB)
+    aX = @allocated PMFRG.addBL!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB)
+    aX += @allocated PMFRG.addBR!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB)
+    aXT = @allocated PMFRG.addBLTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB)
+    aXT += @allocated PMFRG.addBRTilde!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB)
     
     test_TypeStability(Par,WS,aX,aXT)
 

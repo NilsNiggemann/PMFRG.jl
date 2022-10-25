@@ -1,3 +1,8 @@
-using PMFRG
+using PMFRG,SpinFRGLattices,Test
+Obsacc = 1e-14
+include("UnitTests/UnitTests.jl")
 
-PMFRG.test_all()
+testOneLoop(Obsacc)
+testTwoLoop(Obsacc)
+testParquet()
+test_IO()

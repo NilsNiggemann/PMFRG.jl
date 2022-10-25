@@ -207,7 +207,7 @@ function _generateFileName(Par::PMFRGParams,arg::String = "")
     Name = Par.System.Name
     N = Par.NumericalParams.N
 
-    FName = "$(Name)_N=$(N)$arg.h5"
+    FName = "PMFRG_$(Name)_N=$(N)$arg.h5"
     return FName
 end
 generateFileName(Par::PMFRGParams,arg::String = "") = _generateFileName(Par,arg)

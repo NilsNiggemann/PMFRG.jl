@@ -71,23 +71,23 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
 
     @unpack Lam_max,Lam_min,accuracy = Par.NumericalParams
-    save_func(State,t,integrator) = getObservables(State,t,Par)
+    save_func(State,t,integrator) = getObservables(State,t_to_Lam(t),Par)
     
     saved_values = SavedValues(double,Observables)
     i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function bareOutput(State,t,integrator)
-        Lam = exp(t)
+        Lam = t_to_Lam(t)
         i+=1
         i%CheckPointSteps == 0 && setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
     end
     
     function verboseOutput(State,t,integrator)
-        Lam = exp(t)
+        Lam = t_to_Lam(t)
         println("Time taken for output saving: ")
         @time bareOutput(State,t,integrator)
         println("") 
-        writeOutput(State,saved_values,t,Par)
+        writeOutput(State,saved_values,Lam,Par)
     end
 
     function getOutputfunction(MinimalOutput)
@@ -106,41 +106,43 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
     unstable_check(dt,u,p,t) = maximum(abs,u) >MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
 
-    t0 = log(Lam_max)
+    t0 = Lam_to_t(Lam_max)
     tend = get_t_min(Lam_min)
     problem = ODEProblem(Deriv!,State,(t0,tend),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=log(0.2*Lam_max),unstable_check = unstable_check;kwargs...)
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=Lam_to_t(0.2*Lam_max),unstable_check = unstable_check;kwargs...)
     if !Par.Options.MinimalOutput
         println(sol.destats)
     end
-    saveCurrentState(CheckpointDirectory,sol[end],saved_values,sol.t[end],Par)
+    saveCurrentState(CheckpointDirectory,sol[end],saved_values,t_to_Lam(sol.t[end]),Par)
     saveMainOutput(MainFile,sol,saved_values,Par,Group)
 
     SetCompletionCheckmark(CheckpointDirectory)
     return sol,saved_values
 end
-get_t_min(Lam) = max(log(Lam),-30.)
+t_to_Lam(t) = exp(t)
+Lam_to_t(t) = Lam_to_t(t)
+
+get_t_min(Lam) = max(Lam_to_t(Lam),-20.)
 
 DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 
-function getObservables(State::ArrayPartition,t,Par)
+function getObservables(State::ArrayPartition,Lam,Par)
     f_int,gamma,Va,Vb,Vc = State.x
-    Lam = exp(t)
     chi = getChi(State,Lam,Par)
     MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
     MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
     MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
     return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
 end
-writeOutput(State::ArrayPartition,saved_values,t,Par) = writeOutput(State.x...,saved_values.saveval[end],t,Par)
+writeOutput(State::ArrayPartition,saved_values,Lam,Par) = writeOutput(State.x...,saved_values.saveval[end],Lam,Par)
 
-function writeOutput(f_int,gamma,Va,Vb,Vc,obs,t,Par)
+function writeOutput(f_int,gamma,Va,Vb,Vc,obs,Lam,Par)
     @unpack MinimalOutput,usesymmetry = Par.Options
     @unpack N,np_vec,T = Par.NumericalParams
     chi = obs.Chi
-    Lam = exp(t)
-    print("T= ",strd(T)," at t step: ",strd(t)," = ln(",strd(Lam),")\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
+    t = Lam_to_t(Lam)
+    print("T= ",strd(T)," at t step: ",strd(t),", Λ = exp(t) = ",strd(Lam),")\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
     for f in f_int
         print(strd(f),",")
     end
@@ -197,7 +199,7 @@ end
 
 function gettMesh(Saveat::Nothing,Lam_min,Lam_max)
     tmin = get_t_min(Lam_min)
-    tmax = log(Lam_max)
+    tmax = Lam_to_t(Lam_max)
     LinRange(tmin,tmax,150)
 end
 

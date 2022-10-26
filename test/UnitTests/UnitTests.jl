@@ -5,7 +5,7 @@ BenchmarkingParams(Method,System = getPolymer(2)) = Params(
     N = 10,
     Ngamma = 10,
     accuracy = 1e-3,
-    Lam_min = 0.0,
+    Lam_min = 1e-30,
     Lam_max = 100.0,
     usesymmetry = false,
     MinimalOutput = true,

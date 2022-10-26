@@ -204,13 +204,12 @@ function getLambdaMesh(Saveat::Nothing,Lam_min,Lam_max)
     return ObsSaveat
 end
 
-function gettMesh(Saveat::Nothing,Lam_min,Lam_max)
-    tmin = get_t_min(Lam_min)
-    tmax = Lam_to_t(Lam_max)
-    LinRange(tmin,tmax,150)
-end
-
-gettMesh(Saveat::AbstractVector,Lam_min,Lam_max) = Saveat
+# function gettMesh(Saveat::Nothing,Lam_min,Lam_max)
+#     tmin = get_t_min(Lam_min)
+#     tmax = Lam_to_t(Lam_max)
+#     LinRange(tmin,tmax,150)
+# end
+gettMesh(Saveat,Lam_min,Lam_max) = Lam_to_t.(getLambdaMesh(Saveat,Lam_min,Lam_max))
 
 function getLambdaMesh(Saveat::Vector{Float64},Lam_min,Lam_max)
     return unique(push!(Saveat,Lam_max)) # make sure that there is at least one element at beginning of code

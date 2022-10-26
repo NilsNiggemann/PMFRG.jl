@@ -127,7 +127,10 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     return sol,saved_values
 end
 
-get_t_min(Lam) = max(Lam_to_t(Lam),-30.)
+function get_t_min(Lam)
+    Lam < exp(-30) && @warn "Lam_min too small! Set to exp(-30) instead."
+    max(Lam_to_t(Lam),-30.)
+end
 
 DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 

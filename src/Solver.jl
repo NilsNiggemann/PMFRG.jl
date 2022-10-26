@@ -149,7 +149,7 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,Lam,Par)
     @unpack N,np_vec,T = Par.NumericalParams
     chi = obs.Chi
     t = Lam_to_t(Lam)
-    print("T= ",strd(T)," at t step: ",strd(t),", Λ = exp(t) = ",strd(Lam),")\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
+    print("T= ",strd(T)," at t step: ",strd(t),", Λ = exp(t) = ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
     for f in f_int
         print(strd(f),",")
     end

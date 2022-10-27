@@ -5,7 +5,7 @@ BenchmarkingParams(Method,System = getPolymer(2)) = Params(
     N = 10,
     Ngamma = 10,
     accuracy = 1e-3,
-    Lam_min = 1e-30,
+    Lam_min = exp(-30),
     Lam_max = 100.0,
     usesymmetry = false,
     MinimalOutput = true,
@@ -27,10 +27,6 @@ BenchmarkingParams(Method::Parquet,System = getPolymer(2)) = Params(
     lenIntw = 60,
     lenIntw_acc = 60
 )
-
-
-Params(getPolymer(2),Parquet(),N=16,T=0.7,lenIntw = 120)
-
 
 include("ExampleObservables.jl")
 include("DimerTest.jl")

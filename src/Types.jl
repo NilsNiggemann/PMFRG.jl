@@ -17,7 +17,7 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     Ngamma::Int = 100 #Number of gamma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
     accuracy::double = 1e-6
-    Lam_min::double = exp(-10.)
+    Lam_min::double = exp(-10.),
     Lam_max::double = exp(10.),
     usesymmetry::Bool = true
     MinimalOutput::Bool = false

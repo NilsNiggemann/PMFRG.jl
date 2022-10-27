@@ -17,13 +17,13 @@ function test_runFRG(Par::PMFRG.PMFRGParams;kwargs...)
     Γa = SolP.u[end].x[3]
     Γb = SolP.u[end].x[4]
     Γc = SolP.u[end].x[5]
-    return γ,Γa,Γb,Γc,ObsPt.saveval[end],Par
+    return γ,Γa,Γb,Γc,ObsPt.saveval[end],ObsPt.t,Par
 end
 
 
 function test_DimerFRG(Method = OneLoop();Obsacc = 1e-14,kwargs...)
-    γ,Γa,Γb,Γc,Obs,Par = test_runFRG(Method,getPolymer(2))
-    test_FRGResults(γ,Γa,Γb,Γc,Obs,Par;Obsacc = Obsacc,kwargs...)
+    γ,Γa,Γb,Γc,Obs,t,Par = test_runFRG(Method,getPolymer(2))
+    test_FRGResults(γ,Γa,Γb,Γc,Obs,t,Par;Obsacc = Obsacc,kwargs...)
     
     println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
     test_Gammab_Dimer(Γb;kwargs...)
@@ -32,12 +32,16 @@ end
 
 function test_SquagomeFRG(Method = OneLoop();Obsacc = 1e-14,kwargs...)
     SysFunc = SquareKagome.getMirrorSquareKagome
-    γ,Γa,Γb,Γc,Obs,Par = test_runFRG(Method,SysFunc(4,1,0.2))
-    test_FRGResults(γ,Γa,Γb,Γc,Obs,Par,(Method,SysFunc);Obsacc = Obsacc,kwargs...)
+    γ,Γa,Γb,Γc,Obs,t,Par = test_runFRG(Method,SysFunc(4,1,0.2))
+    test_FRGResults(γ,Γa,Γb,Γc,Obs,t,Par,(Method,SysFunc);Obsacc = Obsacc,kwargs...)
     
 end
 
-function test_FRGResults(γ,Γa,Γb,Γc,Obs,Par,Method = PMFRG.getPMFRGMethod(Par);Obsacc=1e-14,kwargs...)
+function test_FRGResults(γ,Γa,Γb,Γc,Obs,t,Par,Method = PMFRG.getPMFRGMethod(Par);Obsacc=1e-14,kwargs...)
+    @testset "Λ saved values" begin
+        @test t[end] ≈ Par.NumericalParams.Lam_min
+    end
+    
     test_nonzero(γ,Γa,Γb,Γc,Par.System.couplings)
 
     @testset verbose = true "Testing frequency symmetries" begin
@@ -74,7 +78,7 @@ function test_DimerParquet(;kwargs...)
     Γa,Γb,Γc = Sol.State.Γ.a,Sol.State.Γ.b,Sol.State.Γ.c
     test_BareBubbles(Sol;kwargs...)
     test_BubbleSymmetries(Sol;kwargs...)
-    test_FRGResults(Sol.State.γ,Γa,Γb,Γc,Obs,Par;kwargs...)
+    test_FRGResults(Sol.State.γ,Γa,Γb,Γc,Obs,Par.NumericalParams.Lam_min,Par;kwargs...)
 end
 
 function test_Observables(Method,Obs;Obsacc=1e-14)

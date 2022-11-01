@@ -21,22 +21,3 @@ mainFile = "temp/"*PMFRG.generateFileName(Par,"_testFile") # specify a file name
 flowpath = "temp/flows/" # specify path for vertex checkpoints
 
 Solution,saved_values = SolveFRG(Par,MainFile = mainFile ,CheckpointDirectory = flowpath,method = DP5(),VertexCheckpoints = [],CheckPointSteps = 3 )
-
-## Evaluation part
-
-using HDF5, FRGLatticeEvaluation
-using CairoMakie #for plotting. You can use whatever plotting package you like of course
-##
-Lattice = LatticeInfo(System,SquareLattice)
-
-chi_ΛR = h5read(mainFile,"0.5/Chi")
-chi_R = chi_ΛR[:,end]
-T = h5read(mainFile,"0.5/T")
-
-chi = getFourier(chi_R,Lattice)
-
-k = LinRange(-2pi,2pi,100)
-
-chik = [chi(x,y) for x in k, y in k]
-
-heatmap(k,k,chik)

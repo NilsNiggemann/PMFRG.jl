@@ -393,7 +393,7 @@ version = "3.3.10+0"
 deps = ["LaTeXStrings", "SLEEFPirates", "SpinFRGLattices", "StaticArrays", "Test"]
 git-tree-sha1 = "e7f8f2c1cd1e912ab746872784457f332bfa508f"
 repo-rev = "master"
-repo-url = "git@gitlabph.physik.fu-berlin.de:niggeni/FRGLatticeEvaluation.jl.git"
+repo-url = "git@gitlabph.physik.fu-berlin.de:julia-frg/FRGLatticeEvaluation.jl.git"
 uuid = "a44b592b-45f7-4b02-a4df-e53b23f0d903"
 version = "0.1.0"
 
@@ -584,7 +584,7 @@ version = "0.16.12"
 deps = ["HDF5", "Test"]
 git-tree-sha1 = "6eb03792c101d4e3279e12cf1940b76ce1c91257"
 repo-rev = "master"
-repo-url = "git@gitlabph.physik.fu-berlin.de:niggeni/HDF5Helpers.jl.git"
+repo-url = "git@gitlabph.physik.fu-berlin.de:julia-frg/HDF5Helpers.jl.git"
 uuid = "2867bddc-101e-43c9-836d-7ce2d0afa337"
 version = "0.1.1"
 
@@ -1076,7 +1076,7 @@ version = "0.11.16"
 deps = ["DiffEqCallbacks", "FixedPoint", "H5Zblosc", "HDF5", "LoopVectorization", "OrdinaryDiffEq", "Parameters", "Printf", "RecursiveArrayTools", "SpinFRGLattices", "StructArrays", "Test"]
 git-tree-sha1 = "0069a1af0cdb1d264a85f7fb8d6e9ae60f306d8b"
 repo-rev = "master"
-repo-url = "git@gitlabph.physik.fu-berlin.de:niggeni/pmfrg.jl.git"
+repo-url = "git@gitlabph.physik.fu-berlin.de:julia-frg/pmfrg.jl.git"
 uuid = "37d616f8-0bcb-4e18-9a76-f5d18f52650d"
 version = "2.1.4"
 
@@ -1084,7 +1084,7 @@ version = "2.1.4"
 deps = ["Dierckx", "FRGLatticeEvaluation", "HDF5", "HDF5Helpers", "LaTeXStrings", "Parameters", "RecursiveArrayTools", "Reexport", "Roots", "SmoothingSplines", "SpinFRGLattices", "StaticArrays"]
 git-tree-sha1 = "077df7b5611c393e711eba0fd963e3a175f10c7c"
 repo-rev = "master"
-repo-url = "git@gitlabph.physik.fu-berlin.de:niggeni/PMFRGEvaluation.git"
+repo-url = "git@gitlabph.physik.fu-berlin.de:julia-frg/PMFRGEvaluation.git"
 uuid = "12f9d3e0-c7ac-4982-a146-f6f67cbda763"
 version = "1.0.0"
 
@@ -1404,7 +1404,7 @@ version = "2.1.7"
 deps = ["Parameters", "StaticArrays", "StructArrays", "Test"]
 git-tree-sha1 = "182f9f2afcf14b0bf515f2d293cbdca5be3bfd3e"
 repo-rev = "master"
-repo-url = "git@gitlabph.physik.fu-berlin.de:niggeni/spinfrglattices.jl.git"
+repo-url = "git@gitlabph.physik.fu-berlin.de:julia-frg/spinfrglattices.jl.git"
 uuid = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
 version = "0.3.12"
 

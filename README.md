@@ -97,3 +97,6 @@ add git@gitlabph.physik.fu-berlin.de:niggeni/spinfrglattices.jl.git, git@gitlabp
 Probably, this can be made more convenient, possibly by switching to public github repositories (which is the plan anyway).
 
 I recommend setting up a new evaluation environment for each project. If you use the same for everything, you might not be able to reproduce plots you made a while ago, because the plotting package or the evaluation package may have changed.
+
+## Implementing your own lattices
+Of course you will eventually have to implement lattices which are not included already, change the couplings, or even remove symmetries. As long as you feed a valid geometry struct from `SpinFRGLattices` to the FRG code (which is quite minimalistic), it should not be necessary to make direct changes to the library. `SpinFRGLattices` contains mostly helper functions to make your life easier. Documentation of how to use it to implement new lattices is found soon in the repository `git@gitlabph.physik.fu-berlin.de:niggeni/spinfrglattices.jl.git`

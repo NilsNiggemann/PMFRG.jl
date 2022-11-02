@@ -4,13 +4,13 @@
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```
 ## Installation
- Currently, you need to have access to this repository to install the package. If you can read this then you have access and the following should work. It is advise to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ . Note that to install [`PMFRG.jl`](https://gitlabph.physik.fu-berlin.de/niggeni/pmfrg.jl) the package [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/niggeni/spinfrglattices.jl)) is also required. To install both, just paste the following into the Julia REPL:
+ Currently, you need to have access to this repository to install the package. If you can read this then you have access and the following should work. It is advise to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ . Note that to install [`PMFRG.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/pmfrg.jl) the package [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/spinfrglattices.jl)) is also required. To install both, just paste the following into the Julia REPL:
 ```
-]add git@gitlabph.physik.fu-berlin.de:niggeni/spinfrglattices.jl.git, "git@gitlabph.physik.fu-berlin.de:niggeni/pmfrg.jl.git"
+]add git@gitlabph.physik.fu-berlin.de:julia-frg/spinfrglattices.jl.git, git@gitlabph.physik.fu-berlin.de:julia-frg/pmfrg.jl.git
 ```
 If ssh authentication is not possible, the package can also be installed using https instead. The following will require a password to the repository:
 ```
-]add https://gitlabph.physik.fu-berlin.de/niggeni/spinfrglattices.jl.git, https://gitlabph.physik.fu-berlin.de/niggeni/pmfrg.jl.git
+]add https://gitlabph.physik.fu-berlin.de/julia-frg/spinfrglattices.jl.git, https://gitlabph.physik.fu-berlin.de/julia-frg/pmfrg.jl.git
 ```
 
 ## Usage
@@ -69,7 +69,7 @@ close(f)
 For longer runs, it is advisable to specify a `CheckPointDirectory`, where regular Checkpoints of the Solution state are stored. From each checkpoint, the Solver can be re-started. Also, the data can be used to for further anaysis, if complete vertex information should be required.
 Note that a single Checkpoint may take up several Gigabytes of storage (for cluster-sized problems) so they should be saved to the scratch directory.
 ## Evaluation
-Since susceptibilities are returned as a list according to pre-selected symmetry inequivalent pairs, the library [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/niggeni/spinfrglattices.jl)) has to be used for evaluation. To compute Fourier transforms (and other things), it is helpful to use the package [`PMFRGEvaluation`](`git@gitlabph.physik.fu-berlin.de:niggeni/(https://gitlabph.physik.fu-berlin.de/niggeni/)PMFRGEvaluation.git`). As an example, the following code plots the magnetic susceptibility for the data generated above.
+Since susceptibilities are returned as a list according to pre-selected symmetry inequivalent pairs, the library [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/spinfrglattices.jl)) has to be used for evaluation. To compute Fourier transforms (and other things), it is helpful to use the package [`PMFRGEvaluation`](`git@gitlabph.physik.fu-berlin.de:julia-frg/(https://gitlabph.physik.fu-berlin.de/julia-frg/)PMFRGEvaluation.git`). As an example, the following code plots the magnetic susceptibility for the data generated above.
 ```
 using HDF5, PMFRGEvaluation
 using CairoMakie #for plotting. You can use whatever plotting package you like of course
@@ -89,15 +89,15 @@ heatmap(k,k,chik)
 
 ```
 ## More Examples
-A more thorough set of examples is found in the Examples folder of this repository. For code reuse, the dependencies of [`PMFRGEvaluation`](`git@gitlabph.physik.fu-berlin.de:niggeni/(https://gitlabph.physik.fu-berlin.de/niggeni/)PMFRGEvaluation.git`) are split into several subdependencies. To try out the examples, activate the project environment with `]activate Example` and download all dependencies with `]instantiate`.
+A more thorough set of examples is found in the Examples folder of this repository. For code reuse, the dependencies of [`PMFRGEvaluation`](`git@gitlabph.physik.fu-berlin.de:julia-frg/(https://gitlabph.physik.fu-berlin.de/julia-frg/)PMFRGEvaluation.git`) are split into several subdependencies. To try out the examples, activate the project environment with `]activate Example` and download all dependencies with `]instantiate`.
 To install packages in a new environment, with up-to-date packages, we need to manually download the private sub-repositories (I don't know, why). The example project was initialized with:
 
 ```
-add git@gitlabph.physik.fu-berlin.de:niggeni/spinfrglattices.jl.git, git@gitlabph.physik.fu-berlin.de:niggeni/HDF5Helpers.jl.git,git@gitlabph.physik.fu-berlin.de:niggeni/pmfrg.jl.git, git@gitlabph.physik.fu-berlin.de:niggeni/FRGLatticeEvaluation.jl.git,git@gitlabph.physik.fu-berlin.de:niggeni/PMFRGEvaluation.git, CairoMakie
+add git@gitlabph.physik.fu-berlin.de:julia-frg/spinfrglattices.jl.git, git@gitlabph.physik.fu-berlin.de:julia-frg/HDF5Helpers.jl.git,git@gitlabph.physik.fu-berlin.de:julia-frg/pmfrg.jl.git, git@gitlabph.physik.fu-berlin.de:julia-frg/FRGLatticeEvaluation.jl.git,git@gitlabph.physik.fu-berlin.de:julia-frg/PMFRGEvaluation.git, CairoMakie
 ```
 Probably, this can be made more convenient, possibly by switching to public github repositories (which is the plan anyway).
 
 I recommend setting up a new evaluation environment for each project. If you use the same for everything, you might not be able to reproduce plots you made a while ago, because the plotting package or the evaluation package may have changed.
 
 ## Implementing your own lattices
-Of course you will eventually have to implement lattices which are not included already, change the couplings, or even remove symmetries. As long as you feed a valid geometry struct from [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/niggeni/spinfrglattices.jl) to the FRG code (which is quite minimalistic), it should not be necessary to make direct changes to the library. [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/niggeni/spinfrglattices.jl)) contains mostly helper functions to make your life easier. Documentation of how to use it to implement new lattices is found soon in the repository.
+Of course you will eventually have to implement lattices which are not included already, change the couplings, or even remove symmetries. As long as you feed a valid geometry struct from [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/spinfrglattices.jl) to the FRG code (which is quite minimalistic), it should not be necessary to make direct changes to the library. [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/spinfrglattices.jl)) contains mostly helper functions to make your life easier. Documentation of how to use it to implement new lattices is found soon in the repository.

@@ -4,11 +4,22 @@
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```
 ## Installation
- Currently, you need to have access to this repository to install the package. If you can read this then you have access and the following should work. It is advise to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ . Note that to install [`PMFRG.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/PMFRG.jl) the package [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl)) is also required. To install both, just paste the following into the Julia REPL:
-```
-]add git@gitlabph.physik.fu-berlin.de:julia-frg/SpinFRGLattices.jl.git, git@gitlabph.physik.fu-berlin.de:julia-frg/PMFRG.jl.git
-```
-If ssh authentication is not possible, the package can also be installed using https instead. The following will require a password to the repository:
+ Currently, you need to have access to this repository to install the package. If you can read this then you have access and the following should work. It is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ . Note that to install [`PMFRG.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/PMFRG.jl) the package [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl)) is also required. 
+
+- *Only once:* To install the packages from Julia-FRG, please download the Julia FRG registry first. This is done by entering the `Pkg` mode by typing a single bracket into the REPL: `]`. Then, execute the following 
+    ```
+    (@v1.8) pkg> registry add git@gitlabph.physik.fu-berlin.de:julia-frg/JuliaFRGRegistry.git
+    ```
+
+- After the registry is added, you can simply install packages to any new environment:
+    ```
+    (@v1.8) pkg> activate TestProject
+    Activating new project at `~/TestProject`
+
+    (TestProject) pkg> add PMFRG
+    ```
+ 
+If ssh authentication is not possible (unfortunately the case on some clusters), the packages can also be installed using https instead. The following will require a password to the repository:
 ```
 ]add https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl.git, https://gitlabph.physik.fu-berlin.de/julia-frg/PMFRG.jl.git
 ```
@@ -90,12 +101,6 @@ heatmap(k,k,chik)
 ```
 ## More Examples
 A more thorough set of examples is found in the Examples folder of this repository. For code reuse, the dependencies of [`PMFRGEvaluation`](`git@gitlabph.physik.fu-berlin.de:julia-frg/(https://gitlabph.physik.fu-berlin.de/julia-frg/)PMFRGEvaluation.git`) are split into several subdependencies. To try out the examples, activate the project environment with `]activate Example` and download all dependencies with `]instantiate`.
-To install packages in a new environment, with up-to-date packages, we need to manually download the private sub-repositories (I don't know, why). The example project was initialized with:
-
-```
-add git@gitlabph.physik.fu-berlin.de:julia-frg/SpinFRGLattices.jl.git, git@gitlabph.physik.fu-berlin.de:julia-frg/HDF5Helpers.jl.git,git@gitlabph.physik.fu-berlin.de:julia-frg/PMFRG.jl.git, git@gitlabph.physik.fu-berlin.de:julia-frg/FRGLatticeEvaluation.jl.git,git@gitlabph.physik.fu-berlin.de:julia-frg/PMFRGEvaluation.git, CairoMakie
-```
-Probably, this can be made more convenient, possibly by switching to public github repositories (which is the plan anyway).
 
 I recommend setting up a new evaluation environment for each project. If you use the same for everything, you might not be able to reproduce plots you made a while ago, because the plotting package or the evaluation package may have changed.
 

@@ -1,8 +1,8 @@
 # PMFRG.jl
-`PMFRG` is a Julia package used to compute observables for spin-$1/2$ Heisenberg models of the form
-$$
+`PMFRG` is a Julia package used to compute observables for spin-$`1/2`$ Heisenberg models of the form
+```math
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
-$$
+```
 ## Installation
  Currently, you need to have access to this repository to install the package. If you can read this then you have access and the following should work. It is advise to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ . Note that to install `PMFRG.jl` the package `SpinFRGLattices.jl` is also required. To install both, just paste the following into the Julia REPL:
 ```

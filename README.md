@@ -66,7 +66,8 @@ julia> chi = read(f["0.5/Chi"]);
 julia> wholefileasDict = read(f);
 close(f)
 ```
-
+For longer runs, it is advisable to specify a `CheckPointDirectory`, where regular Checkpoints of the Solution state are stored. From each checkpoint, the Solver can be re-started. Also, the data can be used to for further anaysis, if complete vertex information should be required.
+Note that a single Checkpoint may take up several Gigabytes of storage (for cluster-sized problems) so they should be saved to the scratch directory.
 ## Evaluation
 Since susceptibilities are returned as a list according to pre-selected symmetry inequivalent pairs, the library `SpinFRGLattices` has to be used for evaluation. To compute Fourier transforms (and other things), it is helpful to use the package `PMFRGEvaluation` (`git@gitlabph.physik.fu-berlin.de:niggeni/PMFRGEvaluation.git`). As an example, the following code plots the magnetic susceptibility for the data generated above.
 ```

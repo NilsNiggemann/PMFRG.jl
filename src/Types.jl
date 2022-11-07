@@ -16,12 +16,12 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     N::Int = 24
     Ngamma::Int = 100 #Number of gamma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
-    accuracy::double = 1e-6
-    Lam_min::double = exp(-10.),
-    Lam_max::double = exp(10.),
+    accuracy::Float64 = 1e-6
+    Lam_min::Float64 = exp(-10.),
+    Lam_max::Float64 = exp(10.),
     usesymmetry::Bool = true
     MinimalOutput::Bool = false
-    ex_freq::double = (2*N-1)*pi*T
+    ex_freq::Float64 = (2*N-1)*pi*T
     lenIntw::Int = N
     lenIntw_acc::Int = 2*maximum((N,Ngamma,lenIntw)) # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1)

@@ -44,7 +44,7 @@ Convenience struct containing references to arrays for vertices and their deriva
 """
 struct OneLoopWorkspace{F,PropsBuff,VertexBuff,ParType <: OneLoopParams} <:PMFRGWorkspace
     State::StateType{F} #Stores the current state
-    Deriv::StateType{F} #Stores the derv
+    Deriv::StateType{F} #Stores the derivative
     
     X::BubbleType{F} #Stores the bubble function X and XTilde
 

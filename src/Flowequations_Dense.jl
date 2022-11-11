@@ -1,8 +1,7 @@
-function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},t) where T
+function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) where T
     (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
 
-	Lam = exp(t)
     getDFint!(Workspace,Lam)
     get_Self_Energy!(Workspace,Lam)
 
@@ -12,15 +11,9 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},t) where
 
     addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
     symmetrizeVertex!(Workspace.Deriv.Γ,Par)
-	adjust_tSubstitution!(Deriv,Lam)
     flush(stdout)
     return
 end
-
-function adjust_tSubstitution!(Deriv::AbstractArray,Lam)
-	Deriv .*= Lam
-end
-
 
 function getDFint!(Workspace::PMFRGWorkspace,Lam::double)
     @unpack State,Deriv,Par = Workspace 
@@ -541,5 +534,3 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
     end
 	return(Chi)
 end
-
-getChi_t(gamma::AbstractArray,Γc::AbstractArray, t::double,args...) = getChi(gamma,Γc,exp(t),args...)

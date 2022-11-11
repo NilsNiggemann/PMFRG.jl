@@ -1,5 +1,4 @@
-function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},t) where T
-    Lam = exp(t)
+function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},Lam) where T
     X,Y,Buffs,Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = TwoLoopWorkspace(Deriv,State,X,Y,Buffs,Par)
 
@@ -15,7 +14,6 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParam
     addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.Y)
 
     symmetrizeVertex!(Workspace.Deriv.Γ,Par)
-	adjust_tSubstitution!(Deriv,Lam)
     return
 end
 

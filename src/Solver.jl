@@ -113,7 +113,8 @@ function launchPMFRG!(State,setup,Deriv!::Function;
 
     t0 = Lam_to_t(Lam_max)
     tend = get_t_min(Lam_min)
-    problem = ODEProblem(Deriv!,State,(t0,tend),setup)
+    Deriv_subst! = generateSubstituteDeriv(Deriv!)
+    problem = ODEProblem(Deriv_subst!,State,(t0,tend),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=Lam_to_t(0.2*Lam_max),unstable_check = unstable_check;kwargs...)
     if !Par.Options.MinimalOutput
@@ -126,6 +127,18 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     SetCompletionCheckmark(CheckpointDirectory)
     return sol,saved_values
 end
+
+function generateSubstituteDeriv(getDeriv!::Function)
+    
+    function DerivSubs!(Deriv,State,par,t)
+        Lam = t_to_Lam(t)
+        a = getDeriv!(Deriv,State,par,Lam)
+        Deriv .*= Lam
+        a
+    end
+
+end
+
 
 function get_t_min(Lam)
     Lam < exp(-30) && @warn "Lam_min too small! Set to exp(-30) instead."

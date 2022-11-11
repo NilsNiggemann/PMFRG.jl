@@ -43,8 +43,12 @@ struct NumericalParams{F <: AbstractFloat}
     ex_freq::F
 end
 
+"""Converts other arguments to type of first argument. If that is not a float, converts everything to Float64."""
+_convertToFloat(Primary::T,args...)  where T<: AbstractFloat = convert.(T,(Primary,args...))
+_convertToFloat(Primary::Real,args...) = convert.(Float64,(Primary,args...))
+
 function NumericalParams(;
-    T::AbstractFloat = 0.5, # Temperature
+    T::Real = 0.5, # Temperature
     N::Integer = 24,
     Ngamma::Integer = N, #Number of gamma frequencies
     accuracy::AbstractFloat = 1e-6, # convert type to float type
@@ -57,7 +61,7 @@ function NumericalParams(;
     ex_freq = (2*N-1)*pi*T,
     kwargs...)
 
-    Lam_min,Lam_max,accuracy,ex_freq = convert.(typeof(T),(Lam_min,Lam_max,accuracy,ex_freq))
+    T,Lam_min,Lam_max,accuracy,ex_freq = _convertToFloat(T,Lam_min,Lam_max,accuracy,ex_freq)
 
     return NumericalParams(
         T,
@@ -87,13 +91,14 @@ struct VertexType{T}
 end
 
 
-function VertexType(VDims::Tuple)
+function VertexType(VDims::Tuple,type)
     return VertexType(
-        zeros(VDims), # Gamma_a
-        zeros(VDims), # Gamma_b
-        zeros(VDims) # Gamma_c
+        zeros(type,VDims), # Gamma_a
+        zeros(type,VDims), # Gamma_b
+        zeros(type,VDims) # Gamma_c
     )
 end
+VertexType(Par::PMFRGParams) = VertexType(getVDims(Par),_getFloatType(Par))
 
 function setToBareVertex!(Γc::AbstractArray{T,4},couplings::AbstractVector) where T
     for Rj in eachindex(couplings,axes(Γc,1))
@@ -112,14 +117,14 @@ end
 setToBareVertex!(Γ::VertexType,Par) = setToBareVertex!(Γ,Par.System.couplings)
 
 """Allocates a frequency-dependent vertex type and initializes it with the bare vertex"""
-BareVertex_Freq(Par) = setToBareVertex!(VertexType(getVDims(Par)),Par.System.couplings)
+BareVertex_Freq(Par) = setToBareVertex!(VertexType(Par),Par.System.couplings)
 
 """Stores all information about the bare vertex (without frequencies)"""
 struct BareVertexType{T}
     c::Vector{T}
 end
 
-BareVertexType(Par::PMFRGParams) = BareVertexType(-Par.System.couplings)
+BareVertexType(Par::PMFRGParams) = BareVertexType(- convert.(_getFloatType(Par),Par.System.couplings))
 
 """Struct containing information about the (physical) ODE State, i.e. vertices"""
 struct StateType{T}
@@ -128,15 +133,15 @@ struct StateType{T}
     Γ::VertexType{T}
 end
 
-function StateType(NUnique::Int,Ngamma::Int,VDims::Tuple)
+function StateType(NUnique::Int,Ngamma::Int,VDims::Tuple,type = Float64::Type)
     return StateType(
-        zeros(NUnique), # fint
-        zeros(NUnique,Ngamma), # gamma
-        VertexType(VDims)
+        zeros(type,NUnique), # fint
+        zeros(type,NUnique,Ngamma), # gamma
+        VertexType(VDims,type)
     )
 end
 
-StateType(Par::PMFRGParams) = StateType(Par.System.NUnique,Par.NumericalParams.Ngamma,getVDims(Par)) 
+StateType(Par::PMFRGParams) = StateType(Par.System.NUnique,Par.NumericalParams.Ngamma,getVDims(Par),_getFloatType(Par)) 
 
 StateType(f_int,γ,Γa,Γb,Γc) = StateType(f_int,γ,VertexType(Γa,Γb,Γc)) 
 

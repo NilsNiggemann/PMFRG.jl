@@ -52,7 +52,7 @@ struct BubbleBufferType{T}
 
     XTd21::Vector{T}
 end
-BubbleBufferType(Npairs) = BubbleBufferType((zeros(Npairs) for _ in 1:4)...)
+BubbleBufferType(type,Npairs) = BubbleBufferType((zeros(type,Npairs) for _ in 1:4)...)
 
 struct BufferTypeTwoLoop{PropsBuff,VertexBuff,XBuff}
     Props::Vector{PropsBuff}

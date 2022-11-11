@@ -15,7 +15,7 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) whe
     return
 end
 
-function getDFint!(Workspace::PMFRGWorkspace,Lam::double)
+function getDFint!(Workspace::PMFRGWorkspace,Lam::Real)
     @unpack State,Deriv,Par = Workspace 
     @unpack T,lenIntw_acc = Par.NumericalParams 
     NUnique = Par.System.NUnique 
@@ -474,17 +474,17 @@ function symmetrizeVertex!(Γ::VertexType,Par)
 end
 
 ##
-getChi(State::ArrayPartition, Lam::double,Par::PMFRGParams,Numax) = getChi(State.x[2],State.x[5], Lam,Par,Numax)
-getChi(State::ArrayPartition, Lam::double,Par::PMFRGParams) = getChi(State.x[2],State.x[5], Lam,Par)
+getChi(State::ArrayPartition, Lam::Real,Par::PMFRGParams,Numax) = getChi(State.x[2],State.x[5], Lam,Par,Numax)
+getChi(State::ArrayPartition, Lam::Real,Par::PMFRGParams) = getChi(State.x[2],State.x[5], Lam,Par)
 
-function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::double,Par::PMFRGParams,Numax)
+function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGParams,Numax)
 	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
 	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
 
 	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
-	Chi = zeros(Npairs,N)
+	Chi = zeros(_getFloatType(Par),Npairs,N)
 
 	@inbounds Threads.@threads for Rij in 1:Npairs
 		@unpack xi,xj = PairTypes[Rij]
@@ -515,7 +515,7 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
-	Chi = zeros(Npairs)
+	Chi = zeros(_getFloatType(Par),Npairs)
 
 	@inbounds Threads.@threads for Rij in 1:Npairs
 		@unpack xi,xj = PairTypes[Rij]

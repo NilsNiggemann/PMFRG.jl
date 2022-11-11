@@ -1,5 +1,3 @@
-const double = Float64
-
 """
 Abstract Param struct to dispatch between different PMFRG methods (i.e. Two-Loop or Parquet)
 Assumed to have at least the fields:
@@ -58,6 +56,9 @@ function NumericalParams(;
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1),
     ex_freq = (2*N-1)*pi*T,
     kwargs...)
+
+    Lam_min,Lam_max,accuracy,ex_freq = convert.(typeof(T),(Lam_min,Lam_max,accuracy,ex_freq))
+
     return NumericalParams(
         T,
         N,
@@ -151,16 +152,16 @@ struct BubbleType{T}
     Td::Array{T,4}
 end
 
-function BubbleType(VDims::Tuple)
+function BubbleType(VDims::Tuple,type = Float64)
     return BubbleType(
-        zeros(VDims),
-        zeros(VDims),
-        zeros(VDims),
+        zeros(type,VDims),
+        zeros(type,VDims),
+        zeros(type,VDims),
 
-        zeros(VDims),
-        zeros(VDims),
-        zeros(VDims),
-        zeros(VDims)
+        zeros(type,VDims),
+        zeros(type,VDims),
+        zeros(type,VDims),
+        zeros(type,VDims)
     )
 end
 
@@ -168,8 +169,8 @@ const VertexOrBubble = Union{StateType,BubbleType,VertexType}
 
 getVDims(Par::PMFRGParams) = (Par.System.Npairs,Par.NumericalParams.N,Par.NumericalParams.N,Par.NumericalParams.N)
 
-BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par)) 
-VertexType(Par::PMFRGParams) = VertexType(getVDims(Par)) 
+BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par),_getFloatType(Par)) 
+VertexType(Par::PMFRGParams) = VertexType(getVDims(Par),_getFloatType(Par)) 
 
 function constructBubbleFromVertex!(B::BubbleType,Γ::VertexType)
     B.a .= Γ.a
@@ -207,7 +208,7 @@ struct VertexBufferType{T}
 	Vc21::Vector{T}
 	Vc43::Vector{T}
 end
-VertexBufferType(Npairs) = VertexBufferType((zeros(Npairs) for _ in 1:8)...)
+VertexBufferType(Npairs,type) = VertexBufferType((zeros(type,Npairs) for _ in 1:8)...)
 ##
 RecursiveArrayTools.ArrayPartition(x::StateType) = ArrayPartition(x.f_int,x.γ,x.Γ.a,x.Γ.b,x.Γ.c)
 StateType(Arr::ArrayPartition) = StateType(Arr.x...)

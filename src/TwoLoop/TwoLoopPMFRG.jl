@@ -12,7 +12,8 @@ function AllocateSetup(Par::TwoLoopParams)
     ##Allocate Memory:
     X = BubbleType(Par)
     Y = BubbleType(Par)
-    PropsBuffers = [MMatrix{NUnique,NUnique,double}(undef) for _ in 1:Threads.nthreads()] 
+    floattype = _getFloatType(Par)
+    PropsBuffers = [MMatrix{NUnique,NUnique,floattype}(undef) for _ in 1:Threads.nthreads()] 
     VertexBuffers = [VertexBufferType(Npairs) for _ in 1:Threads.nthreads()]
     BubbleBuffers = [BubbleBufferType(Npairs) for _ in 1:Threads.nthreads()]
     Buffs = BufferTypeTwoLoop(PropsBuffers,VertexBuffers,BubbleBuffers) 

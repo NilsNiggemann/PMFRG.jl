@@ -1,16 +1,20 @@
 Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
+_getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T)
+
 function InitializeState(Par::PMFRGParams)
     @unpack N,Ngamma = Par.NumericalParams
     VDims = getVDims(Par)
     @unpack couplings,NUnique = Par.System
+
+    floattype = _getFloatType(Par)
     
     State = ArrayPartition( #Allocate Memory:
-        zeros(double,NUnique), # f_int 
-        zeros(double,NUnique,Ngamma), # gamma
-        zeros(double,VDims), #Va
-        zeros(double,VDims), #Vb
-        zeros(double,VDims) #Vc
+        zeros(floattype,NUnique), # f_int 
+        zeros(floattype,NUnique,Ngamma), # gamma
+        zeros(floattype,VDims), #Va
+        zeros(floattype,VDims), #Vb
+        zeros(floattype,VDims) #Vc
     )
 
     Γc = State.x[5]
@@ -24,8 +28,9 @@ function AllocateSetup(Par::OneLoopParams)
     println("One Loop: T= ",Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
-    PropsBuffers = [SpinFRGLattices.MMatrix{NUnique,NUnique,double,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
-	VertexBuffers = [VertexBufferType(Npairs) for _ in 1:Threads.nthreads()]
+    floattype = _getFloatType(Par) #get type of float, i.e. Float64
+    PropsBuffers = [SpinFRGLattices.MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
+	VertexBuffers = [VertexBufferType(Npairs,floattype) for _ in 1:Threads.nthreads()]
     Buffs = BufferType(PropsBuffers,VertexBuffers) 
     return (X,Buffs,Par)
 end
@@ -78,7 +83,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     @unpack Lam_max,Lam_min,accuracy = Par.NumericalParams
     save_func(State,t,integrator) = getObservables(State,t_to_Lam(t),Par)
     
-    saved_values = SavedValues(double,Observables)
+    saved_values = SavedValues(eltype(State),Observables)
     i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function bareOutput(State,t,integrator)

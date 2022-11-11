@@ -16,8 +16,8 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) whe
 end
 
 function getDFint!(Workspace::PMFRGWorkspace,Lam::Real)
-    @unpack State,Deriv,Par = Workspace 
-    @unpack T,lenIntw_acc = Par.NumericalParams 
+    (;State,Deriv,Par) = Workspace 
+    (;T,lenIntw_acc) = Par.NumericalParams 
     NUnique = Par.System.NUnique 
 	
 	@inline γ(x,nw) = gamma_(State.γ,x,nw)
@@ -41,8 +41,8 @@ Computes a single-particle (i.e. self-energy) bubble. Allows specification of fu
 """
 function addTo1PartBubble!(Dgamma::AbstractArray,XT1_::Function,XT2_::Function,Prop,Par)
 
-    @unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma = Par.NumericalParams
-    @unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
+    (;T,N,Ngamma,lenIntw_acc,np_vec_gamma) = Par.NumericalParams
+    (;siteSum,invpairs,Nsum,OnsitePairs) = Par.System
 
 	Threads.@threads for iw1 in 1:Ngamma
 		nw1 = np_vec_gamma[iw1]
@@ -52,7 +52,7 @@ function addTo1PartBubble!(Dgamma::AbstractArray,XT1_::Function,XT2_::Function,P
 				wpw1 = nw1+nw+1 #w + w1: Adding two fermionic Matsubara frequencies gives a +1 for the bosonic index
 				wmw1 = nw-nw1
 				for k_spl in 1:Nsum[Rx]
-					@unpack m,ki,xk = siteSum[k_spl,Rx]
+					(;m,ki,xk) = siteSum[k_spl,Rx]
 					jsum += (XT1_(ki,wpw1,0,wmw1)+2*XT2_(ki,wpw1,0,wmw1))*Prop(xk,nw)*m
 				end
 				Dgamma[x,iw1] += -T *jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
@@ -96,7 +96,7 @@ end
 
 function getXBubble!(Workspace::PMFRGWorkspace,Lam)
 	Par = Workspace.Par
-    @unpack T,N,lenIntw,np_vec = Par.NumericalParams 
+    (;T,N,lenIntw,np_vec) = Par.NumericalParams 
     PropsBuffers = Workspace.Buffer.Props 
     VertexBuffers = Workspace.Buffer.Vertex
 	 
@@ -153,11 +153,11 @@ end
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
 function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props,Buffer)
-	@unpack State,X,Par = Workspace 
-	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
-	@unpack N,np_vec = Par.NumericalParams
-	@unpack Npairs,Nsum,siteSum,invpairs = Par.System
-	Npairs = Workspace.Par.System.Npairs
+	(;State,X,Par) = Workspace 
+	(;Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43) = Buffer 
+	(;N,np_vec) = Par.NumericalParams
+	(;Npairs,Nsum,siteSum,invpairs) = Par.System
+
 	ns = np_vec[is]
 	nt = np_vec[it]
 	nu = np_vec[iu]
@@ -186,7 +186,6 @@ function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer,
 		Xc_sum = 0.
 		@turbo unroll = 1 for k_spl in 1:Nsum[Rij]
 			#loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
-			# @unpack ki,kj,m,xk = siteSum[k_spl,Rij]
 			ki,kj,m,xk = S_ki[k_spl,Rij],S_kj[k_spl,Rij],S_m[k_spl,Rij],S_xk[k_spl,Rij]
 			Ptm = Props[xk,xk]*m
 
@@ -215,9 +214,9 @@ end
 ##
 function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props)
 
-	@unpack State,X,Par = Workspace 
-	@unpack N,np_vec = Par.NumericalParams
-	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
+	(;State,X,Par) = Workspace 
+	(;N,np_vec) = Par.NumericalParams
+	(;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
 
 	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
 	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
@@ -232,7 +231,7 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 		Rij in OnsitePairs  && continue
 		#loop over all left hand side inequivalent pairs Rij
 		Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
-		@unpack xi,xj = PairTypes[Rij]
+		(;xi,xj) = PairTypes[Rij]
 
 		#These values are used several times so they are saved locally
 		Va12 = Va_(Rji, wpw1, ns, wpw2)
@@ -292,9 +291,9 @@ const SingleElementMatrix = Union{SpinFRGLattices.SMatrix{1,1},SpinFRGLattices.M
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)
 
-	@unpack State,X,Par = Workspace 
-	@unpack N,np_vec = Par.NumericalParams
-	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
+	(;State,X,Par) = Workspace 
+	(;N,np_vec) = Par.NumericalParams
+	(;Npairs,invpairs,OnsitePairs) = Par.System
 
 	@inline Va_(Rij,s,t,u) = V_(State.Γ.a,Rij,s,t,u,invpairs[Rij],N)
 	@inline Vb_(Rij,s,t,u) = V_(State.Γ.b,Rij,s,t,u,invpairs[Rij],N)
@@ -309,7 +308,6 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 		Rij in OnsitePairs  && continue
 		#loop over all left hand side inequivalent pairs Rij
 		Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
-		@unpack xi,xj = PairTypes[Rij]
 
 		#These values are used several times so they are saved locally
 		Va12 = Va_(Rji, wpw1, ns, wpw2)
@@ -366,11 +364,10 @@ end
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
-	@unpack State,X,Par = Workspace 
-	@unpack Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43 = Buffer 
-	@unpack N,np_vec = Par.NumericalParams
-	@unpack Npairs,Nsum,siteSum,invpairs = Par.System
-	Npairs = Workspace.Par.System.Npairs
+	(;State,X,Par) = Workspace 
+	(;Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43) = Buffer 
+	(;N,np_vec) = Par.NumericalParams
+	(;Npairs,Nsum,siteSum,invpairs) = Par.System
 
 	ns = np_vec[is]
 	nt = np_vec[it]
@@ -400,7 +397,6 @@ function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer,
 		Xc_sum = 0.
 		@turbo unroll = 1 for k_spl in 1:Nsum[Rij]
 			#loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
-			# @unpack ki,kj,m,xk = siteSum[k_spl,Rij]
 			ki,kj,m = S_ki[k_spl,Rij],S_kj[k_spl,Rij],S_m[k_spl,Rij]
 
 			Xa_sum += (
@@ -429,7 +425,7 @@ end
 """Use symmetries and identities to compute the rest of bubble functions"""
 function symmetrizeBubble!(X::BubbleType,Par::PMFRGParams)
     N = Par.NumericalParams.N
-    @unpack Npairs,OnsitePairs = Par.System
+    (;Npairs,OnsitePairs) = Par.System
     usesymmetry = Par.Options.usesymmetry
     # use the u <--> t symmetry
     if(usesymmetry)
@@ -478,8 +474,8 @@ getChi(State::ArrayPartition, Lam::Real,Par::PMFRGParams,Numax) = getChi(State.x
 getChi(State::ArrayPartition, Lam::Real,Par::PMFRGParams) = getChi(State.x[2],State.x[5], Lam,Par)
 
 function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGParams,Numax)
-	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
-	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
+	(;T,N,lenIntw_acc,np_vec) = Par.NumericalParams
+	(;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
 
 	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
@@ -487,7 +483,7 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 	Chi = zeros(_getFloatType(Par),Npairs,N)
 
 	@inbounds Threads.@threads for Rij in 1:Npairs
-		@unpack xi,xj = PairTypes[Rij]
+		(;xi,xj) = PairTypes[Rij]
 		for i_nu in 1:Numax
        		n_nu = np_vec[i_nu]
 		
@@ -509,8 +505,8 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 end
 
 function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGParams)
-	@unpack T,N,lenIntw_acc,np_vec = Par.NumericalParams
-	@unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
+	(;T,N,lenIntw_acc) = Par.NumericalParams
+	(;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
 
 	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
@@ -518,7 +514,7 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 	Chi = zeros(_getFloatType(Par),Npairs)
 
 	@inbounds Threads.@threads for Rij in 1:Npairs
-		@unpack xi,xj = PairTypes[Rij]
+		(;xi,xj) = PairTypes[Rij]
 		for nK in -lenIntw_acc:lenIntw_acc-1
 			if Rij in OnsitePairs
 				Chi[Rij,1] += T * iG(xi,nK) ^2

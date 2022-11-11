@@ -105,7 +105,7 @@ end
 
 """Constructs Workspace for parquet equations. Irreducible vertex can later be provided by optional argument but this is currently not supported """
 function SetupParquet(Par::ParquetParams)
-    @unpack NUnique,Npairs = Par.System
+    (;NUnique,Npairs) = Par.System
     IrrVertex = BareVertex_Freq(Par)
 
     floattype = _getFloatType(Par) #get type of float, i.e. Float64

@@ -5,9 +5,7 @@ includes Two-loop corrections to PMFRG.
 include("TwoLoopTypes.jl")
 
 function AllocateSetup(Par::TwoLoopParams)
-    @unpack N,Ngamma = Par.NumericalParams
-
-    @unpack couplings,NUnique,Npairs = Par.System
+    (;NUnique,Npairs) = Par.System
     println("Two Loop: T= ",Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)

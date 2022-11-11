@@ -1,5 +1,5 @@
 module PMFRG
-    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Parameters,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5,H5Zblosc
+    using SpinFRGLattices,OrdinaryDiffEq,DiffEqCallbacks,Printf,RecursiveArrayTools,LoopVectorization,StructArrays,HDF5,H5Zblosc
 
     using SpinFRGLattices.StaticArrays
 

@@ -3,9 +3,9 @@ Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 _getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T)
 
 function InitializeState(Par::PMFRGParams)
-    @unpack N,Ngamma = Par.NumericalParams
+    (;N,Ngamma) = Par.NumericalParams
     VDims = getVDims(Par)
-    @unpack couplings,NUnique = Par.System
+    (;couplings,NUnique) = Par.System
 
     floattype = _getFloatType(Par)
     
@@ -23,8 +23,7 @@ function InitializeState(Par::PMFRGParams)
 end
 
 function AllocateSetup(Par::OneLoopParams)
-    @unpack N,Ngamma = Par.NumericalParams
-    @unpack couplings,Npairs,NUnique = Par.System
+    (;Npairs,NUnique) = Par.System
     println("One Loop: T= ",Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
@@ -80,7 +79,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
 
-    @unpack Lam_max,Lam_min,accuracy = Par.NumericalParams
+    (;Lam_max,Lam_min,accuracy) = Par.NumericalParams
     save_func(State,t,integrator) = getObservables(State,t_to_Lam(t),Par)
     
     saved_values = SavedValues(eltype(State),Observables)
@@ -163,8 +162,8 @@ end
 writeOutput(State::ArrayPartition,saved_values,Lam,Par) = writeOutput(State.x...,saved_values.saveval[end],Lam,Par)
 
 function writeOutput(f_int,gamma,Va,Vb,Vc,obs,Lam,Par)
-    @unpack MinimalOutput,usesymmetry = Par.Options
-    @unpack N,np_vec,T = Par.NumericalParams
+    (;usesymmetry) = Par.Options
+    (;N,np_vec,T) = Par.NumericalParams
     chi = obs.Chi
     t = Lam_to_t(Lam)
     print("T= ",strd(T)," at t step: ",strd(t),", Λ = exp(t) = ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")

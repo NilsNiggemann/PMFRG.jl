@@ -104,12 +104,10 @@ function getXBubble!(Workspace::PMFRGWorkspace,Lam)
 	iSKat(x,nw) = iSKat_(Workspace.State.γ,Workspace.Deriv.γ,x,Lam,nw,T)
 
 	function getKataninProp!(BubbleProp,nw1,nw2)
-		# BubbleProp = SpinFRGLattices.MMatrix{NUnique,NUnique,Float64,NUnique*NUnique}(undef)
 		for i in 1:Par.System.NUnique, j in 1:Par.System.NUnique
 			BubbleProp[i,j] = iSKat(i,nw1) *iG(j,nw2)* T
 		end
-		return SpinFRGLattices.SMatrix(BubbleProp)
-		# SpinFRGLattices.MMatrix[iSKat(i,nw1) *iG(j,nw2)* T for i in 1:NUnique, j in 1:NUnique]
+		return SMatrix(BubbleProp)
 	end
 	@sync begin
 		for is in 1:N,it in 1:N
@@ -286,7 +284,7 @@ function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Int
 		)
     end
 end
-const SingleElementMatrix = Union{SpinFRGLattices.SMatrix{1,1},SpinFRGLattices.MMatrix{1,1}}
+const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)

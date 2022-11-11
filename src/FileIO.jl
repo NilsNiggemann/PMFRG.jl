@@ -193,7 +193,7 @@ function UniqueDirName(Path,versNum = getVersionNumber(Path))
 end
 
 function generateName_verbose(Directory::String,Par::PMFRGParams)
-    @unpack T,N = Par.NumericalParams
+    (;T,N) = Par.NumericalParams
     Name = Par.System.Name
     Name = "$(Name)_N=$(N)_T=$(T)"
     Name = joinpath(Directory,Name)
@@ -306,9 +306,11 @@ function setCheckpoint(Directory::Nothing,State,saved_values,Lam,Par,checkPointL
 end
 
 function saveExtraFields(Filename::String,State,Lambda::Real,Par::PMFRGParams,Group::String)
-    @unpack T,N = Par.NumericalParams
-    @unpack Name,NUnique,Npairs,NLen = Par.System
+    (;T,N) = Par.NumericalParams
+    (;Name,NUnique,Npairs,NLen) = Par.System
     Chi_nu = getChi(State,Lambda,Par,N)
+    h5write(Filename,"$Group/Name",Name)
+    h5write(Filename,"$Group/Npairs",Npairs)
     h5write(Filename,"$Group/T",T)
     h5write(Filename,"$Group/N",N)
     h5write(Filename,"$Group/NUnique",NUnique)

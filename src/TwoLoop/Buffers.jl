@@ -50,8 +50,10 @@ end
     invpairs = Par.System.invpairs
     N= Par.NumericalParams.N
 
-    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
-    @unpack XTa21,XTb21,XTc21,XTd21 = XBuffer
+    
+    (;Va34,Vb34,Vc34,Vc43) = VBuffer
+    
+    (;XTa21,XTb21,XTc21,XTd21) = XBuffer
 
 	bufferV_!(Va34, Γ.a, ns, wmw3, wmw4, invpairs, N)
 	bufferV_!(Vb34, Γ.b, ns, wmw3, wmw4, invpairs, N)
@@ -82,9 +84,9 @@ end
 @inline function fillBufferL!(VBuffer::VertexBufferType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams)
     
     invpairs = Par.System.invpairs
-    @unpack N,np_vec = Par.NumericalParams
+    (;N,np_vec) = Par.NumericalParams
 
-    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
+    (;Va34,Vb34,Vc34,Vc43) = VBuffer
     ns = np_vec[is]
 	nt = np_vec[it]
 	nu = np_vec[iu]

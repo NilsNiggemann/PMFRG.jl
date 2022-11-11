@@ -28,7 +28,7 @@ function AllocateSetup(Par::OneLoopParams)
     ##Allocate Memory:
     X = BubbleType(Par)
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
-    PropsBuffers = [SpinFRGLattices.MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
+    PropsBuffers = [MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
 	VertexBuffers = [VertexBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()]
     Buffs = BufferType(PropsBuffers,VertexBuffers) 
     return (X,Buffs,Par)

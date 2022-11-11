@@ -1082,11 +1082,9 @@ version = "2.1.4"
 
 [[deps.PMFRGEvaluation]]
 deps = ["Dierckx", "FRGLatticeEvaluation", "HDF5", "HDF5Helpers", "LaTeXStrings", "Parameters", "RecursiveArrayTools", "Reexport", "Roots", "SmoothingSplines", "SpinFRGLattices", "StaticArrays"]
-git-tree-sha1 = "077df7b5611c393e711eba0fd963e3a175f10c7c"
-repo-rev = "master"
-repo-url = "git@gitlabph.physik.fu-berlin.de:julia-frg/PMFRGEvaluation.git"
+git-tree-sha1 = "1d5f3730b4eed8fb831cd575329fb0203dd835e8"
 uuid = "12f9d3e0-c7ac-4982-a146-f6f67cbda763"
-version = "1.0.0"
+version = "1.0.3"
 
 [[deps.PNGFiles]]
 deps = ["Base64", "CEnum", "ImageCore", "IndirectArrays", "OffsetArrays", "libpng_jll"]

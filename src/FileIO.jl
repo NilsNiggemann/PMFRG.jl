@@ -40,7 +40,7 @@ function readObservables(Filename::String)
     Fields = fieldnames(Observables)
     obsTuple = Tuple(h5read(Filename,"Observables/$f") for f in Fields)
     saveval = Observables[]
-    saved_values = SavedValues(double,Observables)
+    saved_values = SavedValues(eltype(t),Observables)
     # return obsTuple
     for i in eachindex(t)
         Currentval(x) = selectdim(x,length(size(x)),i) |>Array

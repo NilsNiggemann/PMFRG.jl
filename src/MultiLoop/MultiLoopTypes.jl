@@ -108,9 +108,10 @@ function SetupParquet(Par::ParquetParams)
     @unpack NUnique,Npairs = Par.System
     IrrVertex = BareVertex_Freq(Par)
 
-    PropsBuffers = [Matrix{double}(undef,NUnique,NUnique) for _ in 1:Threads.nthreads()] 
-    VertexBuffers = [VertexBufferType(Npairs) for _ in 1:Threads.nthreads()]
-    BubbleBuffers = [BubbleBufferType(Npairs) for _ in 1:Threads.nthreads()]
+    floattype = _getFloatType(Par) #get type of float, i.e. Float64
+    PropsBuffers = [SpinFRGLattices.MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
+    VertexBuffers = [VertexBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()]
+    BubbleBuffers = [BubbleBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()]
     Buffs = BufferTypeTwoLoop(PropsBuffers,VertexBuffers,BubbleBuffers) 
  
     Workspace = ParquetWorkspace(

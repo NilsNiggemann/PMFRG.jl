@@ -213,7 +213,7 @@ struct VertexBufferType{T}
 	Vc21::Vector{T}
 	Vc43::Vector{T}
 end
-VertexBufferType(Npairs,type) = VertexBufferType((zeros(type,Npairs) for _ in 1:8)...)
+VertexBufferType(type,Npairs) = VertexBufferType((zeros(type,Npairs) for _ in 1:8)...)
 ##
 RecursiveArrayTools.ArrayPartition(x::StateType) = ArrayPartition(x.f_int,x.γ,x.Γ.a,x.Γ.b,x.Γ.c)
 StateType(Arr::ArrayPartition) = StateType(Arr.x...)

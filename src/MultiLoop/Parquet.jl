@@ -22,9 +22,7 @@ end
 
 """Performs single BSE iteration. Specify State explicitly to make fixed point libraries compatible (even though it may point to the same memory location as Workspace.State) """
 function BSE_iteration!(State::StateType,Workspace::ParquetWorkspace,Lam::Real)
-    @unpack OldState,I,Γ0,X,B0,BX,Par,Buffer = Workspace
-    @unpack BSE_iters,BSE_epsilon,BSE_vel = Par.Options
-    @unpack T, accuracy = Par.NumericalParams
+    (;OldState,I,Γ0,X,B0,BX,Par,Buffer) = Workspace
     
     getProp! = constructPropagatorFunction(OldState.γ,Lam,Par)
     computeLeft2PartBubble!(B0,Γ0,Γ0,OldState.Γ,getProp!,Par,Buffer)
@@ -40,7 +38,7 @@ end
 
 """Obtains a solution to Bethe-Salpeter and Schwinger-Dyson equations by iteration until convergence is reached up to accuracy specified by accuracy in Params"""
 function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
-    @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
+    (;OldState,State,Par) = Workspace
     
     BSE_iters = Par.Options.BSE_iters
 
@@ -134,7 +132,7 @@ end
 
 """Self-consistently iterates SDE until convergence is reached."""
 function iterateSDE!(Workspace::ParquetWorkspace,Lam)
-    @unpack OldState,State,Γ0,X,B0,BX,Par,Buffer = Workspace
+    (;OldState,State,Γ0,X,B0,BX,Par,Buffer) = Workspace
     @inline Prop(x,nw) = 1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)
 
     # getProp! = constructPropagatorFunction(Workspace,Lam)
@@ -167,9 +165,9 @@ end
 
 
 function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
-    @unpack OldState,State,I,Γ0,X,B0,BX,Par,Buffer = Workspace
-    @unpack BSE_iters,BSE_epsilon,BSE_vel = Par.Options
-    @unpack T, accuracy = Par.NumericalParams
+    (;OldState,State,Γ0,B0,Par,Buffer) = Workspace
+    (;BSE_iters,BSE_epsilon,BSE_vel) = Par.Options
+    (;accuracy) = Par.NumericalParams
 
     OldStateArr,StateArr = ArrayPartition.((OldState,State))
     
@@ -206,7 +204,7 @@ anyisnan(A::ArrayPartition) = any((any(isnan,i) for i in A.x))
 
 
 function iterateSDE_FP!(γ,Γ,B0,Γ0,Lam,Par,Buffer)
-    @unpack SDE_iters,SDE_vel,SDE_epsilon = Par.Options
+    (;SDE_iters,SDE_vel,SDE_epsilon) = Par.Options
     T = Par.NumericalParams.T
     function FixedPointFunction!(gamma,gammaOld)
         @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,T)

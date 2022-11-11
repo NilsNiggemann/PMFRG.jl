@@ -98,6 +98,7 @@ function VertexType(VDims::Tuple,type)
         zeros(type,VDims) # Gamma_c
     )
 end
+getVDims(Par::PMFRGParams) = (Par.System.Npairs,Par.NumericalParams.N,Par.NumericalParams.N,Par.NumericalParams.N)
 VertexType(Par::PMFRGParams) = VertexType(getVDims(Par),_getFloatType(Par))
 
 function setToBareVertex!(Γc::AbstractArray{T,4},couplings::AbstractVector) where T
@@ -172,10 +173,7 @@ end
 
 const VertexOrBubble = Union{StateType,BubbleType,VertexType}
 
-getVDims(Par::PMFRGParams) = (Par.System.Npairs,Par.NumericalParams.N,Par.NumericalParams.N,Par.NumericalParams.N)
-
 BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par),_getFloatType(Par)) 
-VertexType(Par::PMFRGParams) = VertexType(getVDims(Par),_getFloatType(Par)) 
 
 function constructBubbleFromVertex!(B::BubbleType,Γ::VertexType)
     B.a .= Γ.a

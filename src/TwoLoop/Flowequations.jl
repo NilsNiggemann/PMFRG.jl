@@ -18,11 +18,9 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,BubbleType,T,TwoLoopParam
 end
 
 function getTwoLoopDeriv!(Workspace::TwoLoopWorkspace,Lam)
-    @unpack X,Y,State,Par,Buffer = Workspace
+    (;X,Y,State,Par,Buffer) = Workspace
     getProp! = constructPropagatorFunction(Workspace,Lam)
-    @unpack State,Par = Workspace
-    @unpack T,N,np_vec,lenIntw = Par.NumericalParams
-    @unpack NUnique,OnsitePairs = Par.System
+    (;State,Par) = Workspace
     setZero!(Y)
     addToLeft2PartBubble!(Y,X,X,State.Γ,getProp!,Par,Buffer)
     addToRight2PartBubble!(Y,X,X,State.Γ,getProp!,Par,Buffer)
@@ -44,7 +42,7 @@ Computes a two-particle bubble in the s-Channel given two four-point functions (
 To allow the computation using just the left part of a bubble, specification of the transpose is needed i.e. Transpose(X_L) = X_R and Transpose(X) = X, where X = XL + XR is the full bubble.
 """
 function addTo2PartBubble!(ResultBubble::BubbleType,X,XTransp,Γ::VertexType,getProp!::Function,addBTilde_Func!::Function,addB_Func!::Function,Par,Buffer)
-    @unpack T,N,lenIntw,np_vec = Par.NumericalParams
+    (;N,lenIntw,np_vec) = Par.NumericalParams
     @sync begin
 		for is in 1:N,it in 1:N
 			Threads.@spawn begin

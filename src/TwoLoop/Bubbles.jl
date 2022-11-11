@@ -5,13 +5,13 @@ adds to ResultBubble given the vertex as well as a bubble inserted on the left. 
 
 function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props,VBuffer::VertexBufferType,XBuffer::BubbleBufferType,BufferFiller!::Func1 = fillBufferL!,SiteIndex::Func2 = identity) where {Func1 <: Function ,Func2 <: Function }
 
-    @unpack N,np_vec = Par.NumericalParams
-    @unpack Npairs,Nsum,siteSum,invpairs = Par.System
+    (;N,np_vec) = Par.NumericalParams
+    (;Npairs,Nsum,siteSum,invpairs) = Par.System
 
     BufferFiller!(VBuffer,XBuffer,XL,XR,Γ,is,it,iu,nwpr,Par)
 
-    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
-    @unpack XTa21,XTb21,XTc21,XTd21 = XBuffer
+    (;Va34,Vb34,Vc34,Vc43) = VBuffer
+    (;XTa21,XTb21,XTc21,XTd21) = XBuffer
 
     S_ki = siteSum.ki
 	S_kj = siteSum.kj
@@ -56,8 +56,8 @@ end
 
 function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props,FreqSwap::Func = identity) where {Func <: Function}
     
-    @unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
-    @unpack N,np_vec = Par.NumericalParams
+    (;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
+    (;N,np_vec) = Par.NumericalParams
 
     @inline Va_(Rij,s,t,u) = V_(Γ.a,Rij,s,t,u,invpairs[Rij],N)
     @inline Vb_(Rij,s,t,u) = V_(Γ.b,Rij,s,t,u,invpairs[Rij],N)
@@ -82,7 +82,7 @@ function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,
         #loop over all left hand side inequivalent pairs Rij
         Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
 
-        @unpack xi,xj = PairTypes[Rij]
+        (;xi,xj) = PairTypes[Rij]
 
         B.Ta[Rij,is,it,iu] += 
         Props[xj, xi]*(
@@ -114,13 +114,12 @@ end
 
 function addBL!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props::SingleElementMatrix,VBuffer::VertexBufferType,XBuffer::BubbleBufferType,BufferFiller!::Func1 = fillBufferL!,SiteIndex::Func2 = identity) where {Func1 <: Function ,Func2 <: Function }
 
-    @unpack N,np_vec = Par.NumericalParams
-    @unpack Npairs,Nsum,siteSum,invpairs = Par.System
+    (;Npairs,Nsum,siteSum) = Par.System
 
     BufferFiller!(VBuffer,XBuffer,XL,XR,Γ,is,it,iu,nwpr,Par)
 
-    @unpack Va34,Vb34,Vc34,Vc43 = VBuffer
-    @unpack XTa21,XTb21,XTc21,XTd21 = XBuffer
+    (;Va34,Vb34,Vc34,Vc43) = VBuffer
+    (;XTa21,XTb21,XTc21,XTd21) = XBuffer
 
     S_ki = siteSum.ki
 	S_kj = siteSum.kj
@@ -164,8 +163,8 @@ end
 
 function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props::SingleElementMatrix,FreqSwap::Func = identity) where {Func <: Function}
     
-    @unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
-    @unpack N,np_vec = Par.NumericalParams
+    (;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
+    (;N,np_vec) = Par.NumericalParams
 
     @inline Va_(Rij,s,t,u) = V_(Γ.a,Rij,s,t,u,invpairs[Rij],N)
     @inline Vb_(Rij,s,t,u) = V_(Γ.b,Rij,s,t,u,invpairs[Rij],N)
@@ -190,8 +189,6 @@ function addBLTilde!(B::BubbleType,XL::BubbleType,XR::BubbleType,Γ::VertexType,
         Rij in OnsitePairs && continue
         #loop over all left hand side inequivalent pairs Rij
         Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
-
-        @unpack xi,xj = PairTypes[Rij]
 
         B.Ta[Rij,is,it,iu] += 
         Prop*(
@@ -232,12 +229,11 @@ end
 ##
 
 function addBL!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType,is::Integer, it::Integer, iu::Integer, nwpr::Integer,Par::PMFRGParams,Props,Buffer::VertexBufferType)
-    @unpack N,np_vec = Par.NumericalParams
-    @unpack Npairs,Nsum,siteSum,invpairs = Par.System
+    (;Npairs,Nsum,siteSum) = Par.System
 
     fillBufferL!(Buffer,Γ0,Γ,is,it,iu,nwpr,Par)
     
-    @unpack Va34,Vb34,Vc34,Vc43 = Buffer
+    (;Vc34,Vc43) = Buffer
     S_ki = siteSum.ki
 	S_kj = siteSum.kj
 	S_xk = siteSum.xk
@@ -266,8 +262,8 @@ end
 
 function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Par::PMFRGParams,Props)
 
-    @unpack Npairs,invpairs,PairTypes,OnsitePairs = Par.System
-    @unpack N,np_vec = Par.NumericalParams
+    (;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
+    (;N,np_vec) = Par.NumericalParams
 
 
     @inline Va_(Rij,s,t,u) = V_(Γ.a,Rij,s,t,u,invpairs[Rij],N)
@@ -284,7 +280,7 @@ function addBLTilde!(B::BubbleType,Γ0::BareVertexType,Γ::VertexType, is::Integ
         Rij in OnsitePairs && continue
         #loop over all left hand side inequivalent pairs Rij
         Rji = invpairs[Rij] # store pair corresponding to Rji (easiest case: Rji = Rij)
-        @unpack xi,xj = PairTypes[Rij]
+        (;xi,xj) = PairTypes[Rij]
 
         B.Ta[Rij,is,it,iu] += 
         Props[xj, xi]*2*Vc_(Rij, wmw4, ns, wmw3)*Γ0.c[Rij] + 
@@ -304,8 +300,8 @@ end
 function compute1PartBubble_BS!(Dgamma::AbstractArray,Γ,Gamma0,Prop,Par)
 	setZero!(Dgamma)
 
-	@unpack T,N,Ngamma,lenIntw_acc,np_vec_gamma = Par.NumericalParams
-	@unpack siteSum,invpairs,Nsum,OnsitePairs = Par.System
+	(;T,Ngamma,lenIntw_acc,np_vec_gamma) = Par.NumericalParams
+	(;siteSum,invpairs,Nsum,OnsitePairs) = Par.System
 
 	@inline Γc_(Rij,s,t,u) = V_(Γ.c,Rij,s,t,u,invpairs[Rij],Par.NumericalParams.N) # cTilde corresponds to b type vertex!
 
@@ -315,7 +311,7 @@ function compute1PartBubble_BS!(Dgamma::AbstractArray,Γ,Gamma0,Prop,Par)
 		for (x,Rx) in enumerate(OnsitePairs)
 			jsum = 0.
 			for k_spl in 1:Nsum[Rx]
-				@unpack m,ki,xk = siteSum[k_spl,Rx]
+				(;m,ki,xk) = siteSum[k_spl,Rx]
 				ik = invpairs[ki]
 				fac = ifelse(ik in OnsitePairs,1,3)
 				for nw in -lenIntw_acc: lenIntw_acc-1

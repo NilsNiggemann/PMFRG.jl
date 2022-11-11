@@ -1,4 +1,3 @@
-using PMFRG,SpinFRGLattices,Test
 Obsacc = 1e-14
 include("UnitTests/UnitTests.jl")
 

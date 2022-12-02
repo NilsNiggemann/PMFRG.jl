@@ -46,9 +46,9 @@ struct ParquetParams{F,G <: Geometry} <: PMFRGParams
     Options::ParquetOptions{F}
 end
 
-"""Todo: make this error when an unknown kwarg is given!"""
 Params(System::Geometry,O::MultiLoop;kwargs...) = MultiLoopParams(System,NumericalParams(;kwargs...),OptionParams(;kwargs...),O.l)
 
+"""Params constructor for parquet calculation. For all available params, see also PMFRG.ParquetOptions and PMFRG.NumericalParams."""
 function Params(System::Geometry,O::Parquet;eps = nothing,vel = 0.,kwargs...) 
     eps === nothing && (eps = getEpsilon(kwargs[:T]))
     PO = ParquetOptions(;BSE_epsilon = eps,SDE_epsilon = eps,BSE_vel = vel, SDE_vel = vel, kwargs...)

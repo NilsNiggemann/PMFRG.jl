@@ -116,13 +116,13 @@ function getXBubble!(Workspace::PMFRGWorkspace,Lam)
 				Buffer = VertexBuffers[Threads.threadid()]
 				ns = np_vec[is]
 				nt = np_vec[it]
-				for iu in 1:N
-					nu = np_vec[iu]
-					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
-						continue
-					end
-					for nw in -lenIntw:lenIntw-1 # Matsubara sum
-						sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
+				for nw in -lenIntw:lenIntw-1 # Matsubara sum
+					sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
+					for iu in 1:N
+						nu = np_vec[iu]
+						if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+							continue
+						end
 						addXTilde!(Workspace,is,it,iu,nw,sprop) # add to XTilde-type bubble functions
 						if(!Par.Options.usesymmetry || nu<=nt)
 							addX!(Workspace,is,it,iu,nw,sprop,Buffer)# add to X-type bubble functions
@@ -287,7 +287,7 @@ end
 const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)
+@inline function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)
 
 	(;State,X,Par) = Workspace 
 	(;N,np_vec) = Par.NumericalParams
@@ -361,7 +361,7 @@ end
 
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
+@inline function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
 	(;State,X,Par) = Workspace 
 	(;Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43) = Buffer 
 	(;N,np_vec) = Par.NumericalParams

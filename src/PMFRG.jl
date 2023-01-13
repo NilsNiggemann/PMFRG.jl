@@ -4,7 +4,7 @@ module PMFRG
     using SpinFRGLattices.StaticArrays
     
     export SolveFRG,Params,OneLoopParams,BS3,Vern7,DP5,version,getChi,OneLoop
-    version() = """v.2.1.4"""
+    version() = """v.2.1.6"""
     # Essentials
     include("Types.jl")
     include("OneLoopTypes.jl")

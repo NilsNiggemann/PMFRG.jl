@@ -52,7 +52,33 @@ flowpath = "temp/flows/" # specify path for vertex checkpoints
 Solution,saved_values = SolveFRG(Par,MainFile = mainFile ,CheckpointDirectory = flowpath,method = DP5(),VertexCheckpoints = [],CheckPointSteps = 3 )
 ```
 For further options, the documentation of `SolveFRG` or `NumericalParams` can be helpful. Note that if no `MainFile` is specified, then no output is written.
+## Fine-tuning lattice couplings
+We might also want to look at lattices where the couplings are not based on distance. The couplings between each **symmetry inequivalent** pair of sites can also be set individually for example
+```
+setCoupling!(System,1,Rvec(1,0,2),0.3)
+```
+sets the coupling from reference site 1 (`Rvec(0,0,1)`) to another site located at Rvec(1,0,2) to a value of `0.3`. 
+Generally, `Rvec(n1,n2,nb)` means the site is located at 
+ $` n_1 \vec{a}_1 +n_2\vec{a}_2+ \vec{b}_{nb}`$ where $`\vec{a}_i`$ are lattice vectors and $`\vec{b}_{nb}`$ is the $`n_b`$ 'th basis vector.
+Analogously a site in a generic 3D lattice is given by `Rvec(n1,n2,n3,nb)`.
+**attention:** Setting the couplings can **never** break any of the hard-coded lattice symmetries. The function `setCoupling!` will search for the corresponding symmetry inequivalent pair instead. For the square lattice, which is here implemented using all its mirror symmetries the following two lines lead to equivalent results:
 
+```
+setCoupling!(System,1,Rvec(-1,0,1),0.3)
+setCoupling!(System,1,Rvec(1,0,1),0.3)
+```
+If you need to set couplings that do not correspond to a lattices symmetry, the only option is to implement a new version of the lattice with reduced symmetry, which will increase the numerical complexity.
+If you are implementing a new lattice, or experimenting with complicated couplings, it can be helpful to use the package `FRGLatticePlotting`:
+
+```
+using SpinFRGLattices, SpinFRGLattices.SquareLattice, FRGLatticePlotting
+System = getSquareLattice(5,[1.,0])
+setCoupling!(System,1,Rvec(-1,0,1),0.3)
+testGeometry(System)
+plotSystem(System,Basis)
+```
+This will perform a bunch of standardized unit tests that should be fulfilled by a correct implementation. The last part will display a plot of the lattice indicating symmetry-inequivalent pairs as well as their couplings.  
+Another helpful trick is to plot a Fourier transform of the couplings (the list of couplings takes the same form as the list of susceptibilities, see further below). If a lattice is implemented correctly this plot has to obey all symmetries that you would also expect for the susceptibility.
 ## Output
 Typically the main output consists of a single HDF5 file that can be loaded using the HDF5 library.
 It contains a number of observables during the course of the flow. If no group is specified in `SolveFRG` then the temperature is used for the main Group. This way, HDF5 files can be easily merged into a single file for several temperatures. Example:

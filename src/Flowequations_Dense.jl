@@ -11,7 +11,7 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) whe
 
     addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
     symmetrizeVertex!(Workspace.Deriv.Γ,Par)
-    flush(stdout)
+    # flush(stdout)
     return
 end
 
@@ -439,13 +439,15 @@ function symmetrizeBubble!(X::BubbleType,Par::PMFRGParams)
         end
     end
     #local definitions of X.Tilde vertices
-    for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
-        X.Ta[R,is,it,iu] = X.a[R,is,it,iu]
-        X.Tb[R,is,it,iu] = X.b[R,is,it,iu]
-        X.Tc[R,is,it,iu] = X.c[R,is,it,iu]
-        X.Td[R,is,it,iu] = -X.c[R,is,iu,it]
+    Threads.@threads for iu in 1:N
+		for it in 1:N, is in 1:N, R in OnsitePairs
+			X.Ta[R,is,it,iu] = X.a[R,is,it,iu]
+			X.Tb[R,is,it,iu] = X.b[R,is,it,iu]
+			X.Tc[R,is,it,iu] = X.c[R,is,it,iu]
+			X.Td[R,is,it,iu] = -X.c[R,is,iu,it]
+		end
     end
-    @. X.Td= X.Ta - X.Tb - X.Tc
+    @tturbo X.Td .= X.Ta .- X.Tb .- X.Tc
 end
 
 function addToVertexFromBubble!(Γ::VertexType,X::BubbleType)
@@ -462,8 +464,10 @@ end
 
 function symmetrizeVertex!(Γ::VertexType,Par)
 	N = Par.NumericalParams.N
-	for iu in 1:N, it in 1:N, is in 1:N, R in Par.System.OnsitePairs
-		Γ.c[R,is,it,iu] = -Γ.b[R,it,is,iu]
+	Threads.@threads for iu in 1:N
+		for it in 1:N, is in 1:N, R in Par.System.OnsitePairs
+			Γ.c[R,is,it,iu] = -Γ.b[R,it,is,iu]
+		end
 	end
 end
 

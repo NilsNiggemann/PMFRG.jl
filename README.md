@@ -1,5 +1,5 @@
 # PMFRG.jl
-`PMFRG` is a Julia package used to compute observables for spin-$`1/2`$ Heisenberg models of the form
+`PMFRG` is a Julia package used to compute observables for spin- $1/2$ Heisenberg models of the form
 ```math
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```
@@ -42,14 +42,15 @@ flowpath = "temp/flows/" # specify path for vertex checkpoints
 Solution,saved_values = SolveFRG(Par,MainFile = mainFile ,CheckpointDirectory = flowpath,method = DP5(),VertexCheckpoints = [],CheckPointSteps = 3 )
 ```
 For further options, the documentation of `SolveFRG` or `NumericalParams` can be helpful. Note that if no `MainFile` is specified, then no output is written.
+### Beyond oneloop FRG
+If no further specification is made, the standard oneloop implementation will be used. In most cases, the oneloop approximation should be appropriate. The Twoloop implementation can be used via specifying the parameters with the additional argument `Params(System,TwoLoop();kwargs...)`.
 ## Fine-tuning lattice couplings
 We might also want to look at lattices where the couplings are not based on distance. The couplings between each **symmetry inequivalent** pair of sites can also be set individually for example
 ```
 setCoupling!(System,1,Rvec(1,0,2),0.3)
 ```
-sets the coupling from reference site 1 (`Rvec(0,0,1)`) to another site located at Rvec(1,0,2) to a value of `0.3`. 
-Generally, `Rvec(n1,n2,nb)` means the site is located at 
- $` n_1 \vec{a}_1 +n_2\vec{a}_2+ \vec{b}_{nb}`$ where $`\vec{a}_i`$ are lattice vectors and $`\vec{b}_{nb}`$ is the $`n_b`$ 'th basis vector.
+sets the coupling from reference site 1 (`Rvec(0,0,1)`) to another site located at `Rvec(1,0,2)` to a value of `0.3`. 
+Generally, `Rvec(n1,n2,nb)` means the site is located at $n_1 \vec{a}_1 +n_2\vec{a}_2 + \vec{b} _ {n_b}$ where $\vec{a} _ i$ are lattice vectors and $\vec{b} _ {n_b}$ is the $n_b$ 'th basis vector.
 Analogously a site in a generic 3D lattice is given by `Rvec(n1,n2,n3,nb)`.
 **attention:** Setting the couplings can **never** break any of the hard-coded lattice symmetries. The function `setCoupling!` will search for the corresponding symmetry inequivalent pair instead. For the square lattice, which is here implemented using all its mirror symmetries the following two lines lead to equivalent results:
 

@@ -127,7 +127,7 @@ Of course you will eventually have to implement lattices which are not included 
 
 - Lattice implementations: [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl)
 - Evaluation: [`PMFRGEvaluation.jl`](https://github.com/NilsNiggemann/PMFRGEvaluation.jl)
-- visualization of Lattices: [`FRGLatticePlotting.jl`](https://github.com/NilsNiggemann/FRGLatticePlotting.jl)
+- visualization of lattices: [`FRGLatticePlotting.jl`](https://github.com/NilsNiggemann/FRGLatticePlotting.jl)
 ### PMFRG methodological publications
 - https://journals.aps.org/prb/abstract/10.1103/PhysRevB.103.104431
 - https://scipost.org/SciPostPhys.12.5.156

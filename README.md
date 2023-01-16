@@ -5,13 +5,13 @@ H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```
 ## Installation
 It is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ .
-`PMFRG.jl` is not in the official registry (yet?) it thus best installed via
-    ```
-    (@v1.8) pkg> activate TestProject
-    Activating new project at `~/TestProject`
+`PMFRG.jl` is not in the official registry (yet?) and thus best installed via
+```
+(@v1.8) pkg> activate TestProject
+Activating new project at `~/TestProject`
 
-    (TestProject) pkg> add https://github.com/NilsNiggemann/PMFRG.jl.git
-    ```
+(TestProject) pkg> add https://github.com/NilsNiggemann/PMFRG.jl.git
+```
  
 
 ## Usage

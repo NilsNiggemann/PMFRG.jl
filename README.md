@@ -1,5 +1,6 @@
-# PMFRG.jl
-`PMFRG` is a Julia package used to compute observables for spin- $1/2$ Heisenberg models of the form
+# PMFRG.jl: 
+
+`PMFRG.jl` (**P**seudo-**M**ajorana **F**unctional **R**enormalization **G**roup) is a Julia package used to compute observables for spin- $1/2$ Heisenberg models of the form
 ```math
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```

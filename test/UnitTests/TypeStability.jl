@@ -15,10 +15,12 @@ function test_OneLoopAllocations(Par=Params(getPolymer(2)))
     WS = getEmptyWorkspace(Par)
     # eval("@code_warntype PMFRG.getXBubble!(WS,0.)")
     # @code_warntype PMFRG.getXBubble!(WS,0.)
-
-    SProps = convertToSMatrix(WS.Buffer.Props[1])
-    VBuff = WS.Buffer.Vertex[1]
-    test_OneLoopAllocations(Par,WS,SProps,VBuff)
+    SBuff = take!(WS.Buffer.Props)
+    VBuff = take!(WS.Buffer.Vertex)
+    SBuff1 = convertToSMatrix(SBuff)
+    test_OneLoopAllocations(Par,WS,SBuff1,VBuff)
+    put!(WS.Buffer.Props,SBuff)
+    put!(WS.Buffer.Vertex,VBuff)
 end
 function test_OneLoopAllocations(Par,WS,SProps,VBuff)
     PMFRG.addX!(WS,1,1,2,2,SProps,VBuff) # compile functions

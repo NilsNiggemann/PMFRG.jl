@@ -99,7 +99,6 @@ function getXBubble!(Workspace::PMFRGWorkspace,Lam)
     (;T,N,lenIntw,np_vec) = Par.NumericalParams 
     PropsBuffers = Workspace.Buffer.Props 
     VertexBuffers = Workspace.Buffer.Vertex
-	 
 	iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,T)
 	iSKat(x,nw) = iSKat_(Workspace.State.γ,Workspace.Deriv.γ,x,Lam,nw,T)
 
@@ -109,28 +108,25 @@ function getXBubble!(Workspace::PMFRGWorkspace,Lam)
 		end
 		return SMatrix(BubbleProp)
 	end
-	@sync begin
-		for is in 1:N,it in 1:N
-			Threads.@spawn begin
-				BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
-				Buffer = VertexBuffers[Threads.threadid()]
-				ns = np_vec[is]
-				nt = np_vec[it]
-				for nw in -lenIntw:lenIntw-1 # Matsubara sum
-					sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
-					for iu in 1:N
-						nu = np_vec[iu]
-						if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
-							continue
-						end
-						addXTilde!(Workspace,is,it,iu,nw,sprop) # add to XTilde-type bubble functions
-						if(!Par.Options.usesymmetry || nu<=nt)
-							addX!(Workspace,is,it,iu,nw,sprop,Buffer)# add to X-type bubble functions
-						end
-					end
-				end
+	
+	allowedIndices = ( (is,it,iu) for is in 1:N, it in 1:N, iu in 1:N if isodd(np_vec[is]+np_vec[it]+np_vec[iu]))
+
+	@floop for (is,it,iu) in allowedIndices
+		ns = np_vec[is]
+		nt = np_vec[it]
+		nu = np_vec[iu]
+		BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+		Buffer = take!(VertexBuffers)
+		# Workspace.X.a .= Buffer.Va12[begin]
+		for nw in -lenIntw:lenIntw-1 # Matsubara sum
+			sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
+			addXTilde!(Workspace,is,it,iu,nw,sprop) # add to XTilde-type bubble functions
+			if(!Par.Options.usesymmetry || nu<=nt)
+				addX!(Workspace,is,it,iu,nw,sprop,Buffer)# add to X-type bubble functions
 			end
 		end
+		put!(PropsBuffers,BubbleProp)
+		put!(VertexBuffers,Buffer)
 	end
 end
 

@@ -22,14 +22,23 @@ function InitializeState(Par::PMFRGParams)
     return State
 end
 
+function getChannel(Buffs::AbstractVector{<:T}) where T
+    BufferChannel = Channel{T}(length(Buffs))
+    for buff in Buffs
+        put!(BufferChannel, buff)
+    end
+    return BufferChannel
+end
+
 function AllocateSetup(Par::OneLoopParams)
     (;Npairs,NUnique) = Par.System
     println("One Loop: T= ",Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
-    PropsBuffers = [MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
-	VertexBuffers = [VertexBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()]
+	VertexBuffers = getChannel([VertexBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()])
+    PropsBuffers = getChannel([MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] )
+
     Buffs = BufferType(PropsBuffers,VertexBuffers) 
     return (X,Buffs,Par)
 end

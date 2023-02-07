@@ -43,30 +43,29 @@ To allow the computation using just the left part of a bubble, specification of 
 """
 function addTo2PartBubble!(ResultBubble::BubbleType,X,XTransp,Γ::VertexType,getProp!::Function,addBTilde_Func!::Function,addB_Func!::Function,Par,Buffer)
     (;N,lenIntw,np_vec) = Par.NumericalParams
-    @sync begin
-		for is in 1:N,it in 1:N
-			Threads.@spawn begin
-				BubbleProp = Buffer.Props[Threads.threadid()] # get pre-allocated thread-safe buffers
-				VBuffer = Buffer.Vertex[Threads.threadid()]
-				XBuffer = Buffer.X[Threads.threadid()]
-				ns = np_vec[is]
-				nt = np_vec[it]
-				for iu in 1:N
-					nu = np_vec[iu]
-					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
-						continue
-					end
-					for nw in -lenIntw:lenIntw-1 # Matsubara sum
-                        sprop = getProp!(BubbleProp,nw,nw+ns)
-                        addBTilde_Func!(ResultBubble,X,XTransp,Γ, is,it,iu,nw,Par,sprop)
-                        if(!Par.Options.usesymmetry || nu<=nt)
-                            addB_Func!(ResultBubble,X,XTransp,Γ,is,it,iu,nw,Par,sprop,VBuffer,XBuffer)
-                        end
-					end
-				end
-			end
-		end
-	end
+	@floop for is in 1:N,it in 1:N
+		BubbleProp = take!(Buffer.Props)# get pre-allocated thread-safe buffers
+		VBuffer = take!(Buffer.Vertex)
+        XBuffer = take!(Buffer.X)
+        ns = np_vec[is]
+        nt = np_vec[it]
+        for nw in -lenIntw:lenIntw-1 # Matsubara sum
+            sprop = getProp!(BubbleProp,nw,nw+ns)
+            for iu in 1:N
+                nu = np_vec[iu]
+                if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+                    continue
+                end
+                addBTilde_Func!(ResultBubble,X,XTransp,Γ, is,it,iu,nw,Par,sprop)
+                if(!Par.Options.usesymmetry || nu<=nt)
+                    addB_Func!(ResultBubble,X,XTransp,Γ,is,it,iu,nw,Par,sprop,VBuffer,XBuffer)
+                end
+            end
+        end
+        put!(Buffer.Props,BubbleProp)
+		put!(Buffer.Vertex,VBuffer)
+		put!(Buffer.X,XBuffer)
+    end
     return ResultBubble
 end
 

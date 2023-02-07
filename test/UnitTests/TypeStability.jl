@@ -57,13 +57,17 @@ function getEmptyWorkspace(Par::PMFRG.TwoLoopParams)
 end
 function test_TwoLoopAllocations(Par=Params(getPolymer(2),TwoLoop()))
     WS = getEmptyWorkspace(Par)
-    
-    PropB =convertToSMatrix(WS.Buffer.Props[1])
+    PropB_0 = take!(WS.Buffer.Props)
 
-    VB = WS.Buffer.Vertex[1]
-    XB =  WS.Buffer.X[1]
+    VB = take!(WS.Buffer.Vertex)
+    XB =  take!(WS.Buffer.X)
+    
+    PropB =convertToSMatrix(PropB_0)
 
     test_TwoLoopAllocations(Par,WS,PropB,VB,XB)
+    put!(WS.Buffer.Vertex,VB)
+    put!(WS.Buffer.X,XB)
+    put!(WS.Buffer.Props,PropB_0)
 end
 function test_TwoLoopAllocations(Par,WS,PropB,VB,XB)
     PMFRG.addBL!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB) #compile functions

@@ -312,7 +312,6 @@ function saveExtraFields(Filename::String,State,T::Real,Par::PMFRGParams,Group::
     Chi_nu = getChi(State,T,Par,N)
     h5write(Filename,"$Group/Name",Name)
     h5write(Filename,"$Group/Npairs",Npairs)
-    h5write(Filename,"$Group/T",T)
     h5write(Filename,"$Group/N",N)
     h5write(Filename,"$Group/NUnique",NUnique)
     h5write(Filename,"$Group/NLen",NLen)

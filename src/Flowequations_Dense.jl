@@ -516,7 +516,7 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, T::Real,Par::PMFRGParam
 		(;xi,xj) = PairTypes[Rij]
 		for nK in -lenIntw_acc:lenIntw_acc-1
 			if Rij in OnsitePairs
-				Chi[Rij,1] += iG(xi,nK) ^2
+				Chi[Rij] += iG(xi,nK) ^2
 			end
 			for nK2 in -lenIntw_acc:lenIntw_acc-1
 				npwpw2 = nK+nK2+1

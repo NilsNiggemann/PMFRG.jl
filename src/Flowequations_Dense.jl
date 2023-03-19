@@ -1,11 +1,11 @@
-function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) where T
+function getDeriv!(Deriv,State,setup::Tuple{BubbleType,Ty,OneLoopParams},T) where Ty
     (X,Buffs,Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = OneLoopWorkspace(Deriv,State,X,Buffs,Par)
 
-    getDFint!(Workspace,Lam)
-    get_Self_Energy!(Workspace,Lam)
+    getDFint!(Workspace,T)
+    get_Self_Energy!(Workspace,T)
 
-    getXBubble!(Workspace,Lam)
+    getXBubble!(Workspace,T)
 
     symmetrizeBubble!(Workspace.X,Par)
 
@@ -15,24 +15,24 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) whe
     return
 end
 
-function getDFint!(Workspace::PMFRGWorkspace,Lam::Real)
+function getDFint!(Workspace::PMFRGWorkspace,T::Real)
     (;State,Deriv,Par) = Workspace 
-    (;T,lenIntw_acc) = Par.NumericalParams 
+    (;lenIntw_acc) = Par.NumericalParams 
     NUnique = Par.System.NUnique 
 	
 	@inline γ(x,nw) = gamma_(State.γ,x,nw)
-	@inline iG(x,nw) = iG_(State.γ,x,Lam,nw,T)
-	@inline iS(x,nw) = iS_(State.γ,x,Lam,nw,T)
+	@inline iG(x,nw) = iG_(State.γ,x,T,nw)
+	@inline iS(x,nw) = iS_(State.γ,x,T,nw)
 
-	Theta(Lam,w) = w^2/(w^2+Lam^2)
+	Theta(T,w) = w^2/(w^2+T^2)
 	
 	for x in 1:NUnique
 		sumres = 0.
 		for nw in -lenIntw_acc:lenIntw_acc-1
-			w = get_w(nw,T)
-			sumres += iS(x,nw)/iG(x,nw)*Theta(Lam,w) *γ(x,nw)/w
+			w = get_w(nw)
+			sumres += iS(x,nw)/iG(x,nw)*Theta(T,w) *γ(x,nw)/w
 		end
-		Deriv.f_int[x] = -3/2*T*sumres
+		Deriv.f_int[x] = -3/2*sumres
 	end
 end
 
@@ -41,7 +41,7 @@ Computes a single-particle (i.e. self-energy) bubble. Allows specification of fu
 """
 function addTo1PartBubble!(Dgamma::AbstractArray,XT1_::Function,XT2_::Function,Prop,Par)
 
-    (;T,N,Ngamma,lenIntw_acc,np_vec_gamma) = Par.NumericalParams
+    (;N,Ngamma,lenIntw_acc,np_vec_gamma) = Par.NumericalParams
     (;siteSum,invpairs,Nsum,OnsitePairs) = Par.System
 
 	Threads.@threads for iw1 in 1:Ngamma
@@ -55,7 +55,7 @@ function addTo1PartBubble!(Dgamma::AbstractArray,XT1_::Function,XT2_::Function,P
 					(;m,ki,xk) = siteSum[k_spl,Rx]
 					jsum += (XT1_(ki,wpw1,0,wmw1)+2*XT2_(ki,wpw1,0,wmw1))*Prop(xk,nw)*m
 				end
-				Dgamma[x,iw1] += -T *jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
+				Dgamma[x,iw1] += -jsum #For the self-energy derivative, the factor of 1/2 must be in the propagator
 			end
 		end
 	end
@@ -87,24 +87,23 @@ function compute1PartBubble!(Dgamma::AbstractArray,ΓorX,Prop,Par)
 	setZero!(Dgamma)
     addTo1PartBubble!(Dgamma,ΓorX,Prop,Par)
 end
-function get_Self_Energy!(Workspace::PMFRGWorkspace,Lam) 
+function get_Self_Energy!(Workspace::PMFRGWorkspace,T) 
 	Par = Workspace.Par
-	@inline iS(x,nw) = iS_(Workspace.State.γ,x,Lam,nw,Par.NumericalParams.T)/2
+	@inline iS(x,nw) = iS_(Workspace.State.γ,x,T,nw)/2
 	compute1PartBubble!(Workspace.Deriv.γ,Workspace.State.Γ,iS,Par)
 end
-# @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
-function getXBubble!(Workspace::PMFRGWorkspace,Lam)
+function getXBubble!(Workspace::PMFRGWorkspace,T)
 	Par = Workspace.Par
-    (;T,N,lenIntw,np_vec) = Par.NumericalParams 
+    (;N,lenIntw,np_vec) = Par.NumericalParams 
     PropsBuffers = Workspace.Buffer.Props 
     VertexBuffers = Workspace.Buffer.Vertex
-	iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,T)
-	iSKat(x,nw) = iSKat_(Workspace.State.γ,Workspace.Deriv.γ,x,Lam,nw,T)
+	iG(x,nw) = iG_(Workspace.State.γ,x,T,nw)
+	iSKat(x,nw) = iSKat_(Workspace.State.γ,Workspace.Deriv.γ,x,T,nw)
 
 	function getKataninProp!(BubbleProp,nw1,nw2)
 		for i in 1:Par.System.NUnique, j in 1:Par.System.NUnique
-			BubbleProp[i,j] = iSKat(i,nw1) *iG(j,nw2)* T
+			BubbleProp[i,j] = iSKat(i,nw1) *iG(j,nw2)
 		end
 		return SMatrix(BubbleProp)
 	end
@@ -470,14 +469,14 @@ function symmetrizeVertex!(Γ::VertexType,Par)
 end
 
 ##
-getChi(State::ArrayPartition, Lam::Real,Par::PMFRGParams,Numax) = getChi(State.x[2],State.x[5], Lam,Par,Numax)
-getChi(State::ArrayPartition, Lam::Real,Par::PMFRGParams) = getChi(State.x[2],State.x[5], Lam,Par)
+getChi(State::ArrayPartition, T::Real,Par::PMFRGParams,Numax) = getChi(State.x[2],State.x[5], T,Par,Numax)
+getChi(State::ArrayPartition, T::Real,Par::PMFRGParams) = getChi(State.x[2],State.x[5], T,Par)
 
-function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGParams,Numax)
-	(;T,N,lenIntw_acc,np_vec) = Par.NumericalParams
+function getChi(gamma::AbstractArray,Γc::AbstractArray, T::Real,Par::PMFRGParams,Numax)
+	(;N,lenIntw_acc,np_vec) = Par.NumericalParams
 	(;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
 
-	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
+	@inline iG(x,w) = iG_(gamma,x, T,w)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(_getFloatType(Par),Npairs,N)
@@ -489,14 +488,14 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 		
 			for nK in -lenIntw_acc:lenIntw_acc-1
 				if Rij in OnsitePairs
-					Chi[Rij,i_nu] += T * iG(xi,nK) * iG(xi,nK+n_nu)
+					Chi[Rij,i_nu] += iG(xi,nK) * iG(xi,nK+n_nu)
 				end
 				for nK2 in -lenIntw_acc:lenIntw_acc-1
 					npwpw2 = n_nu+nK+nK2+1
 					wmw2 = nK-nK2
 					#use that Vc_0 is calculated from Vb
 					GGGG = iG(xi,nK)*iG(xi,nK+n_nu) * iG(xj,nK2)*iG(xj,nK2+n_nu)
-					Chi[Rij,i_nu] += T^2 * GGGG *Vc_(Rij,n_nu,npwpw2,wmw2)
+					Chi[Rij,i_nu] += GGGG *Vc_(Rij,n_nu,npwpw2,wmw2)
                 end
             end
         end
@@ -504,11 +503,11 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 	return(Chi)
 end
 
-function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGParams)
-	(;T,N,lenIntw_acc) = Par.NumericalParams
+function getChi(gamma::AbstractArray,Γc::AbstractArray, T::Real,Par::PMFRGParams)
+	(;N,lenIntw_acc) = Par.NumericalParams
 	(;Npairs,invpairs,PairTypes,OnsitePairs) = Par.System
 
-	@inline iG(x,w) = iG_(gamma,x, Lam,w,T)
+	@inline iG(x,w) = iG_(gamma,x, T,w)
 	@inline Vc_(Rij,s,t,u) = V_(Γc,Rij,s,t,u,invpairs[Rij],N)
 
 	Chi = zeros(_getFloatType(Par),Npairs)
@@ -517,14 +516,14 @@ function getChi(gamma::AbstractArray,Γc::AbstractArray, Lam::Real,Par::PMFRGPar
 		(;xi,xj) = PairTypes[Rij]
 		for nK in -lenIntw_acc:lenIntw_acc-1
 			if Rij in OnsitePairs
-				Chi[Rij,1] += T * iG(xi,nK) ^2
+				Chi[Rij,1] += iG(xi,nK) ^2
 			end
 			for nK2 in -lenIntw_acc:lenIntw_acc-1
 				npwpw2 = nK+nK2+1
 				wmw2 = nK-nK2
 				#use that Vc_0 is calculated from Vb
 				GGGG = iG(xi,nK)^2 * iG(xj,nK2)^2
-				Chi[Rij] += T^2 * GGGG *Vc_(Rij,0,npwpw2,wmw2)
+				Chi[Rij] += GGGG *Vc_(Rij,0,npwpw2,wmw2)
 			end
         end
     end

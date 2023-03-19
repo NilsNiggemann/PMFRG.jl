@@ -1,6 +1,6 @@
 Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
-_getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T)
+_getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T_min)
 
 function InitializeState(Par::PMFRGParams)
     (;N,Ngamma) = Par.NumericalParams
@@ -32,7 +32,7 @@ end
 
 function AllocateSetup(Par::OneLoopParams)
     (;Npairs,NUnique) = Par.System
-    println("One Loop: T= ",Par.NumericalParams.T)
+    println("One Loop:")
     ##Allocate Memory:
     X = BubbleType(Par)
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
@@ -43,13 +43,13 @@ function AllocateSetup(Par::OneLoopParams)
     return (X,Buffs,Par)
 end
 
-"""Converts t step used for integrator to Λ. Inverse of Lam_to_t."""
-t_to_Lam(t) = exp(t)
-"""Converts physical cutoff Λ to t (integrator step). Inverse of t_to_Lam."""
-Lam_to_t(t) = log(t)
+"""Converts t step used for integrator to Λ. Inverse of T_to_t."""
+t_to_T(t) = exp(t)
+"""Converts physical cutoff Λ to t (integrator step). Inverse of t_to_T."""
+T_to_t(t) = log(t)
 
 """
-Given a set of Parameters (currently, oneß and twoloop are implemented), solves the set of differential flow equations and returns the ODE solution object along with an array of Observables at each lambda step.
+Given a set of Parameters (currently, oneß and twoloop are implemented), solves the set of differential flow equations and returns the ODE solution object along with an array of Observables at each T step.
 Allowed keyword arguments (with default values):
 
     MainFile = nothing,                             # Specifies name of main output file as a string.
@@ -88,24 +88,24 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
 
-    (;Lam_max,Lam_min,accuracy) = Par.NumericalParams
-    save_func(State,t,integrator) = getObservables(State,t_to_Lam(t),Par)
+    (;T_max,T_min,accuracy) = Par.NumericalParams
+    save_func(State,t,integrator) = getObservables(State,t_to_T(t),Par)
     
     saved_values = SavedValues(eltype(State),Observables)
     i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function bareOutput(State,t,integrator)
-        Lam = t_to_Lam(t)
+        T = t_to_T(t)
         i+=1
-        i%CheckPointSteps == 0 && setCheckpoint(CheckpointDirectory,State,saved_values,Lam,Par,VertexCheckpoints)
+        i%CheckPointSteps == 0 && setCheckpoint(CheckpointDirectory,State,saved_values,T,Par,VertexCheckpoints)
     end
     
     function verboseOutput(State,t,integrator)
-        Lam = t_to_Lam(t)
+        T = t_to_T(t)
         println("Time taken for output saving: ")
         @time bareOutput(State,t,integrator)
         println("") 
-        writeOutput(State,saved_values,Lam,Par)
+        writeOutput(State,saved_values,T,Par)
     end
 
     function getOutputfunction(MinimalOutput)
@@ -118,23 +118,23 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     output_func = getOutputfunction(Par.Options.MinimalOutput)
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
-    # ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
-    ObsSaveat = gettMesh(ObsSaveat,Lam_min,Lam_max)
+    # ObsSaveat = getTempMesh(ObsSaveat,T_min,T_max)
+    ObsSaveat = gettMesh(ObsSaveat,T_min,T_max)
     saveCB = SavingCallback(save_func, saved_values,save_everystep =false,saveat = ObsSaveat,tdir=-1)
     outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
     unstable_check(dt,u,p,t) = maximum(abs,u) >MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
 
-    t0 = Lam_to_t(Lam_max)
-    tend = get_t_min(Lam_min)
+    t0 = T_to_t(T_max)
+    tend = get_t_min(T_min)
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
     problem = ODEProblem(Deriv_subst!,State,(t0,tend),setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=Lam_to_t(0.2*Lam_max),unstable_check = unstable_check;kwargs...)
+    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=T_to_t(0.2*T_max),unstable_check = unstable_check;kwargs...)
     if !Par.Options.MinimalOutput
         println(sol.destats)
     end
-    saved_values.t .= t_to_Lam.(saved_values.t)
-    saveCurrentState(CheckpointDirectory,sol[end],saved_values,t_to_Lam(sol.t[end]),Par)
+    saved_values.t .= t_to_T.(saved_values.t)
+    saveCurrentState(CheckpointDirectory,sol[end],saved_values,t_to_T(sol.t[end]),Par)
     saveMainOutput(MainFile,sol,saved_values,Par,Group)
 
     SetCompletionCheckmark(CheckpointDirectory)
@@ -144,38 +144,38 @@ end
 function generateSubstituteDeriv(getDeriv!::Function)
     
     function DerivSubs!(Deriv,State,par,t)
-        Lam = t_to_Lam(t)
-        a = getDeriv!(Deriv,State,par,Lam)
-        Deriv .*= Lam
+        T = t_to_T(t)
+        a = getDeriv!(Deriv,State,par,T)
+        Deriv .*= T
         a
     end
 
 end
 
 
-function get_t_min(Lam)
-    Lam < exp(-30) && @warn "Lam_min too small! Set to exp(-30) instead."
-    max(Lam_to_t(Lam),-30.)
+function get_t_min(T)
+    T < exp(-30) && @warn "T_min too small! Set to exp(-30) instead."
+    max(T_to_t(T),-30.)
 end
 
-DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
+DefaultGroup(Par::PMFRGParams) = ""
 
-function getObservables(State::ArrayPartition,Lam,Par)
+function getObservables(State::ArrayPartition,T,Par)
     f_int,gamma,Va,Vb,Vc = State.x
-    chi = getChi(State,Lam,Par)
+    chi = getChi(State,T,Par)
     MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
     MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
     MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
     return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
 end
-writeOutput(State::ArrayPartition,saved_values,Lam,Par) = writeOutput(State.x...,saved_values.saveval[end],Lam,Par)
+writeOutput(State::ArrayPartition,saved_values,T,Par) = writeOutput(State.x...,saved_values.saveval[end],T,Par)
 
-function writeOutput(f_int,gamma,Va,Vb,Vc,obs,Lam,Par)
+function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
     (;usesymmetry) = Par.Options
-    (;N,np_vec,T) = Par.NumericalParams
+    (;N,np_vec) = Par.NumericalParams
     chi = obs.Chi
-    t = Lam_to_t(Lam)
-    print("T= ",strd(T)," at t step: ",strd(t),", Λ = exp(t) = ",strd(Lam),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
+    t = T_to_t(T)
+    print("T= ",strd(T)," at t step: ",strd(t),", Λ = exp(t) = ",strd(T),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
     for f in f_int
         print(strd(f),",")
     end
@@ -222,21 +222,21 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,Lam,Par)
     end
 end
 
-function getLambdaMesh(Saveat::Nothing,Lam_min,Lam_max)
-    dense_range = collect(LinRange(Lam_min,5.,100))
+function getTempMesh(Saveat::Nothing,T_min,T_max)
+    dense_range = collect(LinRange(T_min,5.,100))
     medium_range = collect(LinRange(5.,10.,50))
-    sparse_range = collect(LinRange(10.,Lam_max,30))
+    sparse_range = collect(LinRange(10.,T_max,30))
     ObsSaveat = unique!(append!(dense_range,medium_range,sparse_range))
     return ObsSaveat
 end
 
-# function gettMesh(Saveat::Nothing,Lam_min,Lam_max)
-#     tmin = get_t_min(Lam_min)
-#     tmax = Lam_to_t(Lam_max)
+# function gettMesh(Saveat::Nothing,T_min,T_max)
+#     tmin = get_t_min(T_min)
+#     tmax = T_to_t(T_max)
 #     LinRange(tmin,tmax,150)
 # end
-gettMesh(Saveat,Lam_min,Lam_max) = Lam_to_t.(getLambdaMesh(Saveat,Lam_min,Lam_max))
+gettMesh(Saveat,T_min,T_max) = T_to_t.(getTempMesh(Saveat,T_min,T_max))
 
-function getLambdaMesh(Saveat::Vector{Float64},Lam_min,Lam_max)
-    return unique(push!(Saveat,Lam_max)) # make sure that there is at least one element at beginning of code
+function getTempMesh(Saveat::Vector{Float64},T_min,T_max)
+    return unique(push!(Saveat,T_max)) # make sure that there is at least one element at beginning of code
 end

@@ -15,17 +15,17 @@ module PMFRG
     include("Flowequations_Dense.jl")
     include("FileIO.jl")
     include("Solver.jl")
-    export saveState, readState, readLam, saveParams, readParams, setupDirectory, saveCurrentState, UniqueDirName,UniqueFileName, generateName, setupFromCheckpoint, SolveFRG_Checkpoint,readGeometry, readObservables,getUnfinishedJobs,generateFileName
+    export saveState, readState, readTemp, saveParams, readParams, setupDirectory, saveCurrentState, UniqueDirName,UniqueFileName, generateName, setupFromCheckpoint, SolveFRG_Checkpoint,readGeometry, readObservables,getUnfinishedJobs,generateFileName
     
     
-    include("TwoLoop/TwoLoopPMFRG.jl")
-    # using .TwoLoopPMFRG
-    export TwoLoop
+    # include("TwoLoop/TwoLoopPMFRG.jl")
+    # # using .TwoLoopPMFRG
+    # export TwoLoop
     
-    using FixedPoint
+    # using FixedPoint
     
-    include("MultiLoop/MultiLoopPMFRG.jl")
-    export MultiLoop,Parquet,SolveParquet
+    # include("MultiLoop/MultiLoopPMFRG.jl")
+    # export MultiLoop,Parquet,SolveParquet
 
     # export UnitTests
 

@@ -15,8 +15,8 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     Ngamma::Int = 100 #Number of gamma frequencies
     VDims::NTuple{4,Int} = (Npairs,N,N,N)
     accuracy::Float64 = 1e-6
-    Lam_min::Float64 = exp(-10.),
-    Lam_max::Float64 = exp(10.),
+    T_min::Float64 = exp(-10.),
+    T_max::Float64 = exp(10.),
     usesymmetry::Bool = true
     MinimalOutput::Bool = false
     ex_freq::Float64 = (2*N-1)*pi*T
@@ -27,20 +27,17 @@ Struct to hold all relevant quantities that are needed throughout the computatio
 
 """
 struct NumericalParams{F <: AbstractFloat}
-    T::F # Temperature
     N::Int # Number of positive frequencies
     Ngamma::Int  # Number of positive gamma frequencies
 
     accuracy::F # 
-    Lam_min::F
-    Lam_max::F
+    T_min::F
+    T_max::F
     
     lenIntw::Int 
     lenIntw_acc::Int  # more accurate for less demanding sums
     np_vec::Array{Int,1}
     np_vec_gamma::Array{Int,1}
-
-    ex_freq::F
 end
 
 """Converts other arguments to type of first argument. If that is not a float, converts everything to Float64."""
@@ -48,33 +45,29 @@ _convertToFloat(Primary::T,args...)  where T<: AbstractFloat = convert.(T,(Prima
 _convertToFloat(Primary::Real,args...) = convert.(Float64,(Primary,args...))
 
 function NumericalParams(;
-    T::Real = 0.5, # Temperature
     N::Integer = 24,
     Ngamma::Integer = N, #Number of gamma frequencies
     accuracy::AbstractFloat = 1e-6, # convert type to float type
-    Lam_min::AbstractFloat = exp(-10.),
-    Lam_max::AbstractFloat = exp(10.),
+    T_min::AbstractFloat = 0.3,
+    T_max::AbstractFloat = exp(10.),
     lenIntw::Int = N,
     lenIntw_acc::Int = 2*maximum((N,Ngamma,lenIntw)), # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1),
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1),
-    ex_freq = (2*N-1)*pi*T,
     kwargs...)
 
-    T,Lam_min,Lam_max,accuracy,ex_freq = _convertToFloat(T,Lam_min,Lam_max,accuracy,ex_freq)
+    T_min,T_max,accuracy = _convertToFloat(T_min,T_max,accuracy)
 
     return NumericalParams(
-        T,
         N,
         Ngamma,
         accuracy,
-        Lam_min,
-        Lam_max ,
+        T_min,
+        T_max ,
         lenIntw,
         lenIntw_acc,
         np_vec,
         np_vec_gamma,
-        ex_freq,
     )
 end
 abstract type AbstractOptions end 

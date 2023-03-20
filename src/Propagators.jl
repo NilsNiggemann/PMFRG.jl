@@ -1,4 +1,8 @@
 θ(T) = 1/sqrt(T)
+function iG0(nw,T)
+    w = get_w(nw)
+    θ(T)/(w)
+end
 """
 Taking a Matsubara integer, gives fully dressed propagator
 """

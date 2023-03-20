@@ -24,13 +24,11 @@ function getDFint!(Workspace::PMFRGWorkspace,T::Real)
 	@inline iG(x,nw) = iG_(State.γ,x,T,nw)
 	@inline iS(x,nw) = iS_(State.γ,x,T,nw)
 
-	Theta(T,w) = w^2/(w^2+T^2)
-	
 	for x in 1:NUnique
 		sumres = 0.
 		for nw in -lenIntw_acc:lenIntw_acc-1
 			w = get_w(nw)
-			sumres += iS(x,nw)/iG(x,nw)*Theta(T,w) *γ(x,nw)/w
+			sumres += iS(x,nw)/iG(x,nw)*iG0(nw,T) *γ(x,nw)
 		end
 		Deriv.f_int[x] = -3/2*sumres
 	end

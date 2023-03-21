@@ -1,14 +1,14 @@
 using SpinFRGLattices, PMFRG
 
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
-    getPolymer(2), # geometry, this is always required
+    getPolymer(2), # geometry, this is alw#ays required
     OneLoop(), # method. OneLoop() is the default
-    N = 32, # Number of positive Matsubara frequencies for the four-point vertex.
-    lenIntw = 32,
-    lenIntw_acc = 32,
+    N = 20, # Number of positive Matsubara frequencies for the four-point vertex.
+    lenIntw = 20,
+    lenIntw_acc = 20,
     accuracy = 1e-6, #absolute and relative tolerance of the ODE solver.
     # For further optional arguments, see documentation of 'NumericalParams'
-    T_min = 0.2,
+    T_min = 0.05,
     T_max = exp(5),
 )
 struct NewObs{T}
@@ -21,7 +21,6 @@ struct NewObs{T}
     MaxVc::Vector{T}
 end
 
-
 function PMFRG.getObservables(::Type{NewObs},State::PMFRG.ArrayPartition,T,Par)
     f_int,gamma,Va,Vb,Vc = State.x
     chinu = PMFRG.getChi(State,T,Par,Par.NumericalParams.N)
@@ -31,17 +30,21 @@ function PMFRG.getObservables(::Type{NewObs},State::PMFRG.ArrayPartition,T,Par)
     return NewObs(chinu[:,1],chinu,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
 end
 
-Solution,saved_values = SolveFRG(Par,method = DP5(),
+Solution,saved_values = SolveFRG(Par,MainFile = "TFlowDimer.h5",method = DP5(),
 ObservableType = NewObs, ObsSaveat = exp10.(LinRange(log10(Par.NumericalParams.T_min),log10(100),500)))
 Res = PMFRG.StructArray(saved_values.saveval) |> reverse
 T = saved_values.t |> reverse
 ##
-using CairoMakie, PMFRGDimerBenchmark
+using CairoMakie, PMFRGDimerBenchmark,PMFRGEvaluation
 chi = Res.Chi
 plotDimerSusc(T,chi,axkwargs = (;xscale = log10,yscale = Makie.pseudolog10))
 ##
 mean(x) = sum(x)/length(x)
-
+e = let 
+    Chinu = PMFRG.convertToArray(Res.Chinu)
+    e = [get_e_Chi(Chinu)
+    
+end
 f_int = mean.(Res.f_int)
 
 f_int = f_int .*T.^(3/3)

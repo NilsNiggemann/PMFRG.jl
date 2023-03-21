@@ -27,7 +27,6 @@ function getDFint!(Workspace::PMFRGWorkspace,T::Real)
 	for x in 1:NUnique
 		sumres = 0.
 		for nw in -lenIntw_acc:lenIntw_acc-1
-			w = get_w(nw)
 			sumres += iS(x,nw)/iG(x,nw)*iG0(nw,T) *γ(x,nw)
 		end
 		Deriv.f_int[x] = -3/2*sumres

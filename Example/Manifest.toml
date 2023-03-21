@@ -2,7 +2,7 @@
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "46a71fa753cd9da8eaafe04c3013d8d20bce568c"
+project_hash = "dae92c8bf5516382e9fedd402d7d7108aca8a76c"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -1164,6 +1164,12 @@ deps = ["DiffEqCallbacks", "FLoops", "FixedPoint", "H5Zblosc", "HDF5", "LoopVect
 path = ".."
 uuid = "37d616f8-0bcb-4e18-9a76-f5d18f52650d"
 version = "2.1.8"
+
+[[deps.PMFRGDimerBenchmark]]
+deps = ["CairoMakie", "PMFRGEvaluation"]
+path = "../../Projects/PMFRGDimerBenchmark.jl"
+uuid = "efb54601-8c71-4107-a34b-e23bae667246"
+version = "0.1.0"
 
 [[deps.PMFRGEvaluation]]
 deps = ["Dierckx", "FRGLatticeEvaluation", "HDF5", "HDF5Helpers", "LaTeXStrings", "Parameters", "RecursiveArrayTools", "Reexport", "Roots", "SmoothingSplines", "SpinFRGLattices", "StaticArrays"]

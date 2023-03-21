@@ -3,7 +3,7 @@ using SpinFRGLattices, PMFRG
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
     getPolymer(2), # geometry, this is always required
     OneLoop(), # method. OneLoop() is the default
-    N = 32, # Number of positive Matsubara frequencies for the four-point vertex.
+    N = 20, # Number of positive Matsubara frequencies for the four-point vertex.
     lenIntw = 100,
     lenIntw_acc = 200,
     accuracy = 1e-6, #absolute and relative tolerance of the ODE solver.
@@ -14,29 +14,13 @@ Par = Params( #create a group of all parameters to pass them to the FRG Solver
 
 Solution,saved_values = SolveFRG(Par,ObsSaveat = exp10.(LinRange(log10(Par.NumericalParams.T_min),log10(Par.NumericalParams.T_max),300)))
 
-chi1_ex(B) = (exp(B) - 1 + B )/(2*(exp(B)+3))
-chi2_ex(B) = -(exp(B) - 1 - B )/(2*(exp(B)+3))
-chi_ex(T) = [chi1_ex(1/T),chi2_ex(1/T)]
 ##
-using CairoMakie
+using CairoMakie, PMFRGDimerBenchmark
 let 
-    fig = Figure(resolution = (800, 600))
-    ax = Axis(fig[1, 1], xlabel = "T", ylabel = L"\chi",
-    # xscale = log10,yscale = Makie.pseudolog10
-    )
     Res = PMFRG.StructArray(saved_values.saveval)
     chi = Res.Chi
     T = saved_values.t
-    println(extrema(T))
-    chi1 = getindex.(chi,1)
-    chi2 = getindex.(chi,2)
-
-    lines!(ax,T, chi1, color = :red)
-    lines!(ax,T, chi2, color = :blue)
-    lines!(ax,T, chi1_ex.(1 ./T), color = :black)
-    lines!(ax,T, chi2_ex.(1 ./T), color = :black)
-    xlims!(ax,0.01,3)
-    fig
+    plotDimerSusc(T,chi)
 end
 ##
 let 
@@ -58,7 +42,7 @@ let
 end
 
 ##
-using PMFRGEvaluation
+using PMFRGEvaluation,PMFRGDimerBenchmark
 
 fex(T) = -T/2*log(sum(exp(-En/T) for En in (-3/4,1/4,1/4,1/4)))
 
@@ -75,15 +59,7 @@ let
     T = T[perm]
     f_int = f_int[perm]
 
-    f_int = f_int*T.^(1/4)
-    Thermo = PMFRGEvaluation.getThermoIntPol(T,f_int  ,1)
+    f_int = f_int .*T^(3/4)
 
-    fint_ex =  fex.(T) .+T*log(2)
-
-    ThermoEx = PMFRGEvaluation.getThermoIntPol(T,fint_ex,1)
-    # lines!(ax,T, f_int  , color = :black)
-    lines!(ax,T, Thermo.c.(T), color = :red)
-    lines!(ax,T, ThermoEx.c.(T), color = :black)
-    xlims!(ax,0.01,100)
-    fig
+    plotThermo(T,f_int,axkwargs = (;xscale = log10))
 end

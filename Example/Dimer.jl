@@ -3,63 +3,55 @@ using SpinFRGLattices, PMFRG
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
     getPolymer(2), # geometry, this is always required
     OneLoop(), # method. OneLoop() is the default
-    N = 20, # Number of positive Matsubara frequencies for the four-point vertex.
-    lenIntw = 100,
-    lenIntw_acc = 200,
+    N = 32, # Number of positive Matsubara frequencies for the four-point vertex.
+    lenIntw = 32,
+    lenIntw_acc = 32,
     accuracy = 1e-6, #absolute and relative tolerance of the ODE solver.
     # For further optional arguments, see documentation of 'NumericalParams'
     T_min = 0.2,
-    T_max = 100.,
+    T_max = exp(5),
 )
+struct NewObs{T}
+    Chi::Vector{T}
+    Chinu::Matrix{T}
+    gamma::Matrix{T}
+    f_int::Vector{T}
+    MaxVa::Vector{T}
+    MaxVb::Vector{T}
+    MaxVc::Vector{T}
+end
 
-Solution,saved_values = SolveFRG(Par,ObsSaveat = exp10.(LinRange(log10(Par.NumericalParams.T_min),log10(Par.NumericalParams.T_max),300)))
 
+function PMFRG.getObservables(::Type{NewObs},State::PMFRG.ArrayPartition,T,Par)
+    f_int,gamma,Va,Vb,Vc = State.x
+    chinu = PMFRG.getChi(State,T,Par,Par.NumericalParams.N)
+    MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
+    MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
+    MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
+    return NewObs(chinu[:,1],chinu,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
+end
+
+Solution,saved_values = SolveFRG(Par,method = DP5(),
+ObservableType = NewObs, ObsSaveat = exp10.(LinRange(log10(Par.NumericalParams.T_min),log10(100),500)))
+Res = PMFRG.StructArray(saved_values.saveval) |> reverse
+T = saved_values.t |> reverse
 ##
 using CairoMakie, PMFRGDimerBenchmark
-let 
-    Res = PMFRG.StructArray(saved_values.saveval)
-    chi = Res.Chi
-    T = saved_values.t
-    plotDimerSusc(T,chi)
-end
+chi = Res.Chi
+plotDimerSusc(T,chi,axkwargs = (;xscale = log10,yscale = Makie.pseudolog10))
 ##
-let 
-    fig = Figure(resolution = (800, 600))
-    ax = Axis(fig[1, 1], xlabel = "T", ylabel = L"\chi_{err}",
-    xscale = log10,yscale = log10
-    )
-    Res = PMFRG.StructArray(saved_values.saveval)
-    chi = Res.Chi
-    T = saved_values.t
-    chi1 = abs.(getindex.(chi,1) .- chi1_ex.(1 ./T))
-    chi2 = abs.(getindex.(chi,2) .- chi1_ex.(1 ./T))
+mean(x) = sum(x)/length(x)
 
-    lines!(ax,T, chi1, color = :red)
-    lines!(ax,T, chi2, color = :blue)
-    lines!(ax,T, T .^- 1, color = :black, linestyle = :dash)
-    xlims!(ax,1,100)
-    fig
-end
+f_int = mean.(Res.f_int)
 
+f_int = f_int .*T.^(3/3)
+
+plotThermo(T,f_int,axkwargs = (;xscale = log10))
 ##
-using PMFRGEvaluation,PMFRGDimerBenchmark
-
-fex(T) = -T/2*log(sum(exp(-En/T) for En in (-3/4,1/4,1/4,1/4)))
-
-let 
-    fig = Figure(resolution = (800, 600))
-    ax = Axis(fig[1, 1], xlabel = "T", ylabel = L"f_int",
-    xscale = log10,yscale = Makie.pseudolog10
-    )
-    Res = PMFRG.StructArray(saved_values.saveval)
-    mean(x) = sum(x)/length(x)
-    f_int = mean.(Res.f_int)
-    T = saved_values.t
-    perm = sortperm(T)
-    T = T[perm]
-    f_int = f_int[perm]
-
-    f_int = f_int .*T^(3/4)
-
-    plotThermo(T,f_int,axkwargs = (;xscale = log10))
+gamma_nT = PMFRG.convertToArray(Res.gamma)[1,:,:] 
+for i in axes(gamma_nT,1)
+    @. gamma_nT[i,:] .*= T^(3/2)
 end
+plotGammaT(T,gamma_nT,axkwargs= (;xscale = log10,yscale = identity,
+),(0,1,5))
+current_figure()

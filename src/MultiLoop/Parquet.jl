@@ -1,20 +1,25 @@
 
 """Given set of parameters solve the self-consistent Parquet approximation iteratively. 
 TODO: Save output to file"""
-function SolveParquet(Par::ParquetParams,Lam::Real,getObsFunc::Function = getObservables;kwargs...)
+function SolveParquet(Par::ParquetParams,Lam::Real;kwargs...)
     Workspace = SetupParquet(Par)
-    SolveParquet(Workspace,Lam,getObsFunc;kwargs...)
+    SolveParquet(Workspace,Lam;kwargs...)
 end
-function SolveParquet(State::StateType,Par::ParquetParams,Lam::Real,getObsFunc::Function = getObservables;kwargs...)
+function SolveParquet(State::StateType,Par::ParquetParams,Lam::Real;kwargs...)
     Workspace = SetupParquet(Par)
     writeTo!(Workspace.OldState,State)
-    SolveParquet(Workspace,Lam,getObsFunc;kwargs...)
+    SolveParquet(Workspace,Lam;kwargs...)
 end
 
-function SolveParquet(Workspace::ParquetWorkspace,Lam::Real,getObsFunc::Function = getObservables;iterator = iterateSolution_FP!,MainFile=nothing,Group = DefaultGroup(Workspace.Par),CheckpointDirectory = nothing,kwargs...)
-    ObsType = typeof(getObservables(Workspace,Lam))
+function SolveParquet(Workspace::ParquetWorkspace,Lam::Real;
+    iterator = iterateSolution_FP!,
+    MainFile=nothing,
+    Group = DefaultGroup(Workspace.Par),
+    CheckpointDirectory = nothing,
+    ObsType = Observables,
+    kwargs...)
     Obs = StructArray(ObsType[])
-    @time Workspace,Obs = iterator(Workspace,Lam,Obs,getObsFunc)
+    @time Workspace,Obs = iterator(Workspace,Lam,Obs)
     saveMainOutput(MainFile,Workspace.State,Obs,Lam,Workspace.Par,Group)
     return Workspace,Obs
 end
@@ -164,11 +169,12 @@ end
 
 
 
-function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
+function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs)
     (;OldState,State,Γ0,B0,Par,Buffer) = Workspace
     (;BSE_iters,BSE_epsilon,BSE_vel) = Par.Options
     (;accuracy) = Par.NumericalParams
 
+    ObsType = eltype(Obs)
     OldStateArr,StateArr = ArrayPartition.((OldState,State))
     
     function FixedPointFunction!(State_Arr,OldState_Arr)
@@ -179,7 +185,7 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFun
 
         writeTo!(Workspace.State,State) # need to do this since State is not equal to Workspace.State anymore!
 
-        CurrentObs = getObsFunc(Workspace,Lam)
+        CurrentObs = getObservables(ObsType,Workspace,Lam)
         push!(Obs,CurrentObs)
         if !Par.Options.MinimalOutput
             writeOutput(State,CurrentObs,Lam,Par)
@@ -232,7 +238,7 @@ end
 getChi(State::StateType, Lam::Real,Par::ParquetParams) = getChi(State.γ,State.Γ.c, Lam,Par)
 getChi(State::StateType, Lam::Real,Par::ParquetParams,Numax) = getChi(State.γ,State.Γ.c, Lam,Par,Numax)
 
-function getObservables(Workspace::ParquetWorkspace,Lam)
+function getObservables(::Type{Observables},Workspace::ParquetWorkspace,Lam)
     State = Workspace.State
     chi = getChi(Workspace.State,Lam,Workspace.Par)
     MaxVa = maximum(abs,State.Γ.a,dims = (2,3,4,5))[:,1,1,1]

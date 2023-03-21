@@ -83,15 +83,16 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     VertexCheckpoints = [],
     overwrite_Checkpoints = false::Bool,
     CheckPointSteps = 1,
+    ObservableType = Observables,
     kwargs...)
     
     Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
 
     (;Lam_max,Lam_min,accuracy) = Par.NumericalParams
-    save_func(State,t,integrator) = getObservables(State,t_to_Lam(t),Par)
+    save_func(State,t,integrator) = getObservables(ObservableType,State,t_to_Lam(t),Par)
     
-    saved_values = SavedValues(eltype(State),Observables)
+    saved_values = SavedValues(eltype(State),ObservableType)
     i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function bareOutput(State,t,integrator)
@@ -160,7 +161,7 @@ end
 
 DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 
-function getObservables(State::ArrayPartition,Lam,Par)
+function getObservables(::Type{Observables},State::ArrayPartition,Lam,Par)
     f_int,gamma,Va,Vb,Vc = State.x
     chi = getChi(State,Lam,Par)
     MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
@@ -168,6 +169,7 @@ function getObservables(State::ArrayPartition,Lam,Par)
     MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
     return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
 end
+
 writeOutput(State::ArrayPartition,saved_values,Lam,Par) = writeOutput(State.x...,saved_values.saveval[end],Lam,Par)
 
 function writeOutput(f_int,gamma,Va,Vb,Vc,obs,Lam,Par)

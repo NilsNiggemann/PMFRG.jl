@@ -6,8 +6,8 @@ function test_saving(FileDirectory,Method=OneLoop(),GeometryGenerator = SquareKa
     Lam = Par.NumericalParams.Lam_min+0.01
     saved_values = PMFRG.SavedValues(Float64,PMFRG.Observables)
 
-    obs1 = PMFRG.getObservables(State,Par.NumericalParams.Lam_max,Par)
-    obs2 = PMFRG.getObservables(State,Lam,Par)
+    obs1 = PMFRG.getObservables(PMFRG.Observables,State,Par.NumericalParams.Lam_max,Par)
+    obs2 = PMFRG.getObservables(PMFRG.Observables,State,Lam,Par)
 
     push!(saved_values.t,Par.NumericalParams.Lam_max)
     push!(saved_values.saveval,obs1)

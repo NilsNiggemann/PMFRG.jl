@@ -83,15 +83,16 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     VertexCheckpoints = [],
     overwrite_Checkpoints = false::Bool,
     CheckPointSteps = 1,
+    ObservableType = Observables,
     kwargs...)
     
     Par = setup[end]
     typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
 
     (;T_max,T_min,accuracy) = Par.NumericalParams
-    save_func(State,t,integrator) = getObservables(State,t_to_T(t),Par)
+    save_func(State,t,integrator) = getObservables(ObservableType,State,t_to_T(t),Par)
     
-    saved_values = SavedValues(eltype(State),Observables)
+    saved_values = SavedValues(eltype(State),ObservableType)
     i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function bareOutput(State,t,integrator)
@@ -152,7 +153,6 @@ function generateSubstituteDeriv(getDeriv!::Function)
 
 end
 
-
 function get_t_min(T)
     T < exp(-30) && @warn "T_min too small! Set to exp(-30) instead."
     max(T_to_t(T),-30.)
@@ -160,7 +160,7 @@ end
 
 DefaultGroup(Par::PMFRGParams) = ""
 
-function getObservables(State::ArrayPartition,T,Par)
+function getObservables(::Type{Observables},State::ArrayPartition,T,Par)
     f_int,gamma,Va,Vb,Vc = State.x
     chi = getChi(State,T,Par)
     MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]

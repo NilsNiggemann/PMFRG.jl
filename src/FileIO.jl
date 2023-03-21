@@ -4,19 +4,18 @@ Stored data can be used to re-launch an incomplete FRG calculation.
 """
 joinGroup(args...) = join(args,"/")
 
-"""Saves Vertices to a compressed HDF5 file in a Group "T"."""
-function saveState(Filename::String,State::ArrayPartition,T,mode = "cw")
+"""Saves Vertices to a compressed HDF5 file in a Group "Lam"."""
+function saveState(Filename::String,State::ArrayPartition,Lam,mode = "cw")
     Vertices = State.x
     Names = "fint","gamma","Va","Vb","Vc"
-    t = T_to_t(T)
-    # Filename = string(DirName,"/$(string(round(T,digits =3))).h5")
+    # Filename = string(DirName,"/$(string(round(Lam,digits =3))).h5")
     try
         h5open(Filename,mode) do f
             for (Name,V) in zip(Names,Vertices)
                 f["$Name",blosc = 9] = V
             end
         end
-        h5write(Filename,"t",t)
+        h5write(Filename,"Lam",Lam)
     catch e
         @warn "Saving state was unsuccessfull with exception:\n $e "
     end
@@ -31,22 +30,22 @@ function readState(Filename::String)
     return State
 end
 
-function readTemp(Filename::String)
-    T = h5read(Filename,"T")
-    return T
+function readLam(Filename::String)
+    Lam = h5read(Filename,"Lam")
+    return Lam
 end
 
-function readObservables(Filename::String)
-    t = h5read(Filename,"Observables/t")
-    Fields = fieldnames(Observables)
+function readObservables(Filename::String,ObsType = Observables)
+    t = h5read(Filename,"Observables/Lambda")
+    Fields = fieldnames(ObsType)
     obsTuple = Tuple(h5read(Filename,"Observables/$f") for f in Fields)
-    saveval = Observables[]
-    saved_values = SavedValues(eltype(t),Observables)
+    saveval = ObsType[]
+    saved_values = SavedValues(eltype(t),ObsType)
     # return obsTuple
     for i in eachindex(t)
         Currentval(x) = selectdim(x,length(size(x)),i) |>Array
         # return Currentval.(obsTuple)
-        push!(saveval,Observables(Currentval.(obsTuple)...))
+        push!(saveval,ObsType(Currentval.(obsTuple)...))
     end
     append!(saved_values.t,t)
     append!(saved_values.saveval, saveval)
@@ -70,8 +69,8 @@ EssentialParamFields() = (
     :N,
     :Ngamma,
     :accuracy,
-    :T_min,
-    :T_max,
+    :Lam_min,
+    :Lam_max,
     :ex_freq,
     :lenIntw,
     :lenIntw_acc
@@ -131,14 +130,14 @@ function setupDirectory(DirPath,Par;overwrite=false)
     return DirPath
 end
 
-function saveCurrentState(DirPath::String,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,T::Real,Par::PMFRGParams)
+function saveCurrentState(DirPath::String,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,Lam::Real,Par::PMFRGParams)
     Filename = joinpath(DirPath,"CurrentState.h5")
-    saveState(Filename,State,T,"w")
+    saveState(Filename,State,Lam,"w")
     saveParams(Filename,Par)
     saveObs(Filename,saved_Values,"Observables")
     Filename
 end
-saveCurrentState(DirPath::Nothing,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,T::Real,Par::PMFRGParams) = nothing
+saveCurrentState(DirPath::Nothing,State::AbstractArray,saved_Values::DiffEqCallbacks.SavedValues,Lam::Real,Par::PMFRGParams) = nothing
 
 """Rename CurrentState to FinalState as indicator that Job is finished"""
 function SetCompletionCheckmark(DirPath::String)
@@ -196,7 +195,7 @@ end
 function generateName_verbose(Directory::String,Par::PMFRGParams)
     (;T,N) = Par.NumericalParams
     Name = Par.System.Name
-    Name = "$(Name)_N=$(N)"
+    Name = "$(Name)_N=$(N)_T=$(T)"
     Name = joinpath(Directory,Name)
     return Name
 end
@@ -215,7 +214,7 @@ generateFileName(Par::PMFRGParams,arg::String = "";kwargs...) = _generateFileNam
 generateFileName(Par::OneLoopParams,arg::String = "";kwargs...) = _generateFileName(Par,"_l1"*arg;kwargs...)
 
 function ParamsCompatible(Par1,Par2)
-    Fields = (:Npairs,:N,:Ngamma,:T_max,:System) 
+    Fields = (:Npairs,:N,:Ngamma,:Lam_max,:System) 
     for f in Fields
         @assert getproperty(Par1,f) == getproperty(Par2,f) "$f not compatible with parameters used in Checkpoint"
     end
@@ -224,31 +223,31 @@ function ParamsCompatible(Par1,Par2)
 end
 
 function getFileParams(Filename,Geometry,Par::PMFRGParams)
-    T = readTemp(Filename)
-    Par_file = readParams(Filename,Geometry;T_max = T)
-    Par = modifyParams(Par;T_max = T)
+    Lam = readLam(Filename)
+    Par_file = readParams(Filename,Geometry;Lam_max = Lam)
+    Par = modifyParams(Par;Lam_max = Lam)
     ParamsCompatible(Par,Par_file)
     return Par
 end
 
 function getFileParams(Filename,Geometry,Par::Nothing;kwargs...)
-    T = readTemp(Filename)
-    return readParams(Filename,Geometry;T_max = T,kwargs...)
+    Lam = readLam(Filename)
+    return readParams(Filename,Geometry;Lam_max = Lam,kwargs...)
 end
 # Todo: provide SpinFRGLattices.getGeometryGenerator that takes Name string and returns correct method
 SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par=nothing;kwargs...) = launchPMFRG_Checkpoint(Filename,Geometry,AllocateSetup,getDeriv!,Par;kwargs...)
 
 
-function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,Params=(),kwargs...)
+function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,Params=(),ObservableType = Observables,kwargs...)
     State = readState(Filename)
-    Old_T_max = h5read(Filename,"Params/T_max")
+    Old_Lam_max = h5read(Filename,"Params/Lam_max")
     Par = getFileParams(Filename,Geometry,Par;Params...)
-    saved_values_full = readObservables(Filename)
+    saved_values_full = readObservables(Filename,ObservableType)
     setup = AllocatorFunction(Par)
     CheckPointfolder = dirname(Filename)
     FilePath = dirname(CheckPointfolder)
-    ObsSaveat = getLambdaMesh(nothing,Par.NumericalParams.T_min,Old_T_max)
-    filter!(x-> x<Par.NumericalParams.T_max,ObsSaveat)
+    ObsSaveat = getLambdaMesh(nothing,Par.NumericalParams.Lam_min,Old_Lam_max)
+    filter!(x-> x<Par.NumericalParams.Lam_max,ObsSaveat)
     sol,saved_values = launchPMFRG!(State,setup,Derivative;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat,kwargs...,MainFile = nothing) #launch PMFRG but do not save output yet
     append!(saved_values_full.t,saved_values.t)
     append!(saved_values_full.saveval,saved_values.saveval)
@@ -261,14 +260,14 @@ end
 SolveFRG_Checkpoint(Filename::String,GeometryGenerator::Function,Par = nothing;kwargs...) = SolveFRG_Checkpoint(Filename,readGeometry(Filename,GeometryGenerator),Par;kwargs...)
 
 """Saves Observables"""
-function saveObs(Filename,saved_values::DiffEqCallbacks.SavedValues,Group = "")
+function saveObs(Filename::String,saved_values::DiffEqCallbacks.SavedValues,Group::String = "")
     ObsArr = StructArray(saved_values.saveval)
     saveObs(Filename,ObsArr,Group)
-    h5write(Filename,joinGroup(Group,"T"),saved_values.t)
+    h5write(Filename,joinGroup(Group,"Lambda"),saved_values.t)
 end
 
-function saveObs(Filename::String,Obs::StructArray{<:Observables},Group::String)
-    Fields = fieldnames(Observables)
+function saveObs(Filename::String,Obs::StructArray{ObsType},Group::String) where ObsType
+    Fields = fieldnames(ObsType)
     for F in Fields
         arr = convertToArray(getproperty(Obs,F))
         h5write(Filename,joinGroup(Group,string(F)),arr)
@@ -288,13 +287,13 @@ end
 saveMainOutput(::Nothing,args...) = nothing
 
 
-function setCheckpoint(Directory::String,State,saved_values,T,Par,checkPointList)
-    saveCurrentState(Directory,State,saved_values,T,Par)
+function setCheckpoint(Directory::String,State,saved_values,Lam,Par,checkPointList)
+    saveCurrentState(Directory,State,saved_values,Lam,Par)
     if !isempty(checkPointList)
-        if T < last(checkPointList) 
+        if Lam < last(checkPointList) 
             Checkpoint = pop!(checkPointList)
-            CheckpointFile = UniqueFileName("$Directory/$(strd(T)).h5")
-            println("\nsaving Checkpoint T ≤ $Checkpoint at ",T)
+            CheckpointFile = UniqueFileName("$Directory/$(strd(Lam)).h5")
+            println("\nsaving Checkpoint Lam ≤ $Checkpoint at ",Lam)
             println("in file ", CheckpointFile)
             println("")
             mv(joinpath(Directory,"CurrentState.h5"),CheckpointFile)
@@ -302,16 +301,17 @@ function setCheckpoint(Directory::String,State,saved_values,T,Par,checkPointList
     end
 end
 
-function setCheckpoint(Directory::Nothing,State,saved_values,T,Par,checkPointList)
+function setCheckpoint(Directory::Nothing,State,saved_values,Lam,Par,checkPointList)
     return
 end
 
-function saveExtraFields(Filename::String,State,T::Real,Par::PMFRGParams,Group::String)
-    (;N) = Par.NumericalParams
+function saveExtraFields(Filename::String,State,Lambda::Real,Par::PMFRGParams,Group::String)
+    (;T,N) = Par.NumericalParams
     (;Name,NUnique,Npairs,NLen) = Par.System
-    Chi_nu = getChi(State,T,Par,N)
+    Chi_nu = getChi(State,Lambda,Par,N)
     h5write(Filename,"$Group/Name",Name)
     h5write(Filename,"$Group/Npairs",Npairs)
+    h5write(Filename,"$Group/T",T)
     h5write(Filename,"$Group/N",N)
     h5write(Filename,"$Group/NUnique",NUnique)
     h5write(Filename,"$Group/NLen",NLen)
@@ -320,10 +320,10 @@ end
 
 saveMainOutput(Filename::String,Solution::ODESolution,saved_values::DiffEqCallbacks.SavedValues,Par::PMFRGParams,Group::String) = saveMainOutput(Filename,Solution[end],saved_values,saved_values.t[end],Par,Group)
 
-function saveMainOutput(Filename::String,State,saved_values,T::Real,Par::PMFRGParams,Group::String)
+function saveMainOutput(Filename::String,State,saved_values,Lambda::Real,Par::PMFRGParams,Group::String)
     function save(name)
         saveMainOutput(name,saved_values,Group)
-        saveExtraFields(name,State,T,Par,Group)
+        saveExtraFields(name,State,Lambda,Par,Group)
     end
     try
         save(Filename)

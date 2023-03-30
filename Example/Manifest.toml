@@ -2,7 +2,7 @@
 
 julia_version = "1.8.0"
 manifest_format = "2.0"
-project_hash = "dae92c8bf5516382e9fedd402d7d7108aca8a76c"
+project_hash = "b0e57d9c82a126830a1dd24721840333bf9e54ab"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -963,6 +963,12 @@ deps = ["Observables"]
 git-tree-sha1 = "2c3fc86d52dfbada1a2e5e150e50f06c30ef149c"
 uuid = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
 version = "0.6.2"
+
+[[deps.MakieHelpers]]
+deps = ["Makie", "MakieCore"]
+git-tree-sha1 = "59b9a66c548c7d50550e19c9a7d5d74da4a08654"
+uuid = "769ed66a-a1e3-4c16-885f-a5b16fb973c2"
+version = "0.2.4"
 
 [[deps.ManualMemory]]
 git-tree-sha1 = "bcaef4fc7a0cfe2cba636d84cda54b5e4e4ca3cd"

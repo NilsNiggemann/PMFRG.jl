@@ -83,7 +83,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     VertexCheckpoints = [],
     overwrite_Checkpoints = false::Bool,
     CheckPointSteps = 1,
-    ObservableType = Observables,
+    ObservableType = ObservablesChi,
     kwargs...)
     
     Par = setup[end]
@@ -160,14 +160,6 @@ end
 
 DefaultGroup(Par::PMFRGParams) = ""
 
-function getObservables(::Type{Observables},State::ArrayPartition,T,Par)
-    f_int,gamma,Va,Vb,Vc = State.x
-    chi = getChi(State,T,Par)
-    MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
-    MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
-    MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
-    return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
-end
 writeOutput(State::ArrayPartition,saved_values,T,Par) = writeOutput(State.x...,saved_values.saveval[end],T,Par)
 
 function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
@@ -175,7 +167,7 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
     (;N,np_vec) = Par.NumericalParams
     chi = obs.Chi
     t = T_to_t(T)
-    print("T= ",strd(T)," at t step: ",strd(t),", Λ = exp(t) = ",strd(T),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
+    print("T= ",strd(T)," at t step: ",strd(t),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
     for f in f_int
         print(strd(f),",")
     end
@@ -223,9 +215,7 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
 end
 
 function getTempMesh(Saveat::Nothing,T_min,T_max)
-    dense_range = collect(LinRange(T_min,5.,100))
-    medium_range = collect(LinRange(5.,10.,50))
-    sparse_range = collect(LinRange(10.,T_max,30))
+    exp10.(range(log10(T_min),log10(T_max),length=500))
     ObsSaveat = unique!(append!(dense_range,medium_range,sparse_range))
     return ObsSaveat
 end

@@ -192,6 +192,34 @@ struct Observables{T}
     MaxVc::Vector{T}
 end
 
+function getObservables(::Type{Observables},State::ArrayPartition,T,Par)
+    f_int,gamma,Va,Vb,Vc = State.x
+    chi = getChi(State,T,Par)
+    MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
+    MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
+    MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
+    return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
+end
+struct ObservablesChi{T}
+    Chi::Vector{T}
+    Chinu::Matrix{T}
+    gamma::Matrix{T}
+    f_int::Vector{T}
+    MaxVa::Vector{T}
+    MaxVb::Vector{T}
+    MaxVc::Vector{T}
+end
+
+function getObservables(::Type{ObservablesChi},State::ArrayPartition,T,Par)
+    f_int,gamma,Va,Vb,Vc = State.x
+    chinu = getChi(State,T,Par,Par.NumericalParams.N)
+    chi = chinu[:,1]
+    MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
+    MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
+    MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
+    return ObservablesChi(chi,chinu,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
+end
+
 struct VertexBufferType{T}
 	Va12::Vector{T}
 	Vb12::Vector{T}

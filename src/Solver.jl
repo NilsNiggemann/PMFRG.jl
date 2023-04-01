@@ -215,8 +215,9 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
 end
 
 function getTempMesh(Saveat::Nothing,T_min,T_max)
-    ObsSaveat = exp10.(range(log10(T_min),log10(T_max),length=500))
-    return ObsSaveat
+    ObsSaveatLow = exp10.(range(log10(T_min),log10(10.),length=300))
+    ObsSaveat = exp10.(range(log10(10.),log10(T_max),length=201))
+    return unique!(append!(ObsSaveatLow,ObsSaveat))
 end
 
 # function gettMesh(Saveat::Nothing,T_min,T_max)

@@ -213,11 +213,14 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
         println("\t+Vc_1($f1,$f2,$f3) = ", +Vc[1,f1,f2,f3] ,"\n")
     end
 end
+logrange(min,max,n) = (exp(x) for x in LinRange(log(min),log(max),n))
 
 function getTempMesh(Saveat::Nothing,T_min,T_max)
-    ObsSaveatLow = exp10.(range(log10(T_min),log10(10.),length=300))
-    ObsSaveat = exp10.(range(log10(10.),log10(T_max),length=201))
-    return unique!(append!(ObsSaveatLow,ObsSaveat))
+    ObsSaveatLow = LinRange(T_min,2.,600) |> collect
+    ObsSaveatMiddle = logrange(2.,10.,201) |> collect
+    ObsSaveatHigh = logrange(10.,T_max,201) |> collect
+
+    return unique!(append!(ObsSaveatLow,ObsSaveatMiddle,ObsSaveatHigh))
 end
 
 # function gettMesh(Saveat::Nothing,T_min,T_max)

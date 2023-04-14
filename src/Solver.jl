@@ -80,6 +80,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     method = DP5(),
     MaxVal = Inf,
     ObsSaveat = nothing,
+    npoints = 600,
     VertexCheckpoints = [],
     overwrite_Checkpoints = false::Bool,
     CheckPointSteps = 1,
@@ -120,7 +121,7 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
     # ObsSaveat = getTempMesh(ObsSaveat,T_min,T_max)
-    ObsSaveat = gettMesh(ObsSaveat,T_min,T_max)
+    ObsSaveat = gettMesh(ObsSaveat,T_min,T_max,npoints)
     saveCB = SavingCallback(save_func, saved_values,save_everystep =false,saveat = ObsSaveat,tdir=-1)
     outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
     unstable_check(dt,u,p,t) = maximum(abs,u) >MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
@@ -215,10 +216,10 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
 end
 logrange(min,max,n) = (exp(x) for x in LinRange(log(min),log(max),n))
 
-function getTempMesh(Saveat::Nothing,T_min,T_max)
-    ObsSaveatLow = LinRange(T_min,2.,600) |> collect
-    ObsSaveatMiddle = logrange(2.,10.,201) |> collect
-    ObsSaveatHigh = logrange(10.,T_max,201) |> collect
+function getTempMesh(Saveat::Nothing,T_min,T_max,npoints = 800)
+    ObsSaveatLow = LinRange(T_min,2.,(4*npoints) ÷7 ) |> collect
+    ObsSaveatMiddle = logrange(2.,10.,(2*npoints) ÷7+1) |> collect
+    ObsSaveatHigh = logrange(10.,T_max,(npoints) ÷7+1) |> collect
 
     return unique!(append!(ObsSaveatLow,ObsSaveatMiddle,ObsSaveatHigh))
 end
@@ -228,8 +229,8 @@ end
 #     tmax = T_to_t(T_max)
 #     LinRange(tmin,tmax,150)
 # end
-gettMesh(Saveat,T_min,T_max) = T_to_t.(getTempMesh(Saveat,T_min,T_max))
+gettMesh(Saveat,T_min,T_max,npoints) = T_to_t.(getTempMesh(Saveat,T_min,T_max,npoints))
 
-function getTempMesh(Saveat::Vector{Float64},T_min,T_max)
+function getTempMesh(Saveat::Vector{Float64},T_min,T_max,npoints)
     return unique(push!(Saveat,T_max)) # make sure that there is at least one element at beginning of code
 end

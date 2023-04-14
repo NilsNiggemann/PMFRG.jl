@@ -174,6 +174,7 @@ function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
     end
     println(")")
     function givefreqs()
+        N<=7 && return 1,2,3 # avoid errors for small N
         f1 = 1 
         f2 = div(N,2)-3 
         f3 = N - 5

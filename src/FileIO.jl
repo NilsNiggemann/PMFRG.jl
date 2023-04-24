@@ -65,7 +65,6 @@ function readGeometry(Filename::String, GeometryGenerator::Function;Group="Geome
 end
 
 EssentialParamFields() = (
-    :T,
     :N,
     :Ngamma,
     :accuracy,

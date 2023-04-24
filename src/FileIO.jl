@@ -70,7 +70,6 @@ EssentialParamFields() = (
     :accuracy,
     :T_min,
     :T_max,
-    :ex_freq,
     :lenIntw,
     :lenIntw_acc
 )

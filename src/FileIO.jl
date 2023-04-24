@@ -193,9 +193,9 @@ function UniqueDirName(Path,versNum = getVersionNumber(Path))
 end
 
 function generateName_verbose(Directory::String,Par::PMFRGParams)
-    (;N) = Par.NumericalParams
+    (;T,N) = Par.NumericalParams
     Name = Par.System.Name
-    Name = "$(Name)_N=$(N)_NLen=$(Par.System.NLen)"
+    Name = "$(Name)_N=$(N)_T=$(T)"
     Name = joinpath(Directory,Name)
     return Name
 end

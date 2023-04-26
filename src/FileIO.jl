@@ -212,13 +212,19 @@ generateFileName(Par::PMFRGParams,arg::String = "";kwargs...) = _generateFileNam
 generateFileName(Par::OneLoopParams,arg::String = "";kwargs...) = _generateFileName(Par,"_l1"*arg;kwargs...)
 
 function ParamsCompatible(Par1,Par2)
-    Fields = (:Npairs,:N,:Ngamma,:T_max,:System) 
-    for f in Fields
-        @assert getproperty(Par1,f) == getproperty(Par2,f) "$f not compatible with parameters used in Checkpoint"
+    NumericalFields = (:N,:Ngamma,:T_max)
+    SystemFields = (:Npairs, :NUnique, :siteSum)
+    for f in NumericalFields
+        @assert getproperty(Par1.NumericalParams,f) == getproperty(Par2.NumericalParams,f) "$f not compatible with parameters used in Checkpoint"
     end
-
+    
+    for f in SystemFields
+        @assert getproperty(Par1.System,f) == getproperty(Par2.System,f) "$f not compatible with parameters used in Checkpoint"
+    end
+    
     return true
 end
+
 
 function getFileParams(Filename,Geometry,Par::PMFRGParams)
     T = readTemp(Filename)
@@ -244,11 +250,12 @@ function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geome
     setup = AllocatorFunction(Par)
     CheckPointfolder = dirname(Filename)
     FilePath = dirname(CheckPointfolder)
-    ObsSaveat = gettMesh(nothing,Par.NumericalParams.T_min,Old_T_max)
+    ObsSaveat = getTempMesh(nothing,Par.NumericalParams.T_min,Old_T_max)
     filter!(x-> x<Par.NumericalParams.T_max,ObsSaveat)
-    sol,saved_values = launchPMFRG!(State,setup,Derivative;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat,kwargs...,MainFile = nothing) #launch PMFRG but do not save output yet
+    sol,saved_values = launchPMFRG!(State,setup,Derivative;CheckpointDirectory = FilePath,ObsSaveat = ObsSaveat,kwargs...,MainFile = nothing,ObservableType) #launch PMFRG but do not save output yet
     append!(saved_values_full.t,saved_values.t)
     append!(saved_values_full.saveval,saved_values.saveval)
+    saved_values_full.t .= t_to_T.(saved_values_full.t)
     if MainFile !== nothing
         saveMainOutput(MainFile,sol,saved_values_full,Par,Group)
     end
@@ -261,7 +268,7 @@ SolveFRG_Checkpoint(Filename::String,GeometryGenerator::Function,Par = nothing;k
 function saveObs(Filename::String,saved_values::DiffEqCallbacks.SavedValues,Group::String = "")
     ObsArr = StructArray(saved_values.saveval)
     saveObs(Filename,ObsArr,Group)
-    h5write(Filename,joinGroup(Group,"T"),saved_values.t)
+    h5write(Filename,joinGroup(Group,"t"),saved_values.t)
 end
 
 function saveObs(Filename::String,Obs::StructArray{ObsType},Group::String) where ObsType

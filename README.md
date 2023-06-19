@@ -52,6 +52,17 @@ flowpath = "temp/flows/" # specify path for vertex checkpoints
 Solution,saved_values = SolveFRG(Par,MainFile = mainFile ,CheckpointDirectory = flowpath,method = DP5(),VertexCheckpoints = [],CheckPointSteps = 3 )
 ```
 For further options, the documentation of `SolveFRG` or `NumericalParams` can be helpful. Note that if no `MainFile` is specified, then no output is written.
+## Usage on SLURM Clusters
+To start a run on a cluster, we need both a batch script which requests the required resources and a job-script that runs the calculation. An example is found in the file ´Example/Slurm_example.jl´ in this repository.
+Since Julia ignores everything after `#`, we can also place the batch script and the job script in the same file. To run a job array with indices `1-10`, we only need to run `sbatch --array=1-10 Example/Slurm_example.jl` in the cluster's terminal on the login node. The indices of the job array are passed as arguments, so they can be accessed via `i_arg = parse(Int, ARGS[1])`. 
+One can also sweep over several parameters at once by linearly indexing an array that contains all the combinations of parameters:
+```
+Trange = 0.2:0.1:2.
+J2range = 0.025:0.025:0.175
+
+jobsarray = [(t,j) for t in Trange,j in J2range]
+T,J2 = jobsarray[i_arg]
+```
 ## Fine-tuning lattice couplings
 We might also want to look at lattices where the couplings are not based on distance. The couplings between each **symmetry inequivalent** pair of sites can also be set individually for example
 ```

@@ -11,7 +11,7 @@ function getDeriv!(Deriv,State,setup::Tuple{BubbleType,T,OneLoopParams},Lam) whe
 
     addToVertexFromBubble!(Workspace.Deriv.Γ,Workspace.X)
     symmetrizeVertex!(Workspace.Deriv.Γ,Par)
-    flush(stdout)
+    # flush(stdout)
     return
 end
 
@@ -99,7 +99,6 @@ function getXBubble!(Workspace::PMFRGWorkspace,Lam)
     (;T,N,lenIntw,np_vec) = Par.NumericalParams 
     PropsBuffers = Workspace.Buffer.Props 
     VertexBuffers = Workspace.Buffer.Vertex
-	 
 	iG(x,nw) = iG_(Workspace.State.γ,x,Lam,nw,T)
 	iSKat(x,nw) = iSKat_(Workspace.State.γ,Workspace.Deriv.γ,x,Lam,nw,T)
 
@@ -109,28 +108,27 @@ function getXBubble!(Workspace::PMFRGWorkspace,Lam)
 		end
 		return SMatrix(BubbleProp)
 	end
-	@sync begin
-		for is in 1:N,it in 1:N
-			Threads.@spawn begin
-				BubbleProp = PropsBuffers[Threads.threadid()] # get pre-allocated thread-safe buffers
-				Buffer = VertexBuffers[Threads.threadid()]
-				ns = np_vec[is]
-				nt = np_vec[it]
-				for iu in 1:N
-					nu = np_vec[iu]
-					if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
-						continue
-					end
-					for nw in -lenIntw:lenIntw-1 # Matsubara sum
-						sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
-						addXTilde!(Workspace,is,it,iu,nw,sprop) # add to XTilde-type bubble functions
-						if(!Par.Options.usesymmetry || nu<=nt)
-							addX!(Workspace,is,it,iu,nw,sprop,Buffer)# add to X-type bubble functions
-						end
-					end
+	@floop for is in 1:N,it in 1:N
+		BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+		Buffer = take!(VertexBuffers)
+		ns = np_vec[is]
+		nt = np_vec[it]
+		# Workspace.X.a .= Buffer.Va12[begin]
+		for nw in -lenIntw:lenIntw-1 # Matsubara sum
+			sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
+			for iu in 1:N
+				nu = np_vec[iu]
+				if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+					continue
+				end
+				addXTilde!(Workspace,is,it,iu,nw,sprop) # add to XTilde-type bubble functions
+				if(!Par.Options.usesymmetry || nu<=nt)
+					addX!(Workspace,is,it,iu,nw,sprop,Buffer)# add to X-type bubble functions
 				end
 			end
 		end
+		put!(PropsBuffers,BubbleProp)
+		put!(VertexBuffers,Buffer)
 	end
 end
 
@@ -287,7 +285,7 @@ end
 const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)
+@inline function addXTilde!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix)
 
 	(;State,X,Par) = Workspace 
 	(;N,np_vec) = Par.NumericalParams
@@ -361,7 +359,7 @@ end
 
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
-function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
+@inline function addX!(Workspace::PMFRGWorkspace, is::Integer, it::Integer, iu::Integer, nwpr::Integer, Props::SingleElementMatrix,Buffer)
 	(;State,X,Par) = Workspace 
 	(;Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43) = Buffer 
 	(;N,np_vec) = Par.NumericalParams
@@ -439,13 +437,15 @@ function symmetrizeBubble!(X::BubbleType,Par::PMFRGParams)
         end
     end
     #local definitions of X.Tilde vertices
-    for iu in 1:N, it in 1:N, is in 1:N, R in OnsitePairs
-        X.Ta[R,is,it,iu] = X.a[R,is,it,iu]
-        X.Tb[R,is,it,iu] = X.b[R,is,it,iu]
-        X.Tc[R,is,it,iu] = X.c[R,is,it,iu]
-        X.Td[R,is,it,iu] = -X.c[R,is,iu,it]
+    Threads.@threads for iu in 1:N
+		for it in 1:N, is in 1:N, R in OnsitePairs
+			X.Ta[R,is,it,iu] = X.a[R,is,it,iu]
+			X.Tb[R,is,it,iu] = X.b[R,is,it,iu]
+			X.Tc[R,is,it,iu] = X.c[R,is,it,iu]
+			X.Td[R,is,it,iu] = -X.c[R,is,iu,it]
+		end
     end
-    @. X.Td= X.Ta - X.Tb - X.Tc
+    @tturbo X.Td .= X.Ta .- X.Tb .- X.Tc
 end
 
 function addToVertexFromBubble!(Γ::VertexType,X::BubbleType)
@@ -462,8 +462,10 @@ end
 
 function symmetrizeVertex!(Γ::VertexType,Par)
 	N = Par.NumericalParams.N
-	for iu in 1:N, it in 1:N, is in 1:N, R in Par.System.OnsitePairs
-		Γ.c[R,is,it,iu] = -Γ.b[R,it,is,iu]
+	Threads.@threads for iu in 1:N
+		for it in 1:N, is in 1:N, R in Par.System.OnsitePairs
+			Γ.c[R,is,it,iu] = -Γ.b[R,it,is,iu]
+		end
 	end
 end
 

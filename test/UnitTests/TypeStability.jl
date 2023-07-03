@@ -15,10 +15,12 @@ function test_OneLoopAllocations(Par=Params(getPolymer(2)))
     WS = getEmptyWorkspace(Par)
     # eval("@code_warntype PMFRG.getXBubble!(WS,0.)")
     # @code_warntype PMFRG.getXBubble!(WS,0.)
-
-    SProps = convertToSMatrix(WS.Buffer.Props[1])
-    VBuff = WS.Buffer.Vertex[1]
-    test_OneLoopAllocations(Par,WS,SProps,VBuff)
+    SBuff = take!(WS.Buffer.Props)
+    VBuff = take!(WS.Buffer.Vertex)
+    SBuff1 = convertToSMatrix(SBuff)
+    test_OneLoopAllocations(Par,WS,SBuff1,VBuff)
+    put!(WS.Buffer.Props,SBuff)
+    put!(WS.Buffer.Vertex,VBuff)
 end
 function test_OneLoopAllocations(Par,WS,SProps,VBuff)
     PMFRG.addX!(WS,1,1,2,2,SProps,VBuff) # compile functions
@@ -55,13 +57,17 @@ function getEmptyWorkspace(Par::PMFRG.TwoLoopParams)
 end
 function test_TwoLoopAllocations(Par=Params(getPolymer(2),TwoLoop()))
     WS = getEmptyWorkspace(Par)
-    
-    PropB =convertToSMatrix(WS.Buffer.Props[1])
+    PropB_0 = take!(WS.Buffer.Props)
 
-    VB = WS.Buffer.Vertex[1]
-    XB =  WS.Buffer.X[1]
+    VB = take!(WS.Buffer.Vertex)
+    XB =  take!(WS.Buffer.X)
+    
+    PropB =convertToSMatrix(PropB_0)
 
     test_TwoLoopAllocations(Par,WS,PropB,VB,XB)
+    put!(WS.Buffer.Vertex,VB)
+    put!(WS.Buffer.X,XB)
+    put!(WS.Buffer.Props,PropB_0)
 end
 function test_TwoLoopAllocations(Par,WS,PropB,VB,XB)
     PMFRG.addBL!(WS.Y,WS.X,WS.X,WS.State.Γ,1,1,2,2,Par,PropB,VB,XB) #compile functions

@@ -35,17 +35,17 @@ function readLam(Filename::String)
     return Lam
 end
 
-function readObservables(Filename::String)
+function readObservables(Filename::String,ObsType = Observables)
     t = h5read(Filename,"Observables/Lambda")
-    Fields = fieldnames(Observables)
+    Fields = fieldnames(ObsType)
     obsTuple = Tuple(h5read(Filename,"Observables/$f") for f in Fields)
-    saveval = Observables[]
-    saved_values = SavedValues(eltype(t),Observables)
+    saveval = ObsType[]
+    saved_values = SavedValues(eltype(t),ObsType)
     # return obsTuple
     for i in eachindex(t)
         Currentval(x) = selectdim(x,length(size(x)),i) |>Array
         # return Currentval.(obsTuple)
-        push!(saveval,Observables(Currentval.(obsTuple)...))
+        push!(saveval,ObsType(Currentval.(obsTuple)...))
     end
     append!(saved_values.t,t)
     append!(saved_values.saveval, saveval)
@@ -203,15 +203,15 @@ end
 generateUniqueName(Directory::String,Par::PMFRGParams) = UniqueDirName(generateName_verbose(Directory,Par))
 
 
-function _generateFileName(Par::PMFRGParams,arg::String = "")
+function _generateFileName(Par::PMFRGParams,arg::String = "";kwargs...)
     Name = Par.System.Name
     N = Par.NumericalParams.N
 
-    FName = "PMFRG_$(Name)_N=$(N)$arg.h5"
+    FName = "PMFRG_$(Name)_N=$(N)$arg"*join("_$(k)=$(strd(v))" for (k,v) in kwargs)*".h5"
     return FName
 end
-generateFileName(Par::PMFRGParams,arg::String = "") = _generateFileName(Par,arg)
-generateFileName(Par::OneLoopParams,arg::String = "") = _generateFileName(Par,"_l1"*arg)
+generateFileName(Par::PMFRGParams,arg::String = "";kwargs...) = _generateFileName(Par,arg;kwargs...)
+generateFileName(Par::OneLoopParams,arg::String = "";kwargs...) = _generateFileName(Par,"_l1"*arg;kwargs...)
 
 function ParamsCompatible(Par1,Par2)
     Fields = (:Npairs,:N,:Ngamma,:Lam_max,:System) 
@@ -238,11 +238,11 @@ end
 SolveFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,Par=nothing;kwargs...) = launchPMFRG_Checkpoint(Filename,Geometry,AllocateSetup,getDeriv!,Par;kwargs...)
 
 
-function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,Params=(),kwargs...)
+function launchPMFRG_Checkpoint(Filename::String,Geometry::SpinFRGLattices.Geometry,AllocatorFunction::Function,Derivative::Function,Par = nothing;MainFile = nothing,Group =nothing,Params=(),ObservableType = Observables,kwargs...)
     State = readState(Filename)
     Old_Lam_max = h5read(Filename,"Params/Lam_max")
     Par = getFileParams(Filename,Geometry,Par;Params...)
-    saved_values_full = readObservables(Filename)
+    saved_values_full = readObservables(Filename,ObservableType)
     setup = AllocatorFunction(Par)
     CheckPointfolder = dirname(Filename)
     FilePath = dirname(CheckPointfolder)
@@ -260,14 +260,14 @@ end
 SolveFRG_Checkpoint(Filename::String,GeometryGenerator::Function,Par = nothing;kwargs...) = SolveFRG_Checkpoint(Filename,readGeometry(Filename,GeometryGenerator),Par;kwargs...)
 
 """Saves Observables"""
-function saveObs(Filename,saved_values::DiffEqCallbacks.SavedValues,Group = "")
+function saveObs(Filename::String,saved_values::DiffEqCallbacks.SavedValues,Group::String = "")
     ObsArr = StructArray(saved_values.saveval)
     saveObs(Filename,ObsArr,Group)
     h5write(Filename,joinGroup(Group,"Lambda"),saved_values.t)
 end
 
-function saveObs(Filename::String,Obs::StructArray{<:Observables},Group::String)
-    Fields = fieldnames(Observables)
+function saveObs(Filename::String,Obs::StructArray{ObsType},Group::String) where ObsType
+    Fields = fieldnames(ObsType)
     for F in Fields
         arr = convertToArray(getproperty(Obs,F))
         h5write(Filename,joinGroup(Group,string(F)),arr)

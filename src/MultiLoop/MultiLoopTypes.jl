@@ -109,9 +109,9 @@ function SetupParquet(Par::ParquetParams)
     IrrVertex = BareVertex_Freq(Par)
 
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
-    PropsBuffers = [MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] 
-    VertexBuffers = [VertexBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()]
-    BubbleBuffers = [BubbleBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()]
+    PropsBuffers = getChannel([MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] )
+    VertexBuffers = getChannel([VertexBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()])
+    BubbleBuffers = getChannel([BubbleBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()])
     Buffs = BufferTypeTwoLoop(PropsBuffers,VertexBuffers,BubbleBuffers) 
  
     Workspace = ParquetWorkspace(

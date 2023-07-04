@@ -5,19 +5,19 @@ using CairoMakie #for plotting. You can use whatever plotting package you like o
 
 TSweepFile = "temp/PMFRG_SquareLattice_NLen=5_N=10_l1_testFile_TSweep.h5"
 ##
-Results = PMResults(TSweepFile) 
+Results = PMResults(TSweepFile)
 
 ##
-let 
+let
     fig = Figure()
-    ax = Axis(fig[1,1],xlabel = L"T",ylabel = L"\delta \chi_{ii}")
-    
+    ax = Axis(fig[1, 1], xlabel = L"T", ylabel = L"\delta \chi_{ii}")
+
     T = Results.T
-    gamma = Results.gamma_TxN[:,1,:] #only one inequivalent site
-    Chi00 = Results.Chi_TR[:,1] # local chi component
+    gamma = Results.gamma_TxN[:, 1, :] #only one inequivalent site
+    Chi00 = Results.Chi_TR[:, 1] # local chi component
     N_extrapolate = 60 # extrapolate number of frequencies for matsubara sum
-    err = wardIdentityviolation.(T,eachrow(gamma),Chi00,N_extrapolate)
-    lines!(ax,T,err)
+    err = wardIdentityviolation.(T, eachrow(gamma), Chi00, N_extrapolate)
+    lines!(ax, T, err)
 
     fig
 end

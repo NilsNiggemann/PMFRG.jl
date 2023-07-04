@@ -1,6 +1,6 @@
 struct TwoLoop end
 
-struct TwoLoopParams{F,G <: Geometry} <: PMFRGParams
+struct TwoLoopParams{F,G<:Geometry} <: PMFRGParams
     System::G
     NumericalParams::NumericalParams{F}
     Options::OptionParams
@@ -8,7 +8,7 @@ end
 
 getLoopOrder(P::TwoLoopParams) = 2
 getPMFRGMethod(P::TwoLoopParams) = TwoLoop()
-generateFileName(Par::TwoLoopParams,arg::String = "") = _generateFileName(Par,"_l2"*arg)
+generateFileName(Par::TwoLoopParams, arg::String = "") = _generateFileName(Par, "_l2" * arg)
 
 
 
@@ -20,27 +20,20 @@ Convenience struct containing references to arrays for vertices and their deriva
 struct TwoLoopWorkspace{F,Buff,ParType} <: PMFRGWorkspace
     State::StateType{F} #Stores the current state
     Deriv::StateType{F} #Stores the derv
-    
+
     X::BubbleType{F} #Stores the bubble function X and XTilde
     Y::BubbleType{F} #Stores the bubble function X and XTilde
 
     Buffer::Buff #Buffer Arrays
- 
+
     Par::ParType # Params
 end
 
-function TwoLoopWorkspace(Deriv::ArrayPartition,State::ArrayPartition,X,Y,Buffer,Par)
+function TwoLoopWorkspace(Deriv::ArrayPartition, State::ArrayPartition, X, Y, Buffer, Par)
     setZero!(Deriv)
     setZero!(X)
     setZero!(Y)
-    return TwoLoopWorkspace(
-        StateType(State.x...),
-        StateType(Deriv.x...),
-        X,
-        Y,
-        Buffer,
-        Par
-    )
+    return TwoLoopWorkspace(StateType(State.x...), StateType(Deriv.x...), X, Y, Buffer, Par)
 end
 
 struct BubbleBufferType{T}
@@ -52,7 +45,7 @@ struct BubbleBufferType{T}
 
     XTd21::Vector{T}
 end
-BubbleBufferType(type,Npairs) = BubbleBufferType((zeros(type,Npairs) for _ in 1:4)...)
+BubbleBufferType(type, Npairs) = BubbleBufferType((zeros(type, Npairs) for _ = 1:4)...)
 
 struct BufferTypeTwoLoop{PropsBuff,VertexBuff,XBuff}
     Props::PropsBuff

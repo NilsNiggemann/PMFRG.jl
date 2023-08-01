@@ -8,6 +8,38 @@ couplings = [J1, J2] # Construct a vector of couplings: nearest neighbor couplin
 
 System = getSquareLattice(NLen, couplings) # create a structure that contains all information about the geometry of the problem.
 
+println("Warm up")
+
+Par = Params( #create a group of all parameters to pass them to the FRG Solver
+    System, # geometry, this is always required
+    OneLoop(), # method. OneLoop() is the default
+    T=0.5, # Temperature for the simulation.
+    N=10, # Number of positive Matsubara frequencies for the four-point vertex.
+    accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
+    # For further optional arguments, see documentation of 'NumericalParams'
+    MinimalOutput=true,
+)
+
+tempdir = "temp"
+println("Removing data from previous runs ($tempdir)")
+rm(tempdir, recursive=true, force=true) # DEB   UG
+mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
+flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
+
+Solution, saved_values = SolveFRG(
+    Par,
+    MainFile=mainFile,
+    CheckpointDirectory=flowpath,
+    method=DP5(),
+    VertexCheckpoints=[],
+    CheckPointSteps=3,
+);
+
+
+
+println("Warmup done, timing real problem now.")
+
+
 Par = Params( #create a group of all parameters to pass them to the FRG Solver
     System, # geometry, this is always required
     OneLoop(), # method. OneLoop() is the default

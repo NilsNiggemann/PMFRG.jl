@@ -35,15 +35,13 @@ Par = Params( #create a group of all parameters to pass them to the FRG Solver
 
 With multiple threads we have:
 
-+----------+----------+
 | Nthreads | Time (s) |
-+----------+----------+
+|----------|----------|
 |        1 |     21.3 |
 |        2 |     14.6 |
 |        4 |      9.4 |
 |        8 |      7.3 |
 |       16 |     10.7 |
-+----------+----------+
 
 
 Switching to `N=50`:
@@ -62,13 +60,39 @@ Par = Params( #create a group of all parameters to pass them to the FRG Solver
 
 With multiple threads we have 
 
-+----------+----------+
 | Nthreads | Time (s) |
-+----------+----------+
+|----------|----------|
 |        1 |    142.7 |
 |        2 |     91.3 |
 |        4 |     66.0 |
 |        8 |     60.9 |
 |       16 |     57.3 |
-+----------+----------+
+
+#### HoreKa 
+Benchmarking on a single node HoreKa, 76-core machine
+(Intel Xeon Platinum 8368 @ 2.40GHz).
+Not using any pinning to any core.
+
+```
+Par = Params( #create a group of all parameters to pass them to the FRG Solver
+    System, # geometry, this is always required
+    OneLoop(), # method. OneLoop() is the default
+    T=0.5, # Temperature for the simulation.
+    N=50, # Number of positive Matsubara frequencies for the four-point vertex.
+    accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
+    # For further optional arguments, see documentation of 'NumericalParams'
+    MinimalOutput=true,
+)
+```
+
+| Nthreads | Time (s) |
+|----------|----------|
+|        1 |    178.9 |
+|        2 |    100.6 |
+|        4 |     58.9 |
+|        8 |     38.7 |
+|       19 |     21.5 |
+|       38 |     14.5 |
+|       76 |     11.9 |
+|      152 |     17.2 |
 

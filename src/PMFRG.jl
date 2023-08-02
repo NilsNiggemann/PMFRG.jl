@@ -7,8 +7,7 @@ using SpinFRGLattices,
     LoopVectorization,
     StructArrays,
     HDF5,
-    H5Zblosc,
-    FLoops
+    H5Zblosc
 
 using SpinFRGLattices.StaticArrays
 

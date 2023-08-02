@@ -107,34 +107,38 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     iG(x, nw) = iG_(Workspace.State.γ, x, Lam, nw, T)
     iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, Lam, nw, T)
 
-    function getKataninProp!(BubbleProp, nw1, nw2)
-        for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
-            BubbleProp[i, j] = iSKat(i, nw1) * iG(j, nw2) * T
-        end
-        return SMatrix(BubbleProp)
-    end
-    @floop for is = 1:N, it = 1:N
-        BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
-        Buffer = take!(VertexBuffers)
-        ns = np_vec[is]
-        nt = np_vec[it]
-        # Workspace.X.a .= Buffer.Va12[begin]
-        for nw = -lenIntw:lenIntw-1 # Matsubara sum
-            sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-            for iu = 1:N
-                nu = np_vec[iu]
-                if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
-                    continue
-                end
-                addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
-                if (!Par.Options.usesymmetry || nu <= nt)
-                    addX!(Workspace, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
-                end
-            end
-        end
-        put!(PropsBuffers, BubbleProp)
-        put!(VertexBuffers, Buffer)
-    end
+	function getKataninProp!(BubbleProp,nw1,nw2)
+		for i in 1:Par.System.NUnique, j in 1:Par.System.NUnique
+			BubbleProp[i,j] = iSKat(i,nw1) *iG(j,nw2)* T
+		end
+		return SMatrix(BubbleProp)
+	end
+	@sync begin
+		for is in 1:N,it in 1:N
+			Threads.@spawn begin
+				BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
+				Buffer = take!(VertexBuffers)
+				ns = np_vec[is]
+				nt = np_vec[it]
+				# Workspace.X.a .= Buffer.Va12[begin]
+				for nw in -lenIntw:lenIntw-1 # Matsubara sum
+					sprop = getKataninProp!(BubbleProp,nw,nw+ns) 
+					for iu in 1:N
+						nu = np_vec[iu]
+						if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+							continue
+						end
+						addXTilde!(Workspace,is,it,iu,nw,sprop) # add to XTilde-type bubble functions
+						if(!Par.Options.usesymmetry || nu<=nt)
+							addX!(Workspace,is,it,iu,nw,sprop,Buffer)# add to X-type bubble functions
+						end
+					end
+				end
+				put!(PropsBuffers,BubbleProp)
+				put!(VertexBuffers,Buffer)
+			end
+		end
+	end
 end
 
 @inline function mixedFrequencies(ns, nt, nu, nwpr)

@@ -116,7 +116,7 @@ end
 function setupDirectory(DirPath, Par; overwrite=false)
     DirPath = generateName_verbose(DirPath, Par)
     overwrite || (DirPath = UniqueDirName(DirPath))
-    println("Checkpoints saved at $DirPath")
+    println("Checkpoints saved at $(abspath(DirPath))")
     # CheckPath = joinpath(DirPath,"Checkpoints")
     mkpath(DirPath)
     return DirPath
@@ -214,23 +214,36 @@ generateUniqueName(Directory::String, Par::PMFRGParams) =
     UniqueDirName(generateName_verbose(Directory, Par))
 
 
-function _generateFileName(Par::PMFRGParams, arg::String=""; savekeywords=false, unique=true, kwargs...)
+function _generateFileName(Par::PMFRGParams, arg::String=""; kwargs...)
     Name = Par.System.Name
     N = Par.NumericalParams.N
 
     FName = "PMFRG_$(Name)_N=$(N)$arg" * join("_$(k)=$(strd(v))" for (k, v) in kwargs) * ".h5"
-    unique && (FName = UniqueFileName(FName))
-    if savekeywords
-        for (k, v) in kwargs
-            h5write(FName, string(k), v)
-        end
-    end
+
     return FName
 end
+
+
+
 generateFileName(Par::PMFRGParams, arg::String=""; kwargs...) =
     _generateFileName(Par, arg; kwargs...)
 generateFileName(Par::OneLoopParams, arg::String=""; kwargs...) =
     _generateFileName(Par, "_l1" * arg; kwargs...)
+
+function generateMainFile(Directory::String,Par::PMFRGParams, arg::String=""; savekeywords=true, unique=true, kwargs...)
+    FName = joinpath(Directory,generateFileName(Par,arg;kwargs...))
+    
+    unique && (FName = UniqueFileName(FName))
+    h5open(FName, "w") do f
+        if savekeywords
+            for (k, v) in kwargs
+                f[string(k)] = v
+            end
+        end
+    end
+    return FName
+end
+generateMainFile(Par::PMFRGParams, arg::String=""; kwargs...) = generateMainFile(".", Par, arg; kwargs...)
 
 function ParamsCompatible(Par1, Par2)
     Fields = (:Npairs, :N, :Ngamma, :Lam_max, :System)
@@ -334,8 +347,8 @@ function convertToArray(
 end
 
 function saveMainOutput(Filename::String, saved_values, Group::String)
-    println("Saving Main output to ", Filename)
     mkpath(dirname(Filename))
+    println("Saving Main output to ", abspath(Filename))
     saveObs(Filename, saved_values, Group)
 end
 saveMainOutput(::Nothing, args...) = nothing

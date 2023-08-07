@@ -38,7 +38,8 @@ export saveState,
     readGeometry,
     readObservables,
     getUnfinishedJobs,
-    generateFileName
+    generateFileName,
+    generateMainFile
 
 
 include("TwoLoop/TwoLoopPMFRG.jl")

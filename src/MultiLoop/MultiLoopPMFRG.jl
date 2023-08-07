@@ -6,5 +6,6 @@ include("MultiLoopTypes.jl")
 include("Parquet.jl")
 
 export SolveParquet
-generateFileName(Par::MultiLoopParams,arg::String = "") = _generateFileName(Par,"_l$(Par.l)"*arg)
-generateFileName(Par::ParquetParams,arg::String = "") = _generateFileName(Par,"_p"*arg)
+generateFileName(Par::MultiLoopParams, arg::String = "") =
+    _generateFileName(Par, "_l$(Par.l)" * arg)
+generateFileName(Par::ParquetParams, arg::String = "") = _generateFileName(Par, "_p" * arg)

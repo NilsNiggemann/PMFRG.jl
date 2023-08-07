@@ -1,78 +1,83 @@
 
 """Given set of parameters solve the self-consistent Parquet approximation iteratively. 
 TODO: Save output to file"""
-function SolveParquet(Par::ParquetParams,Lam::Real;kwargs...)
+function SolveParquet(Par::ParquetParams, Lam::Real; kwargs...)
     Workspace = SetupParquet(Par)
-    SolveParquet(Workspace,Lam;kwargs...)
+    SolveParquet(Workspace, Lam; kwargs...)
 end
-function SolveParquet(State::StateType,Par::ParquetParams,Lam::Real;kwargs...)
+function SolveParquet(State::StateType, Par::ParquetParams, Lam::Real; kwargs...)
     Workspace = SetupParquet(Par)
-    writeTo!(Workspace.OldState,State)
-    SolveParquet(Workspace,Lam;kwargs...)
+    writeTo!(Workspace.OldState, State)
+    SolveParquet(Workspace, Lam; kwargs...)
 end
 
-function SolveParquet(Workspace::ParquetWorkspace,Lam::Real;
+function SolveParquet(
+    Workspace::ParquetWorkspace,
+    Lam::Real;
     iterator = iterateSolution_FP!,
-    MainFile=nothing,
+    MainFile = nothing,
     Group = DefaultGroup(Workspace.Par),
     CheckpointDirectory = nothing,
     ObsType = Observables,
-    kwargs...)
+    kwargs...,
+)
     Obs = StructArray(ObsType[])
-    @time Workspace,Obs = iterator(Workspace,Lam,Obs)
-    saveMainOutput(MainFile,Workspace.State,Obs,Lam,Workspace.Par,Group)
-    return Workspace,Obs
+    @time Workspace, Obs = iterator(Workspace, Lam, Obs)
+    saveMainOutput(MainFile, Workspace.State, Obs, Lam, Workspace.Par, Group)
+    return Workspace, Obs
 end
 
 
 """Performs single BSE iteration. Specify State explicitly to make fixed point libraries compatible (even though it may point to the same memory location as Workspace.State) """
-function BSE_iteration!(State::StateType,Workspace::ParquetWorkspace,Lam::Real)
-    (;OldState,I,Γ0,X,B0,BX,Par,Buffer) = Workspace
-    
-    getProp! = constructPropagatorFunction(OldState.γ,Lam,Par)
-    computeLeft2PartBubble!(B0,Γ0,Γ0,OldState.Γ,getProp!,Par,Buffer)
-    computeLeft2PartBubble!(BX,X,X,OldState.Γ,getProp!,Par,Buffer)
-    
-    getXFromBubbles!(X,B0,BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
-    getVertexFromChannels!(State.Γ,I,X)
-    symmetrizeVertex!(State.Γ,Par)
-    
+function BSE_iteration!(State::StateType, Workspace::ParquetWorkspace, Lam::Real)
+    (; OldState, I, Γ0, X, B0, BX, Par, Buffer) = Workspace
+
+    getProp! = constructPropagatorFunction(OldState.γ, Lam, Par)
+    computeLeft2PartBubble!(B0, Γ0, Γ0, OldState.Γ, getProp!, Par, Buffer)
+    computeLeft2PartBubble!(BX, X, X, OldState.Γ, getProp!, Par, Buffer)
+
+    getXFromBubbles!(X, B0, BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
+    getVertexFromChannels!(State.Γ, I, X)
+    symmetrizeVertex!(State.Γ, Par)
+
 
     return State
 end
 
 """Obtains a solution to Bethe-Salpeter and Schwinger-Dyson equations by iteration until convergence is reached up to accuracy specified by accuracy in Params"""
-function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::Function)
-    (;OldState,State,Par) = Workspace
-    
+function iterateSolution!(Workspace::ParquetWorkspace, Lam::Real, Obs, getObsFunc::Function)
+    (; OldState, State, Par) = Workspace
+
     BSE_iters = Par.Options.BSE_iters
 
 
     Tol_Vertex = 1E16 #Initial tolerance level
 
     iter = 0
-    while Tol_Vertex > Par.NumericalParams.accuracy 
-        iter+=1
-        
+    while Tol_Vertex > Par.NumericalParams.accuracy
+        iter += 1
+
         if iter >= BSE_iters
-            @warn("BSE: No convergence found after $BSE_iters iterations, tol = $Tol_Vertex")
+            @warn(
+                "BSE: No convergence found after $BSE_iters iterations, tol = $Tol_Vertex"
+            )
             break
         end
 
-        writeTo!(OldState.Γ,State.Γ)
-        BSE_iteration!(Workspace.State,Workspace,Lam)
+        writeTo!(OldState.Γ, State.Γ)
+        BSE_iteration!(Workspace.State, Workspace, Lam)
         # iterateSDE_FP!(State.γ,State.Γ,B0,Γ0,Lam,Par,Buffer)
-        Tol_Vertex = reldist(OldState.Γ,State.Γ)
-                
-        iterateSDE!(Workspace,Lam)
-        dampen!(State,OldState,Par.Options.BSE_epsilon)
+        Tol_Vertex = reldist(OldState.Γ, State.Γ)
 
-        CurrentObs = getObsFunc(Workspace,Lam)
-        push!(Obs,CurrentObs)
+        iterateSDE!(Workspace, Lam)
+        dampen!(State, OldState, Par.Options.BSE_epsilon)
+
+        CurrentObs = getObsFunc(Workspace, Lam)
+        push!(Obs, CurrentObs)
 
         if !Par.Options.MinimalOutput
             println("iteration $iter:")
-            writeOutput(State,CurrentObs,Lam,Par)
+            writeOutput(State, CurrentObs, Lam, Par)
             println("""
             Tol_Vertex = $Tol_Vertex
             """)
@@ -82,63 +87,70 @@ function iterateSolution!(Workspace::ParquetWorkspace,Lam::Real,Obs,getObsFunc::
     println("""
     \t\tBSE done after  $(iter) / $BSE_iters iterations (tol = $(Tol_Vertex))""")
 
-    return Workspace,Obs
+    return Workspace, Obs
 end
 
-function dampen!(State,OldState,epsilon)
+function dampen!(State, OldState, epsilon)
     StateArr = ArrayPartition(State)
     OldStateArr = ArrayPartition(OldState)
-    dampen!(StateArr,OldStateArr,epsilon)
+    dampen!(StateArr, OldStateArr, epsilon)
 end
 
-function dampen!(StateArr::AbstractArray,OldStateArr::AbstractArray,epsilon::Real)
-    @. StateArr = (1-epsilon) * OldStateArr + epsilon * StateArr
+function dampen!(StateArr::AbstractArray, OldStateArr::AbstractArray, epsilon::Real)
+    @. StateArr = (1 - epsilon) * OldStateArr + epsilon * StateArr
 end
 
-function constructPropagatorFunction(γ, Lam,Par)    
-    T= Par.NumericalParams.T
+function constructPropagatorFunction(γ, Lam, Par)
+    T = Par.NumericalParams.T
     NUnique = Par.System.NUnique
 
-    @inline iG(x,nw) = iG_(γ,x,Lam,nw,T)
+    @inline iG(x, nw) = iG_(γ, x, Lam, nw, T)
 
-    function getProp!(BubbleProp,nw1,nw2)
-        for i in 1:NUnique, j in 1:NUnique
-            BubbleProp[i,j] = iG(i,nw1) *iG(j,nw2)* T
+    function getProp!(BubbleProp, nw1, nw2)
+        for i = 1:NUnique, j = 1:NUnique
+            BubbleProp[i, j] = iG(i, nw1) * iG(j, nw2) * T
         end
         return BubbleProp
     end
     return getProp!
 end
 
-constructPropagatorFunction(Workspace::PMFRGWorkspace,Lam) = constructPropagatorFunction(Workspace.State.γ,Lam,Workspace.Par) 
+constructPropagatorFunction(Workspace::PMFRGWorkspace, Lam) =
+    constructPropagatorFunction(Workspace.State.γ, Lam, Workspace.Par)
 
 
-function getXFromBubbles!(X::BubbleType,B0::BubbleType,BX::BubbleType)
+function getXFromBubbles!(X::BubbleType, B0::BubbleType, BX::BubbleType)
     for f in fieldnames(BubbleType)
-        Xf,B0f,BXf = getfield(X,f),getfield(B0,f),getfield(BX,f)
+        Xf, B0f, BXf = getfield(X, f), getfield(B0, f), getfield(BX, f)
 
-        Threads.@threads for i in eachindex(Xf,B0f,BXf)
-           Xf[i] = 0.5* B0f[i] + BXf[i]
+        Threads.@threads for i in eachindex(Xf, B0f, BXf)
+            Xf[i] = 0.5 * B0f[i] + BXf[i]
         end
     end
     return X
 end
 
-function getVertexFromChannels!(Γ::VertexType,I::VertexType,X::BubbleType)
-    Threads.@threads for iu in axes(Γ.a,4)
-        for it in axes(Γ.a,3), is in axes(Γ.a,2), Rij in axes(Γ.a,1)
-            Γ.a[Rij,is,it,iu] = I.a[Rij,is,it,iu] + X.a[Rij,is,it,iu] - X.Ta[Rij,it,is,iu] + X.Ta[Rij,iu,is,it]
-            Γ.b[Rij,is,it,iu] = I.b[Rij,is,it,iu] + X.b[Rij,is,it,iu] - X.Tc[Rij,it,is,iu] + X.Tc[Rij,iu,is,it]
-            Γ.c[Rij,is,it,iu] = I.c[Rij,is,it,iu] + X.c[Rij,is,it,iu] - X.Tb[Rij,it,is,iu] + X.Td[Rij,iu,is,it]
+function getVertexFromChannels!(Γ::VertexType, I::VertexType, X::BubbleType)
+    Threads.@threads for iu in axes(Γ.a, 4)
+        for it in axes(Γ.a, 3), is in axes(Γ.a, 2), Rij in axes(Γ.a, 1)
+            Γ.a[Rij, is, it, iu] =
+                I.a[Rij, is, it, iu] + X.a[Rij, is, it, iu] - X.Ta[Rij, it, is, iu] +
+                X.Ta[Rij, iu, is, it]
+            Γ.b[Rij, is, it, iu] =
+                I.b[Rij, is, it, iu] + X.b[Rij, is, it, iu] - X.Tc[Rij, it, is, iu] +
+                X.Tc[Rij, iu, is, it]
+            Γ.c[Rij, is, it, iu] =
+                I.c[Rij, is, it, iu] + X.c[Rij, is, it, iu] - X.Tb[Rij, it, is, iu] +
+                X.Td[Rij, iu, is, it]
         end
     end
     return Γ
 end
 
 """Self-consistently iterates SDE until convergence is reached."""
-function iterateSDE!(Workspace::ParquetWorkspace,Lam)
-    (;OldState,State,Γ0,X,B0,BX,Par,Buffer) = Workspace
-    @inline Prop(x,nw) = 1/6*iG_(OldState.γ,x,Lam,nw,Par.NumericalParams.T)
+function iterateSDE!(Workspace::ParquetWorkspace, Lam)
+    (; OldState, State, Γ0, X, B0, BX, Par, Buffer) = Workspace
+    @inline Prop(x, nw) = 1 / 6 * iG_(OldState.γ, x, Lam, nw, Par.NumericalParams.T)
 
     # getProp! = constructPropagatorFunction(Workspace,Lam)
 
@@ -150,80 +162,94 @@ function iterateSDE!(Workspace::ParquetWorkspace,Lam)
             # @warn("SDE: No convergence found after $maxIter iterations\nremaining Tol: $SDE_tolerance")
             break
         end
-        iter +=1
-        writeTo!(OldState.γ,State.γ)
+        iter += 1
+        writeTo!(OldState.γ, State.γ)
 
         # computeLeft2PartBubble!(B0,Γ0,Γ0,State.Γ,getProp!,Par,Buffer)
-        
-        compute1PartBubble!(State.γ,B0,Prop,Par)
+
+        compute1PartBubble!(State.γ, B0, Prop, Par)
         # compute1PartBubble_BS!(State.γ,State.Γ,Γ0,Prop,Par)
-        dampen!(State.γ,OldState.γ,Par.Options.SDE_epsilon)
-        SDE_tolerance = reldist(State.γ,OldState.γ)
+        dampen!(State.γ, OldState.γ, Par.Options.SDE_epsilon)
+        SDE_tolerance = reldist(State.γ, OldState.γ)
     end
     if !Par.Options.MinimalOutput
         println("""
         \t\tSDE step done after $iter / $SDE_iters iterations (tol = $(SDE_tolerance)""")
     end
-    return 
+    return
 end
 
 
 
-function iterateSolution_FP!(Workspace::ParquetWorkspace,Lam::Real,Obs)
-    (;OldState,State,Γ0,B0,Par,Buffer) = Workspace
-    (;BSE_iters,BSE_epsilon,BSE_vel) = Par.Options
-    (;accuracy) = Par.NumericalParams
+function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
+    (; OldState, State, Γ0, B0, Par, Buffer) = Workspace
+    (; BSE_iters, BSE_epsilon, BSE_vel) = Par.Options
+    (; accuracy) = Par.NumericalParams
 
     ObsType = eltype(Obs)
-    OldStateArr,StateArr = ArrayPartition.((OldState,State))
-    
-    function FixedPointFunction!(State_Arr,OldState_Arr)
+    OldStateArr, StateArr = ArrayPartition.((OldState, State))
+
+    function FixedPointFunction!(State_Arr, OldState_Arr)
         anyisnan(OldState_Arr) && return State_Arr
         State = StateType(State_Arr.x...)
-        BSE_iteration!(State,Workspace,Lam)
-        iterateSDE_FP!(State.γ,State.Γ,B0,Γ0,Lam,Par,Buffer)
+        BSE_iteration!(State, Workspace, Lam)
+        iterateSDE_FP!(State.γ, State.Γ, B0, Γ0, Lam, Par, Buffer)
 
-        writeTo!(Workspace.State,State) # need to do this since State is not equal to Workspace.State anymore!
+        writeTo!(Workspace.State, State) # need to do this since State is not equal to Workspace.State anymore!
 
-        CurrentObs = getObservables(ObsType,Workspace,Lam)
-        push!(Obs,CurrentObs)
+        CurrentObs = getObservables(ObsType, Workspace, Lam)
+        push!(Obs, CurrentObs)
         if !Par.Options.MinimalOutput
-            writeOutput(State,CurrentObs,Lam,Par)
+            writeOutput(State, CurrentObs, Lam, Par)
         end
         # OldState_Arr .= State_Arr
         return State_Arr
     end
 
-    s = afps!(FixedPointFunction!,OldStateArr,iters = BSE_iters,vel = BSE_vel ,ep = BSE_epsilon,tol = accuracy)
+    s = afps!(
+        FixedPointFunction!,
+        OldStateArr,
+        iters = BSE_iters,
+        vel = BSE_vel,
+        ep = BSE_epsilon,
+        tol = accuracy,
+    )
     StateArr .= s.x
     println("""
     \t\tBSE done after  $(length(Obs)) / $BSE_iters iterations (tol = $(s.error))""")
-    if anyisnan(StateArr) 
+    if anyisnan(StateArr)
         @warn "NaN detected... Aborted"
     elseif s.error > accuracy
         @warn "Tolerance goal ($accuracy) not reached"
     end
-    return Workspace,Obs
+    return Workspace, Obs
 end
 
-anyisnan(A::ArrayPartition) = any((any(isnan,i) for i in A.x))
+anyisnan(A::ArrayPartition) = any((any(isnan, i) for i in A.x))
 
 
-function iterateSDE_FP!(γ,Γ,B0,Γ0,Lam,Par,Buffer)
-    (;SDE_iters,SDE_vel,SDE_epsilon) = Par.Options
+function iterateSDE_FP!(γ, Γ, B0, Γ0, Lam, Par, Buffer)
+    (; SDE_iters, SDE_vel, SDE_epsilon) = Par.Options
     T = Par.NumericalParams.T
-    function FixedPointFunction!(gamma,gammaOld)
-        @inline Prop(x,nw) = 1/6*iG_(gammaOld,x,Lam,nw,T)
+    function FixedPointFunction!(gamma, gammaOld)
+        @inline Prop(x, nw) = 1 / 6 * iG_(gammaOld, x, Lam, nw, T)
 
-        getProp! = constructPropagatorFunction(gammaOld,Lam,Par)
+        getProp! = constructPropagatorFunction(gammaOld, Lam, Par)
 
         # computeLeft2PartBubble!(B0,Γ0,Γ0,Γ,getProp!,Par,Buffer)
-        compute1PartBubble!(gamma,B0,Prop,Par)
+        compute1PartBubble!(gamma, B0, Prop, Par)
         # compute1PartBubble_BS!(gamma,Γ,Γ0,Prop,Par)
         return gamma
     end
 
-    s = afps!(FixedPointFunction!,γ,iters = SDE_iters,vel =SDE_vel,ep = SDE_epsilon,tol = Par.Options.SDE_tolerance)
+    s = afps!(
+        FixedPointFunction!,
+        γ,
+        iters = SDE_iters,
+        vel = SDE_vel,
+        ep = SDE_epsilon,
+        tol = Par.Options.SDE_tolerance,
+    )
     γ .= s.x
     # FixedPointFunction!(State.γ,OldState.γ)
     # println(maximum(γ))
@@ -235,24 +261,27 @@ function iterateSDE_FP!(γ,Γ,B0,Γ0,Lam,Par,Buffer)
 end
 
 
-getChi(State::StateType, Lam::Real,Par::ParquetParams) = getChi(State.γ,State.Γ.c, Lam,Par)
-getChi(State::StateType, Lam::Real,Par::ParquetParams,Numax) = getChi(State.γ,State.Γ.c, Lam,Par,Numax)
+getChi(State::StateType, Lam::Real, Par::ParquetParams) =
+    getChi(State.γ, State.Γ.c, Lam, Par)
+getChi(State::StateType, Lam::Real, Par::ParquetParams, Numax) =
+    getChi(State.γ, State.Γ.c, Lam, Par, Numax)
 
-function getObservables(::Type{Observables},Workspace::ParquetWorkspace,Lam)
+function getObservables(::Type{Observables}, Workspace::ParquetWorkspace, Lam)
     State = Workspace.State
-    chi = getChi(Workspace.State,Lam,Workspace.Par)
-    MaxVa = maximum(abs,State.Γ.a,dims = (2,3,4,5))[:,1,1,1]
-    MaxVb = maximum(abs,State.Γ.b,dims = (2,3,4,5))[:,1,1,1]
-    MaxVc = maximum(abs,State.Γ.c,dims = (2,3,4,5))[:,1,1,1]
-    return Observables(chi,copy(State.γ),copy(State.f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
+    chi = getChi(Workspace.State, Lam, Workspace.Par)
+    MaxVa = maximum(abs, State.Γ.a, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    MaxVb = maximum(abs, State.Γ.b, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    MaxVc = maximum(abs, State.Γ.c, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    return Observables(chi, copy(State.γ), copy(State.f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
 end
 
 # writeOutput(St::StateType,Obs,Lam,Par) = println(Obs)
-writeOutput(St::StateType,Obs,Lam,Par) = writeOutput(St.f_int,St.γ,St.Γ.a,St.Γ.b,St.Γ.c,Obs,Lam,Par)
+writeOutput(St::StateType, Obs, Lam, Par) =
+    writeOutput(St.f_int, St.γ, St.Γ.a, St.Γ.b, St.Γ.c, Obs, Lam, Par)
 
-function modifyWorkspace(Workspace::ParquetWorkspace;kwargs...)
-    NewPar = modifyParams(Workspace.Par;kwargs...)
+function modifyWorkspace(Workspace::ParquetWorkspace; kwargs...)
+    NewPar = modifyParams(Workspace.Par; kwargs...)
     newWorkspace = SetupParquet(NewPar)
-    writeTo!(newWorkspace.State,Workspace.State)
+    writeTo!(newWorkspace.State, Workspace.State)
     return newWorkspace
 end

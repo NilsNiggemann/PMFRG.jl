@@ -3,26 +3,26 @@ Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 _getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T_min)
 
 function InitializeState(Par::PMFRGParams)
-    (;N,Ngamma) = Par.NumericalParams
+    (; N, Ngamma) = Par.NumericalParams
     VDims = getVDims(Par)
-    (;couplings,NUnique) = Par.System
+    (; couplings, NUnique) = Par.System
 
     floattype = _getFloatType(Par)
-    
+
     State = ArrayPartition( #Allocate Memory:
-        zeros(floattype,NUnique), # f_int 
-        zeros(floattype,NUnique,Ngamma), # gamma
-        zeros(floattype,VDims), #Va
-        zeros(floattype,VDims), #Vb
-        zeros(floattype,VDims) #Vc
+        zeros(floattype, NUnique), # f_int 
+        zeros(floattype, NUnique, Ngamma), # gamma
+        zeros(floattype, VDims), #Va
+        zeros(floattype, VDims), #Vb
+        zeros(floattype, VDims), #Vc
     )
 
     Γc = State.x[5]
-    setToBareVertex!(Γc,couplings)
+    setToBareVertex!(Γc, couplings)
     return State
 end
 
-function getChannel(Buffs::AbstractVector{<:T}) where T
+function getChannel(Buffs::AbstractVector{<:T}) where {T}
     BufferChannel = Channel{T}(length(Buffs))
     for buff in Buffs
         put!(BufferChannel, buff)
@@ -31,16 +31,20 @@ function getChannel(Buffs::AbstractVector{<:T}) where T
 end
 
 function AllocateSetup(Par::OneLoopParams)
-    (;Npairs,NUnique) = Par.System
+    (; Npairs, NUnique) = Par.System
     println("One Loop:")
     ##Allocate Memory:
     X = BubbleType(Par)
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
-	VertexBuffers = getChannel([VertexBufferType(floattype,Npairs) for _ in 1:Threads.nthreads()])
-    PropsBuffers = getChannel([MMatrix{NUnique,NUnique,floattype,NUnique*NUnique}(undef) for _ in 1:Threads.nthreads()] )
+    VertexBuffers =
+        getChannel([VertexBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
+    PropsBuffers = getChannel([
+        MMatrix{NUnique,NUnique,floattype,NUnique * NUnique}(undef) for
+        _ = 1:Threads.nthreads()
+    ])
 
-    Buffs = BufferType(PropsBuffers,VertexBuffers) 
-    return (X,Buffs,Par)
+    Buffs = BufferType(PropsBuffers, VertexBuffers)
+    return (X, Buffs, Par)
 end
 
 """Converts t step used for integrator to Λ. Inverse of T_to_t."""
@@ -71,9 +75,13 @@ Allowed keyword arguments (with default values):
                                                     # See the OrdinaryDiffEq documentation for further details.
 
 """
-SolveFRG(Par;kwargs...) = launchPMFRG!(InitializeState(Par),AllocateSetup(Par),getDeriv!; kwargs...)
+SolveFRG(Par; kwargs...) =
+    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDeriv!; kwargs...)
 
-function launchPMFRG!(State,setup,Deriv!::Function;
+function launchPMFRG!(
+    State,
+    setup,
+    Deriv!::Function;
     MainFile = nothing,
     Group = DefaultGroup(setup[end]),
     CheckpointDirectory = nothing,
@@ -85,29 +93,40 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     overwrite_Checkpoints = false::Bool,
     CheckPointSteps = 1,
     ObservableType = ObservablesChi,
-    kwargs...)
-    
+    kwargs...,
+)
+
     Par = setup[end]
-    typeof(CheckpointDirectory)==String && (CheckpointDirectory = setupDirectory(CheckpointDirectory,Par,overwrite = overwrite_Checkpoints))
+    typeof(CheckpointDirectory) == String && (
+        CheckpointDirectory =
+            setupDirectory(CheckpointDirectory, Par, overwrite = overwrite_Checkpoints)
+    )
 
-    (;T_max,T_min,accuracy) = Par.NumericalParams
-    save_func(State,t,integrator) = getObservables(ObservableType,State,t_to_T(t),Par)
-    
-    saved_values = SavedValues(eltype(State),ObservableType)
-    i=0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
+    (; T_max, T_min, accuracy) = Par.NumericalParams
+    save_func(State, t, integrator) = getObservables(ObservableType, State, t_to_T(t), Par)
 
-    function bareOutput(State,t,integrator)
+    saved_values = SavedValues(eltype(State), ObservableType)
+    i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
+
+    function bareOutput(State, t, integrator)
         T = t_to_T(t)
-        i+=1
-        i%CheckPointSteps == 0 && setCheckpoint(CheckpointDirectory,State,saved_values,T,Par,VertexCheckpoints)
+        i += 1
+        i % CheckPointSteps == 0 && setCheckpoint(
+            CheckpointDirectory,
+            State,
+            saved_values,
+            T,
+            Par,
+            VertexCheckpoints,
+        )
     end
-    
-    function verboseOutput(State,t,integrator)
+
+    function verboseOutput(State, t, integrator)
         T = t_to_T(t)
         println("Time taken for output saving: ")
-        @time bareOutput(State,t,integrator)
-        println("") 
-        writeOutput(State,saved_values,T,Par)
+        @time bareOutput(State, t, integrator)
+        println("")
+        writeOutput(State, saved_values, T, Par)
     end
 
     function getOutputfunction(MinimalOutput)
@@ -121,33 +140,49 @@ function launchPMFRG!(State,setup,Deriv!::Function;
     sort!(VertexCheckpoints)
     #get Default for lambda range for observables
     # ObsSaveat = getTempMesh(ObsSaveat,T_min,T_max)
-    ObsSaveat = gettMesh(ObsSaveat,T_min,T_max,npoints)
-    saveCB = SavingCallback(save_func, saved_values,save_everystep =false,saveat = ObsSaveat,tdir=-1)
-    outputCB = FunctionCallingCallback(output_func,tdir=-1,func_start = false)
-    unstable_check(dt,u,p,t) = maximum(abs,u) >MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
+    ObsSaveat = gettMesh(ObsSaveat, T_min, T_max, npoints)
+    saveCB = SavingCallback(
+        save_func,
+        saved_values,
+        save_everystep = false,
+        saveat = ObsSaveat,
+        tdir = -1,
+    )
+    outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
+    unstable_check(dt, u, p, t) = maximum(abs, u) > MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
 
     t0 = T_to_t(T_max)
     tend = get_t_min(T_min)
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
-    problem = ODEProblem(Deriv_subst!,State,(t0,tend),setup)
+    problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(problem,method,reltol = accuracy,abstol = accuracy, save_everystep = false,callback=CallbackSet(saveCB,outputCB),dt=T_to_t(0.2*T_max),unstable_check = unstable_check;kwargs...)
+    @time sol = solve(
+        problem,
+        method,
+        reltol = accuracy,
+        abstol = accuracy,
+        save_everystep = false,
+        callback = CallbackSet(saveCB, outputCB),
+        dt = T_to_t(0.2 * T_max),
+        unstable_check = unstable_check;
+        kwargs...,
+    )
     if !Par.Options.MinimalOutput
         println(sol.destats)
     end
     saved_values.t .= t_to_T.(saved_values.t)
-    saveCurrentState(CheckpointDirectory,sol[end],saved_values,t_to_T(sol.t[end]),Par)
-    saveMainOutput(MainFile,sol,saved_values,Par,Group)
+    saveCurrentState(CheckpointDirectory, sol[end], saved_values, t_to_T(sol.t[end]), Par)
+    saveMainOutput(MainFile, sol, saved_values, Par, Group)
 
     SetCompletionCheckmark(CheckpointDirectory)
-    return sol,saved_values
+    return sol, saved_values
 end
 
 function generateSubstituteDeriv(getDeriv!::Function)
-    
-    function DerivSubs!(Deriv,State,par,t)
+
+    function DerivSubs!(Deriv, State, par, t)
         T = t_to_T(t)
-        a = getDeriv!(Deriv,State,par,T)
+        a = getDeriv!(Deriv, State, par, T)
         Deriv .*= T
         a
     end
@@ -156,73 +191,88 @@ end
 
 function get_t_min(T)
     T < exp(-30) && @warn "T_min too small! Set to exp(-30) instead."
-    max(T_to_t(T),-30.)
+    max(T_to_t(T), -30.0)
 end
 
 DefaultGroup(Par::PMFRGParams) = ""
 
-writeOutput(State::ArrayPartition,saved_values,T,Par) = writeOutput(State.x...,saved_values.saveval[end],T,Par)
+writeOutput(State::ArrayPartition, saved_values, T, Par) =
+    writeOutput(State.x..., saved_values.saveval[end], T, Par)
 
-function writeOutput(f_int,gamma,Va,Vb,Vc,obs,T,Par)
-    (;usesymmetry) = Par.Options
-    (;N,np_vec) = Par.NumericalParams
+function writeOutput(f_int, gamma, Va, Vb, Vc, obs, T, Par)
+    (; usesymmetry) = Par.Options
+    (; N, np_vec) = Par.NumericalParams
     chi = obs.Chi
     t = T_to_t(T)
-    print("T= ",strd(T)," at t step: ",strd(t),"\tchi_1 = ",strd(chi[1]),"\tchi_2 = ",strd(chi[2]),"\t f_int = (")
+    print(
+        "T= ",
+        strd(T),
+        " at t step: ",
+        strd(t),
+        "\tchi_1 = ",
+        strd(chi[1]),
+        "\tchi_2 = ",
+        strd(chi[2]),
+        "\t f_int = (",
+    )
     for f in f_int
-        print(strd(f),",")
+        print(strd(f), ",")
     end
     println(")")
     function givefreqs()
-        N<=7 && return 1,2,3 # avoid errors for small N
-        f1 = 1 
-        f2 = div(N,2)-3 
+        N <= 7 && return 1, 2, 3 # avoid errors for small N
+        f1 = 1
+        f2 = div(N, 2) - 3
         f3 = N - 5
-    
-        n1,n2,n3 = np_vec[f1],np_vec[f2],np_vec[f3]
-        while (n1+n2+n3)%2 == 0 && f3>0
-            f3 -=1
+
+        n1, n2, n3 = np_vec[f1], np_vec[f2], np_vec[f3]
+        while (n1 + n2 + n3) % 2 == 0 && f3 > 0
+            f3 -= 1
             n3 = np_vec[f3]
         end
-        return f1,f2,f3
+        return f1, f2, f3
     end
-    MaxVa,MaxPosVa = absmax(Va)
-    MaxVb,MaxPosVb = absmax(Vb)
-    MaxVc,MaxPosVc = absmax(Vc)
-    println("Max Va",Tuple(MaxPosVa) ," = ", MaxVa)
-    println("Max Vb",Tuple(MaxPosVb) ," = ", MaxVb)
-    println("Max Vc",Tuple(MaxPosVc) ," = ", MaxVc)
-    
-    f1,f2,f3 = givefreqs()
+    MaxVa, MaxPosVa = absmax(Va)
+    MaxVb, MaxPosVb = absmax(Vb)
+    MaxVc, MaxPosVc = absmax(Vc)
+    println("Max Va", Tuple(MaxPosVa), " = ", MaxVa)
+    println("Max Vb", Tuple(MaxPosVb), " = ", MaxVb)
+    println("Max Vc", Tuple(MaxPosVc), " = ", MaxVc)
+
+    f1, f2, f3 = givefreqs()
     println("\t_____Symmetry tests_____")
-    println("\t+Va_1($f1,$f2,$f3) = ", +Va[1,f1,f2,f3])
-    println("\t-Va_1($f3,$f2,$f1) = ", -Va[1,f3,f2,f1])
-    println("\t+Va_1($f2,$f3,$f1) = ", +Va[1,f2,f3,f1])
+    println("\t+Va_1($f1,$f2,$f3) = ", +Va[1, f1, f2, f3])
+    println("\t-Va_1($f3,$f2,$f1) = ", -Va[1, f3, f2, f1])
+    println("\t+Va_1($f2,$f3,$f1) = ", +Va[1, f2, f3, f1])
 
-    if(!usesymmetry)
-        println("\t-Va_1($f1,$f3,$f2) = ", -Va[1,f1,f3,f2] ,"\n")
-        println("\t+Va_2($f1,$f2,$f3) = ", +Va[2,f1,f2,f3] )
-        println("\t-Va_2($f1,$f3,$f2) = ", -Va[2,f1,f3,f2] )
-        println("\t+Vb_1($f1,$f2,$f3) = ", +Vb[1,f1,f2,f3] )
-        println("\t-Vb_1($f1,$f3,$f2) = ", -Vb[1,f1,f3,f2] ,"\n")
+    if (!usesymmetry)
+        println("\t-Va_1($f1,$f3,$f2) = ", -Va[1, f1, f3, f2], "\n")
+        println("\t+Va_2($f1,$f2,$f3) = ", +Va[2, f1, f2, f3])
+        println("\t-Va_2($f1,$f3,$f2) = ", -Va[2, f1, f3, f2])
+        println("\t+Vb_1($f1,$f2,$f3) = ", +Vb[1, f1, f2, f3])
+        println("\t-Vb_1($f1,$f3,$f2) = ", -Vb[1, f1, f3, f2], "\n")
 
-        println("\t+Va_2($f1,$f2,$f3)\n\t-Vb_2($f1,$f2,$f3)\n\t+Vc_2($f1,$f3,$f2) = ",
-            (+Va[2,f1,f2,f3] -Vb[2,f1,f2,f3] +Vc[2,f1,f3,f2]))
-        println("\t+Vc_2($f1,$f2,$f3) = ", +Vc[2,f1,f2,f3] ,"\n")
+        println(
+            "\t+Va_2($f1,$f2,$f3)\n\t-Vb_2($f1,$f2,$f3)\n\t+Vc_2($f1,$f3,$f2) = ",
+            (+Va[2, f1, f2, f3] - Vb[2, f1, f2, f3] + Vc[2, f1, f3, f2]),
+        )
+        println("\t+Vc_2($f1,$f2,$f3) = ", +Vc[2, f1, f2, f3], "\n")
 
-        println("\t+Va_1($f1,$f2,$f3)\n\t-Vb_1($f1,$f2,$f3)\n\t+Vc_1($f1,$f3,$f2) = ",
-            (+Va[1,f1,f2,f3] -Vb[1,f1,f2,f3] +Vc[1,f1,f3,f2]))
-        println("\t+Vc_1($f1,$f2,$f3) = ", +Vc[1,f1,f2,f3] ,"\n")
+        println(
+            "\t+Va_1($f1,$f2,$f3)\n\t-Vb_1($f1,$f2,$f3)\n\t+Vc_1($f1,$f3,$f2) = ",
+            (+Va[1, f1, f2, f3] - Vb[1, f1, f2, f3] + Vc[1, f1, f3, f2]),
+        )
+        println("\t+Vc_1($f1,$f2,$f3) = ", +Vc[1, f1, f2, f3], "\n")
     end
 end
-logrange(min,max,n) = (exp(x) for x in LinRange(log(min),log(max),n))
+logrange(min, max, n) = (exp(x) for x in LinRange(log(min), log(max), n))
 
-function getTempMesh(Saveat::Nothing,T_min,T_max,npoints = 800)
-    ObsSaveatLow = LinRange(T_min,2.,(4*npoints) ÷7 ) |> collect
-    ObsSaveatMiddle = logrange(2.,10.,(2*npoints) ÷7+1) |> collect
-    ObsSaveatHigh = logrange(10.,T_max,(npoints) ÷7+1) |> collect
+function getTempMesh(Saveat::Nothing, T_min, T_max, npoints = 800)
+    ObsSaveatLow = LinRange(T_min, 2.0, (4 * npoints) ÷ 7) |> collect
+    ObsSaveatMiddle = logrange(2.0, 10.0, (2 * npoints) ÷ 7 + 1) |> collect
+    ObsSaveatHigh = logrange(10.0, T_max, (npoints) ÷ 7 + 1) |> collect
 
-    return unique!(append!(ObsSaveatLow,ObsSaveatMiddle,ObsSaveatHigh))
+    return unique!(append!(ObsSaveatLow, ObsSaveatMiddle, ObsSaveatHigh))
 end
 
 # function gettMesh(Saveat::Nothing,T_min,T_max)
@@ -230,8 +280,9 @@ end
 #     tmax = T_to_t(T_max)
 #     LinRange(tmin,tmax,150)
 # end
-gettMesh(Saveat,T_min,T_max,npoints) = T_to_t.(getTempMesh(Saveat,T_min,T_max,npoints))
+gettMesh(Saveat, T_min, T_max, npoints) =
+    T_to_t.(getTempMesh(Saveat, T_min, T_max, npoints))
 
-function getTempMesh(Saveat::Vector{Float64},T_min,T_max,npoints)
-    return unique(push!(Saveat,T_max)) # make sure that there is at least one element at beginning of code
+function getTempMesh(Saveat::Vector{Float64}, T_min, T_max, npoints)
+    return unique(push!(Saveat, T_max)) # make sure that there is at least one element at beginning of code
 end

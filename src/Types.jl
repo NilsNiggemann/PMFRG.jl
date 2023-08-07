@@ -26,54 +26,56 @@ Struct to hold all relevant quantities that are needed throughout the computatio
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1)
 
 """
-struct NumericalParams{F <: AbstractFloat}
+struct NumericalParams{F<:AbstractFloat}
     N::Int # Number of positive frequencies
     Ngamma::Int  # Number of positive gamma frequencies
 
     accuracy::F # 
     T_min::F
     T_max::F
-    
-    lenIntw::Int 
+
+    lenIntw::Int
     lenIntw_acc::Int  # more accurate for less demanding sums
     np_vec::Array{Int,1}
     np_vec_gamma::Array{Int,1}
 end
 
 """Converts other arguments to type of first argument. If that is not a float, converts everything to Float64."""
-_convertToFloat(Primary::T,args...)  where T<: AbstractFloat = convert.(T,(Primary,args...))
-_convertToFloat(Primary::Real,args...) = convert.(Float64,(Primary,args...))
+_convertToFloat(Primary::T, args...) where {T<:AbstractFloat} =
+    convert.(T, (Primary, args...))
+_convertToFloat(Primary::Real, args...) = convert.(Float64, (Primary, args...))
 
 function NumericalParams(;
     N::Integer = 24,
     Ngamma::Integer = N, #Number of gamma frequencies
     accuracy::AbstractFloat = 1e-6, # convert type to float type
     T_min::AbstractFloat = 0.3,
-    T_max::AbstractFloat = exp(10.),
+    T_max::AbstractFloat = exp(10.0),
     lenIntw::Int = N,
-    lenIntw_acc::Int = 2*maximum((N,Ngamma,lenIntw)), # more accurate for less demanding sums
+    lenIntw_acc::Int = 2 * maximum((N, Ngamma, lenIntw)), # more accurate for less demanding sums
     np_vec::Array{Int,1} = collect(0:N-1),
     np_vec_gamma::Array{Int,1} = collect(0:Ngamma-1),
-    kwargs...)
+    kwargs...,
+)
 
-    T_min,T_max,accuracy = _convertToFloat(T_min,T_max,accuracy)
+    T_min, T_max, accuracy = _convertToFloat(T_min, T_max, accuracy)
 
     return NumericalParams(
         N,
         Ngamma,
         accuracy,
         T_min,
-        T_max ,
+        T_max,
         lenIntw,
         lenIntw_acc,
         np_vec,
         np_vec_gamma,
     )
 end
-abstract type AbstractOptions end 
+abstract type AbstractOptions end
 getPMFRGMethod(::Val{1}) = OneLoop()
 getPMFRGMethod(::Val{2}) = TwoLoop()
-getPMFRGMethod(::Val{n}) where n = MultiLoop(n)
+getPMFRGMethod(::Val{n}) where {n} = MultiLoop(n)
 getPMFRGMethod(n::Int) = getPMFRGMethod(Val(n))
 
 """Struct containing information about four-point vertices"""
@@ -84,41 +86,43 @@ struct VertexType{T}
 end
 
 
-function VertexType(VDims::Tuple,type)
+function VertexType(VDims::Tuple, type)
     return VertexType(
-        zeros(type,VDims), # Gamma_a
-        zeros(type,VDims), # Gamma_b
-        zeros(type,VDims) # Gamma_c
+        zeros(type, VDims), # Gamma_a
+        zeros(type, VDims), # Gamma_b
+        zeros(type, VDims), # Gamma_c
     )
 end
-getVDims(Par::PMFRGParams) = (Par.System.Npairs,Par.NumericalParams.N,Par.NumericalParams.N,Par.NumericalParams.N)
-VertexType(Par::PMFRGParams) = VertexType(getVDims(Par),_getFloatType(Par))
+getVDims(Par::PMFRGParams) =
+    (Par.System.Npairs, Par.NumericalParams.N, Par.NumericalParams.N, Par.NumericalParams.N)
+VertexType(Par::PMFRGParams) = VertexType(getVDims(Par), _getFloatType(Par))
 
-function setToBareVertex!(Γc::AbstractArray{T,4},couplings::AbstractVector) where T
-    for Rj in eachindex(couplings,axes(Γc,1))
-        Γc[Rj,:,:,:] .= -couplings[Rj]
+function setToBareVertex!(Γc::AbstractArray{T,4}, couplings::AbstractVector) where {T}
+    for Rj in eachindex(couplings, axes(Γc, 1))
+        Γc[Rj, :, :, :] .= -couplings[Rj]
     end
     return Γc
 end
 
-function setToBareVertex!(Γ::VertexType,couplings::AbstractVector)
-    Γ.a .= 0.
-    Γ.b .= 0.
-    setToBareVertex!(Γ.c,couplings)
+function setToBareVertex!(Γ::VertexType, couplings::AbstractVector)
+    Γ.a .= 0.0
+    Γ.b .= 0.0
+    setToBareVertex!(Γ.c, couplings)
     return Γ
 end
 
-setToBareVertex!(Γ::VertexType,Par) = setToBareVertex!(Γ,Par.System.couplings)
+setToBareVertex!(Γ::VertexType, Par) = setToBareVertex!(Γ, Par.System.couplings)
 
 """Allocates a frequency-dependent vertex type and initializes it with the bare vertex"""
-BareVertex_Freq(Par) = setToBareVertex!(VertexType(Par),Par.System.couplings)
+BareVertex_Freq(Par) = setToBareVertex!(VertexType(Par), Par.System.couplings)
 
 """Stores all information about the bare vertex (without frequencies)"""
 struct BareVertexType{T}
     c::Vector{T}
 end
 
-BareVertexType(Par::PMFRGParams) = BareVertexType(- convert.(_getFloatType(Par),Par.System.couplings))
+BareVertexType(Par::PMFRGParams) =
+    BareVertexType(-convert.(_getFloatType(Par), Par.System.couplings))
 
 """Struct containing information about the (physical) ODE State, i.e. vertices"""
 struct StateType{T}
@@ -127,17 +131,22 @@ struct StateType{T}
     Γ::VertexType{T}
 end
 
-function StateType(NUnique::Int,Ngamma::Int,VDims::Tuple,type = Float64::Type)
+function StateType(NUnique::Int, Ngamma::Int, VDims::Tuple, type = Float64::Type)
     return StateType(
-        zeros(type,NUnique), # fint
-        zeros(type,NUnique,Ngamma), # gamma
-        VertexType(VDims,type)
+        zeros(type, NUnique), # fint
+        zeros(type, NUnique, Ngamma), # gamma
+        VertexType(VDims, type),
     )
 end
 
-StateType(Par::PMFRGParams) = StateType(Par.System.NUnique,Par.NumericalParams.Ngamma,getVDims(Par),_getFloatType(Par)) 
+StateType(Par::PMFRGParams) = StateType(
+    Par.System.NUnique,
+    Par.NumericalParams.Ngamma,
+    getVDims(Par),
+    _getFloatType(Par),
+)
 
-StateType(f_int,γ,Γa,Γb,Γc) = StateType(f_int,γ,VertexType(Γa,Γb,Γc)) 
+StateType(f_int, γ, Γa, Γb, Γc) = StateType(f_int, γ, VertexType(Γa, Γb, Γc))
 
 """Struct storing information about Bubble functions, i.e. rhs derivatives of vertex flow equations."""
 struct BubbleType{T}
@@ -151,36 +160,36 @@ struct BubbleType{T}
     Td::Array{T,4}
 end
 
-function BubbleType(VDims::Tuple,type = Float64)
+function BubbleType(VDims::Tuple, type = Float64)
     return BubbleType(
-        zeros(type,VDims),
-        zeros(type,VDims),
-        zeros(type,VDims),
-
-        zeros(type,VDims),
-        zeros(type,VDims),
-        zeros(type,VDims),
-        zeros(type,VDims)
+        zeros(type, VDims),
+        zeros(type, VDims),
+        zeros(type, VDims),
+        zeros(type, VDims),
+        zeros(type, VDims),
+        zeros(type, VDims),
+        zeros(type, VDims),
     )
 end
 
 const VertexOrBubble = Union{StateType,BubbleType,VertexType}
 
-BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par),_getFloatType(Par)) 
+BubbleType(Par::PMFRGParams) = BubbleType(getVDims(Par), _getFloatType(Par))
 
-function constructBubbleFromVertex!(B::BubbleType,Γ::VertexType)
+function constructBubbleFromVertex!(B::BubbleType, Γ::VertexType)
     B.a .= Γ.a
     B.b .= Γ.b
     B.c .= Γ.c
-    for Rij in axes(Γ.a,1), s in axes(Γ.a,2), t in axes(Γ.a,3), u in axes(Γ.a,4) 
-        B.Ta[Rij,s,t,u] = -Γ.a[Rij,t,s,u] 
-        B.Tb[Rij,s,t,u] = -Γ.c[Rij,t,s,u] 
-        B.Tc[Rij,s,t,u] = -Γ.b[Rij,t,s,u]
-        B.Td[Rij,s,t,u] = Γ.c[Rij,t,u,s]
+    for Rij in axes(Γ.a, 1), s in axes(Γ.a, 2), t in axes(Γ.a, 3), u in axes(Γ.a, 4)
+        B.Ta[Rij, s, t, u] = -Γ.a[Rij, t, s, u]
+        B.Tb[Rij, s, t, u] = -Γ.c[Rij, t, s, u]
+        B.Tc[Rij, s, t, u] = -Γ.b[Rij, t, s, u]
+        B.Td[Rij, s, t, u] = Γ.c[Rij, t, u, s]
     end
     return B
 end
-constructBubbleFromVertex(Γ::VertexType) = constructBubbleFromVertex!(BubbleType(size(Γ.a)),Γ) 
+constructBubbleFromVertex(Γ::VertexType) =
+    constructBubbleFromVertex!(BubbleType(size(Γ.a)), Γ)
 
 """Struct containing the observables that are saved at every step"""
 struct Observables{T}
@@ -192,13 +201,13 @@ struct Observables{T}
     MaxVc::Vector{T}
 end
 
-function getObservables(::Type{Observables},State::ArrayPartition,T,Par)
-    f_int,gamma,Va,Vb,Vc = State.x
-    chi = getChi(State,T,Par)
-    MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
-    MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
-    MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
-    return Observables(chi,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
+function getObservables(::Type{Observables}, State::ArrayPartition, T, Par)
+    f_int, gamma, Va, Vb, Vc = State.x
+    chi = getChi(State, T, Par)
+    MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    return Observables(chi, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
 end
 struct ObservablesChi{T}
     Chi::Vector{T}
@@ -210,29 +219,30 @@ struct ObservablesChi{T}
     MaxVc::Vector{T}
 end
 
-function getObservables(::Type{ObservablesChi},State::ArrayPartition,T,Par)
-    f_int,gamma,Va,Vb,Vc = State.x
-    chinu = getChi(State,T,Par,Par.NumericalParams.N)
-    chi = chinu[:,1]
-    MaxVa = maximum(abs,Va,dims = (2,3,4,5))[:,1,1,1]
-    MaxVb = maximum(abs,Vb,dims = (2,3,4,5))[:,1,1,1]
-    MaxVc = maximum(abs,Vc,dims = (2,3,4,5))[:,1,1,1]
-    return ObservablesChi(chi,chinu,copy(gamma),copy(f_int),MaxVa,MaxVb,MaxVc) # make sure to allocate new memory each time this function is called
+function getObservables(::Type{ObservablesChi}, State::ArrayPartition, T, Par)
+    f_int, gamma, Va, Vb, Vc = State.x
+    chinu = getChi(State, T, Par, Par.NumericalParams.N)
+    chi = chinu[:, 1]
+    MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+    return ObservablesChi(chi, chinu, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
 end
 
 struct VertexBufferType{T}
-	Va12::Vector{T}
-	Vb12::Vector{T}
-	Vc12::Vector{T}
+    Va12::Vector{T}
+    Vb12::Vector{T}
+    Vc12::Vector{T}
 
-	Va34::Vector{T}
-	Vb34::Vector{T}
-	Vc34::Vector{T}
-	
-	Vc21::Vector{T}
-	Vc43::Vector{T}
+    Va34::Vector{T}
+    Vb34::Vector{T}
+    Vc34::Vector{T}
+
+    Vc21::Vector{T}
+    Vc43::Vector{T}
 end
-VertexBufferType(type,Npairs) = VertexBufferType((zeros(type,Npairs) for _ in 1:8)...)
+VertexBufferType(type, Npairs) = VertexBufferType((zeros(type, Npairs) for _ = 1:8)...)
 ##
-RecursiveArrayTools.ArrayPartition(x::StateType) = ArrayPartition(x.f_int,x.γ,x.Γ.a,x.Γ.b,x.Γ.c)
+RecursiveArrayTools.ArrayPartition(x::StateType) =
+    ArrayPartition(x.f_int, x.γ, x.Γ.a, x.Γ.b, x.Γ.c)
 StateType(Arr::ArrayPartition) = StateType(Arr.x...)

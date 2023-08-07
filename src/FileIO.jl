@@ -219,7 +219,7 @@ function _generateFileName(Par::PMFRGParams, arg::String=""; savekeywords=false,
     N = Par.NumericalParams.N
 
     FName = "PMFRG_$(Name)_N=$(N)$arg" * join("_$(k)=$(strd(v))" for (k, v) in kwargs) * ".h5"
-    unique && FName = UniqueFileName(FName)
+    unique && (FName = UniqueFileName(FName))
     if savekeywords
         for (k, v) in kwargs
             h5write(FName, string(k), v)

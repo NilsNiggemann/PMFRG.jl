@@ -115,7 +115,7 @@ end
 function setupDirectory(DirPath, Par; overwrite = false)
     DirPath = generateName_verbose(DirPath, Par)
     overwrite || (DirPath = UniqueDirName(DirPath))
-    println("Checkpoints saved at $DirPath")
+    println("Checkpoints saved at $(abspath(DirPath))")
     # CheckPath = joinpath(DirPath,"Checkpoints")
     mkpath(DirPath)
     return DirPath
@@ -178,21 +178,27 @@ end
 
 versionString(versNum) = "(v_$versNum)"
 
-function UniqueFileName(Path, versNum = getVersionNumber(Path))
-    ispath(Path) || return Path
+function UniqueFileName(Path)
     ending = "." * file_extension(Path)
-    if versNum == 0
-        replace(Path, ending => versionString(versNum + 1) * ending)
+    while ispath(Path)
+        versNum = getVersionNumber(Path)
+        if versNum == 0
+            Path = replace(Path, ending => versionString(versNum + 1) * ending)
+        end
+        Path = replace(Path, versionString(versNum) => versionString(versNum + 1))
     end
-    replace(Path, versionString(versNum) => versionString(versNum + 1))
+    return Path
 end
 
-function UniqueDirName(Path, versNum = getVersionNumber(Path))
-    ispath(Path) || return Path
-    if versNum == 0
-        return Path * versionString(versNum + 1)
+function UniqueDirName(Path)
+    while ispath(Path)
+        versNum = getVersionNumber(Path)
+        if versNum == 0
+            Path = Path * versionString(versNum + 1)
+        end
+        Path = replace(Path, versionString(versNum) => versionString(versNum + 1))
     end
-    return replace(Path, versionString(versNum) => versionString(versNum + 1))
+    return Path
 end
 
 function generateName_verbose(Directory::String, Par::PMFRGParams)
@@ -206,19 +212,35 @@ end
 generateUniqueName(Directory::String, Par::PMFRGParams) =
     UniqueDirName(generateName_verbose(Directory, Par))
 
-
-function _generateFileName(Par::PMFRGParams, arg::String = ""; kwargs...)
+function _generateFileName(Par::PMFRGParams, arg::String=""; kwargs...)
     Name = Par.System.Name
     N = Par.NumericalParams.N
 
-    FName =
-        "PMFRG_$(Name)_N=$(N)$arg" * join("_$(k)=$(strd(v))" for (k, v) in kwargs) * ".h5"
+    FName = "PMFRG_$(Name)_N=$(N)$arg" * join("_$(k)=$(strd(v))" for (k, v) in kwargs) * ".h5"
+
     return FName
 end
-generateFileName(Par::PMFRGParams, arg::String = ""; kwargs...) =
+
+
+generateFileName(Par::PMFRGParams, arg::String=""; kwargs...) =
     _generateFileName(Par, arg; kwargs...)
-generateFileName(Par::OneLoopParams, arg::String = ""; kwargs...) =
+generateFileName(Par::OneLoopParams, arg::String=""; kwargs...) =
     _generateFileName(Par, "_l1" * arg; kwargs...)
+
+function generateMainFile(Directory::String,Par::PMFRGParams, arg::String=""; savekeywords=true, unique=true, kwargs...)
+    FName = joinpath(Directory,generateFileName(Par,arg;kwargs...))
+    
+    unique && (FName = UniqueFileName(FName))
+    h5open(FName, "cw") do f
+        if savekeywords
+            for (k, v) in kwargs
+                f[string(k)] = v
+            end
+        end
+    end
+    return FName
+end
+generateMainFile(Par::PMFRGParams, arg::String=""; kwargs...) = generateMainFile(".", Par, arg; kwargs...)
 
 function ParamsCompatible(Par1, Par2)
     NumericalFields = (:N, :Ngamma, :T_max)
@@ -311,7 +333,7 @@ function saveObs(
 )
     ObsArr = StructArray(saved_values.saveval)
     saveObs(Filename, ObsArr, Group)
-    h5write(Filename, joinGroup(Group, "t"), saved_values.t)
+    h5write(Filename, joinGroup(Group, "T"), saved_values.t)
 end
 
 function saveObs(Filename::String, Obs::StructArray{ObsType}, Group::String) where {ObsType}
@@ -330,7 +352,7 @@ function convertToArray(
 end
 
 function saveMainOutput(Filename::String, saved_values, Group::String)
-    println("Saving Main output to ", Filename)
+    println("Saving Main output to ", abspath(Filename))
     mkpath(dirname(Filename))
     saveObs(Filename, saved_values, Group)
 end

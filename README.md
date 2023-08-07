@@ -1,29 +1,20 @@
-# PMFRG.jl
-`PMFRG` is a Julia package used to compute observables for spin-$`1/2`$ Heisenberg models of the form
+# PMFRG.jl: 
+
+`PMFRG.jl` (**P**seudo-**M**ajorana **F**unctional **R**enormalization **G**roup) is a Julia package used to compute observables for spin- $1/2$ Heisenberg models of the form
+
 ```math
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```
 ## Installation
- Currently, you need to have access to this repository to install the package. If you can read this then you have access and the following should work. It is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ . Note that to install [`PMFRG.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/PMFRG.jl) the package [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl)) is also required. 
+It is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ .
+`PMFRG.jl` is not in the official registry (yet?) and thus best installed via
+```
+(@v1.8) pkg> activate TestProject
+Activating new project at `~/TestProject`
 
-- *Only once:* To install the packages from Julia-FRG, please download the Julia FRG registry first. This is done by entering the `Pkg` mode by typing a single bracket into the REPL: `]`. Then, execute the following 
-    ```
-    (@v1.8) pkg> registry add git@gitlabph.physik.fu-berlin.de:julia-frg/JuliaFRGRegistry.git
-    ```
-
-- After the registry is added, you can simply install packages to any new environment:
-    ```
-    (@v1.8) pkg> activate TestProject
-    Activating new project at `~/TestProject`
-
-    (TestProject) pkg> add PMFRG
-    ```
+(TestProject) pkg> add https://github.com/NilsNiggemann/PMFRG.jl.git
+```
  
-If ssh authentication is not possible (unfortunately the case on some clusters), the packages can also be installed using https instead. The following will require a password to the repository:
-```
-]add https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl.git, https://gitlabph.physik.fu-berlin.de/julia-frg/PMFRG.jl.git
-```
-
 ## Usage
 After the package is installed to a local environment it can be loaded in a Julia session with  `using PMFRG`. The following contains a minimal working example:
 ```
@@ -52,6 +43,8 @@ flowpath = "temp/flows/" # specify path for vertex checkpoints
 Solution,saved_values = SolveFRG(Par,MainFile = mainFile ,CheckpointDirectory = flowpath,method = DP5(),VertexCheckpoints = [],CheckPointSteps = 3 )
 ```
 For further options, the documentation of `SolveFRG` or `NumericalParams` can be helpful. Note that if no `MainFile` is specified, then no output is written.
+### Beyond oneloop FRG
+If no further specification is made, the standard oneloop implementation will be used. In most cases, the oneloop approximation should be appropriate. The Twoloop implementation can be used via specifying the parameters with the additional argument `Params(System,TwoLoop();kwargs...)`.
 ## Usage on SLURM Clusters
 To start a run on a cluster, we need both a batch script which requests the required resources and a job-script that runs the calculation. An example is found in the file ´Example/Slurm_example.jl´ in this repository.
 Since Julia ignores everything after `#`, we can also place the batch script and the job script in the same file. To run a job array with indices `1-10`, we only need to run `sbatch --array=1-10 Example/Slurm_example.jl` in the cluster's terminal on the login node. The indices of the job array are passed as arguments, so they can be accessed via `i_arg = parse(Int, ARGS[1])`. 
@@ -117,7 +110,7 @@ close(f)
 For longer runs, it is advisable to specify a `CheckPointDirectory`, where regular Checkpoints of the Solution state are stored. From each checkpoint, the Solver can be re-started. Also, the data can be used to for further anaysis, if complete vertex information should be required.
 Note that a single Checkpoint may take up several Gigabytes of storage (for cluster-sized problems) so they should be saved to the scratch directory.
 ## Evaluation
-Since susceptibilities are returned as a list according to pre-selected symmetry inequivalent pairs, the library [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl)) has to be used for evaluation. To compute Fourier transforms (and other things), it is helpful to use the package [`PMFRGEvaluation`](`git@gitlabph.physik.fu-berlin.de:julia-frg/(https://gitlabph.physik.fu-berlin.de/julia-frg/)PMFRGEvaluation.git`). As an example, the following code plots the magnetic susceptibility for the data generated above.
+Since susceptibilities are returned as a list according to pre-selected symmetry inequivalent pairs, the library [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl)) has to be used for evaluation. To compute Fourier transforms (and other things), it is helpful to use the package [`PMFRGEvaluation`](`https://github.com/NilsNiggemann/PMFRGEvaluation.jl`). As an example, the following code plots the magnetic susceptibility for the data generated above.
 ```
 using HDF5, PMFRGEvaluation
 using CairoMakie #for plotting. You can use whatever plotting package you like of course
@@ -137,9 +130,19 @@ heatmap(k,k,chik)
 
 ```
 ## More Examples
-A more thorough set of examples is found in the Examples folder of this repository. For code reuse, the dependencies of [`PMFRGEvaluation`](`git@gitlabph.physik.fu-berlin.de:julia-frg/(https://gitlabph.physik.fu-berlin.de/julia-frg/)PMFRGEvaluation.git`) are split into several subdependencies. To try out the examples, activate the project environment with `]activate Example` and download all dependencies with `]instantiate`.
+A more thorough set of examples is found in the `Examples` folder of this repository. For code reuse, the dependencies of [`PMFRGEvaluation`](`https://github.com/NilsNiggemann/PMFRGEvaluation.jl`) are split into several subdependencies. To try out the examples, activate the project environment with `]activate Example` and download all dependencies with `]instantiate`.
 
-I recommend setting up a new evaluation environment for each project. If you use the same for everything, you might not be able to reproduce plots you made a while ago, because the plotting package or the evaluation package may have changed.
+It is a good practice to set up a new evaluation environment for each project. If you use the same environment for everything, you might not be able to reproduce plots you made a while ago, because the plotting package or the evaluation package may have changed.
 
 ## Implementing your own lattices
-Of course you will eventually have to implement lattices which are not included already, change the couplings, or even remove symmetries. As long as you feed a valid geometry struct from [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl) to the FRG code (which is quite minimalistic), it should not be necessary to make direct changes to the library. [`SpinFRGLattices.jl`](https://gitlabph.physik.fu-berlin.de/julia-frg/SpinFRGLattices.jl)) contains mostly helper functions to make your life easier. Documentation of how to use it to implement new lattices is found soon in the repository.
+Of course you will eventually have to implement lattices which are not included already, change the couplings, or even remove symmetries. As long as you feed a valid geometry struct from [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl) to the FRG code (which is quite minimalistic), it should not be necessary to make direct changes to the library. [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl)) contains mostly helper functions to make your life easier. Documentation of how to use it to implement new lattices is found soon in the repository.
+## See also
+
+- Lattice implementations: [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl)
+- Evaluation: [`PMFRGEvaluation.jl`](https://github.com/NilsNiggemann/PMFRGEvaluation.jl)
+- visualization of lattices: [`FRGLatticePlotting.jl`](https://github.com/NilsNiggemann/FRGLatticePlotting.jl)
+### PMFRG methodological publications
+- https://journals.aps.org/prb/abstract/10.1103/PhysRevB.103.104431
+- https://scipost.org/SciPostPhys.12.5.156
+### Other packages of interest
+- For zero temperature calculations: [`PFFRGSolver.jl`](https://github.com/dominikkiese/PFFRGSolver.jl)

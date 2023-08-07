@@ -175,22 +175,29 @@ end
 
 versionString(versNum) = "(v_$versNum)"
 
-function UniqueFileName(Path,versNum = getVersionNumber(Path))
-    ispath(Path) || return Path
+function UniqueFileName(Path)
     ending = "."*file_extension(Path)
-    if versNum == 0
-        replace(Path,ending  => versionString(versNum+1)*ending)
+    while ispath(Path)
+        versNum = getVersionNumber(Path)
+        if versNum == 0
+            Path = replace(Path,ending  => versionString(versNum+1)*ending)
+        end
+        Path = replace(Path,versionString(versNum)  => versionString(versNum+1))
     end
-    replace(Path,versionString(versNum)  => versionString(versNum+1))
+    return Path
 end
 
-function UniqueDirName(Path,versNum = getVersionNumber(Path))
-    ispath(Path) || return Path
-    if versNum == 0
-        return Path * versionString(versNum+1)
+function UniqueDirName(Path)
+    while ispath(Path)
+        versNum = getVersionNumber(Path)
+        if versNum == 0
+            Path = Path * versionString(versNum+1)
+        end
+        Path = replace(Path, versionString(versNum)  => versionString(versNum+1))
     end
-    return replace(Path, versionString(versNum)  => versionString(versNum+1))
+    return Path
 end
+
 
 function generateName_verbose(Directory::String,Par::PMFRGParams)
     (;T,N) = Par.NumericalParams
@@ -203,11 +210,12 @@ end
 generateUniqueName(Directory::String,Par::PMFRGParams) = UniqueDirName(generateName_verbose(Directory,Par))
 
 
-function _generateFileName(Par::PMFRGParams,arg::String = "";kwargs...)
+function _generateFileName(Par::PMFRGParams,arg::String = "",savekeywords = false;kwargs...)
     Name = Par.System.Name
     N = Par.NumericalParams.N
 
     FName = "PMFRG_$(Name)_N=$(N)$arg"*join("_$(k)=$(strd(v))" for (k,v) in kwargs)*".h5"
+    FName = UniqueFileName(FName)
     return FName
 end
 generateFileName(Par::PMFRGParams,arg::String = "";kwargs...) = _generateFileName(Par,arg;kwargs...)

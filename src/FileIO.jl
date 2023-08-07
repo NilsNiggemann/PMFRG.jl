@@ -5,14 +5,14 @@ Stored data can be used to re-launch an incomplete FRG calculation.
 joinGroup(args...) = join(args, "/")
 
 """Saves Vertices to a compressed HDF5 file in a Group "Lam"."""
-function saveState(Filename::String, State::ArrayPartition, Lam, mode = "cw")
+function saveState(Filename::String, State::ArrayPartition, Lam, mode="cw")
     Vertices = State.x
     Names = "fint", "gamma", "Va", "Vb", "Vc"
     # Filename = string(DirName,"/$(string(round(Lam,digits =3))).h5")
     try
         h5open(Filename, mode) do f
             for (Name, V) in zip(Names, Vertices)
-                f["$Name", blosc = 9] = V
+                f["$Name", blosc=9] = V
             end
         end
         h5write(Filename, "Lam", Lam)
@@ -33,7 +33,7 @@ function readLam(Filename::String)
     return Lam
 end
 
-function readObservables(Filename::String, ObsType = Observables)
+function readObservables(Filename::String, ObsType=Observables)
     t = h5read(Filename, "Observables/Lambda")
     Fields = fieldnames(ObsType)
     obsTuple = Tuple(h5read(Filename, "Observables/$f") for f in Fields)
@@ -50,7 +50,7 @@ function readObservables(Filename::String, ObsType = Observables)
     return saved_values
 end
 
-function readGeometry(Filename::String, GeometryGenerator::Function; Group = "Geometry")
+function readGeometry(Filename::String, GeometryGenerator::Function; Group="Geometry")
     NLen = h5read(Filename, "$Group/NLen")
     couplings = h5read(Filename, "$Group/couplings")
     Npairs = h5read(Filename, "$Group/Npairs")
@@ -66,7 +66,7 @@ EssentialParamFields() =
     (:T, :N, :Ngamma, :accuracy, :Lam_min, :Lam_max, :ex_freq, :lenIntw, :lenIntw_acc)
 
 """Saves important information about computation parameters so that they can be reconstructed"""
-function saveNumericalParams(Filename, Par::PMFRGParams, Group = "")
+function saveNumericalParams(Filename, Par::PMFRGParams, Group="")
     Fields = EssentialParamFields()
     for F in Fields
         h5write(Filename, joinGroup(Group, "Params/$F"), getfield(Par.NumericalParams, F))
@@ -74,22 +74,22 @@ function saveNumericalParams(Filename, Par::PMFRGParams, Group = "")
 end
 
 """Saves important information about Geometry parameters so that they can be reconstructed"""
-function saveGeometryParams(Filename, Par::PMFRGParams, Group = "")
+function saveGeometryParams(Filename, Par::PMFRGParams, Group="")
     h5write(Filename, joinGroup(Group, "Geometry/Name"), Par.System.Name)
     h5write(Filename, joinGroup(Group, "Geometry/NLen"), Par.System.NLen)
     h5write(Filename, joinGroup(Group, "Geometry/couplings"), Par.System.couplings)
     h5write(Filename, joinGroup(Group, "Geometry/Npairs"), Par.System.Npairs)
 end
 
-function saveMethodParams(Filename, Par::PMFRGParams, Group = "")
+function saveMethodParams(Filename, Par::PMFRGParams, Group="")
     h5write(Filename, joinGroup(Group, "Params/looporder"), getLoopOrder(Par))
 end
-readLoopOrder(Filename, Group = "") = h5read(Filename, string(Group, "/Params/looporder"))
+readLoopOrder(Filename, Group="") = h5read(Filename, string(Group, "/Params/looporder"))
 
 
 """Saves important information about parameters so that they can be reconstructed
 """
-function saveParams(Filename, Par::PMFRGParams, Group = "")
+function saveParams(Filename, Par::PMFRGParams, Group="")
     saveNumericalParams(Filename, Par, Group)
     saveGeometryParams(Filename, Par, Group)
     saveMethodParams(Filename, Par, Group)
@@ -113,7 +113,7 @@ function modifyParams(Par; modifyParams...)
     Par = Params(Par.System, getPMFRGMethod(Par); NumParKwargs..., modifyParams...)
 end
 
-function setupDirectory(DirPath, Par; overwrite = false)
+function setupDirectory(DirPath, Par; overwrite=false)
     DirPath = generateName_verbose(DirPath, Par)
     overwrite || (DirPath = UniqueDirName(DirPath))
     println("Checkpoints saved at $DirPath")
@@ -179,21 +179,27 @@ end
 
 versionString(versNum) = "(v_$versNum)"
 
-function UniqueFileName(Path, versNum = getVersionNumber(Path))
-    ispath(Path) || return Path
+function UniqueFileName(Path)
     ending = "." * file_extension(Path)
-    if versNum == 0
-        replace(Path, ending => versionString(versNum + 1) * ending)
+    while ispath(Path)
+        versNum = getVersionNumber(Path)
+        if versNum == 0
+            Path = replace(Path, ending => versionString(versNum + 1) * ending)
+        end
+        Path = replace(Path, versionString(versNum) => versionString(versNum + 1))
     end
-    replace(Path, versionString(versNum) => versionString(versNum + 1))
+    return Path
 end
 
-function UniqueDirName(Path, versNum = getVersionNumber(Path))
-    ispath(Path) || return Path
-    if versNum == 0
-        return Path * versionString(versNum + 1)
+function UniqueDirName(Path)
+    while ispath(Path)
+        versNum = getVersionNumber(Path)
+        if versNum == 0
+            Path = Path * versionString(versNum + 1)
+        end
+        Path = replace(Path, versionString(versNum) => versionString(versNum + 1))
     end
-    return replace(Path, versionString(versNum) => versionString(versNum + 1))
+    return Path
 end
 
 function generateName_verbose(Directory::String, Par::PMFRGParams)
@@ -208,17 +214,22 @@ generateUniqueName(Directory::String, Par::PMFRGParams) =
     UniqueDirName(generateName_verbose(Directory, Par))
 
 
-function _generateFileName(Par::PMFRGParams, arg::String = ""; kwargs...)
+function _generateFileName(Par::PMFRGParams, arg::String=""; savekeywords=false, unique=true, kwargs...)
     Name = Par.System.Name
     N = Par.NumericalParams.N
 
-    FName =
-        "PMFRG_$(Name)_N=$(N)$arg" * join("_$(k)=$(strd(v))" for (k, v) in kwargs) * ".h5"
+    FName = "PMFRG_$(Name)_N=$(N)$arg" * join("_$(k)=$(strd(v))" for (k, v) in kwargs) * ".h5"
+    unique && FName = UniqueFileName(FName)
+    if savekeywords
+        for (k, v) in kwargs
+            h5write(FName, string(k), v)
+        end
+    end
     return FName
 end
-generateFileName(Par::PMFRGParams, arg::String = ""; kwargs...) =
+generateFileName(Par::PMFRGParams, arg::String=""; kwargs...) =
     _generateFileName(Par, arg; kwargs...)
-generateFileName(Par::OneLoopParams, arg::String = ""; kwargs...) =
+generateFileName(Par::OneLoopParams, arg::String=""; kwargs...) =
     _generateFileName(Par, "_l1" * arg; kwargs...)
 
 function ParamsCompatible(Par1, Par2)
@@ -232,22 +243,22 @@ end
 
 function getFileParams(Filename, Geometry, Par::PMFRGParams)
     Lam = readLam(Filename)
-    Par_file = readParams(Filename, Geometry; Lam_max = Lam)
-    Par = modifyParams(Par; Lam_max = Lam)
+    Par_file = readParams(Filename, Geometry; Lam_max=Lam)
+    Par = modifyParams(Par; Lam_max=Lam)
     ParamsCompatible(Par, Par_file)
     return Par
 end
 
 function getFileParams(Filename, Geometry, Par::Nothing; kwargs...)
     Lam = readLam(Filename)
-    return readParams(Filename, Geometry; Lam_max = Lam, kwargs...)
+    return readParams(Filename, Geometry; Lam_max=Lam, kwargs...)
 end
 # Todo: provide SpinFRGLattices.getGeometryGenerator that takes Name string and returns correct method
 SolveFRG_Checkpoint(
     Filename::String,
     Geometry::SpinFRGLattices.Geometry,
-    Par = nothing;
-    kwargs...,
+    Par=nothing;
+    kwargs...
 ) = launchPMFRG_Checkpoint(Filename, Geometry, AllocateSetup, getDeriv!, Par; kwargs...)
 
 
@@ -256,12 +267,12 @@ function launchPMFRG_Checkpoint(
     Geometry::SpinFRGLattices.Geometry,
     AllocatorFunction::Function,
     Derivative::Function,
-    Par = nothing;
-    MainFile = nothing,
-    Group = nothing,
-    Params = (),
-    ObservableType = Observables,
-    kwargs...,
+    Par=nothing;
+    MainFile=nothing,
+    Group=nothing,
+    Params=(),
+    ObservableType=Observables,
+    kwargs...
 )
     State = readState(Filename)
     Old_Lam_max = h5read(Filename, "Params/Lam_max")
@@ -276,10 +287,10 @@ function launchPMFRG_Checkpoint(
         State,
         setup,
         Derivative;
-        CheckpointDirectory = FilePath,
-        ObsSaveat = ObsSaveat,
+        CheckpointDirectory=FilePath,
+        ObsSaveat=ObsSaveat,
         kwargs...,
-        MainFile = nothing,
+        MainFile=nothing
     ) #launch PMFRG but do not save output yet
     append!(saved_values_full.t, saved_values.t)
     append!(saved_values_full.saveval, saved_values.saveval)
@@ -292,15 +303,15 @@ end
 SolveFRG_Checkpoint(
     Filename::String,
     GeometryGenerator::Function,
-    Par = nothing;
-    kwargs...,
+    Par=nothing;
+    kwargs...
 ) = SolveFRG_Checkpoint(Filename, readGeometry(Filename, GeometryGenerator), Par; kwargs...)
 
 """Saves Observables"""
 function saveObs(
     Filename::String,
     saved_values::DiffEqCallbacks.SavedValues,
-    Group::String = "",
+    Group::String="",
 )
     ObsArr = StructArray(saved_values.saveval)
     saveObs(Filename, ObsArr, Group)
@@ -319,7 +330,7 @@ end
 function convertToArray(
     VecOfArray::AbstractVector{VT},
 ) where {N,VT<:AbstractArray{T,N} where {T}}
-    cat(VecOfArray..., dims = N + 1)
+    cat(VecOfArray..., dims=N + 1)
 end
 
 function saveMainOutput(Filename::String, saved_values, Group::String)

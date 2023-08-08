@@ -44,7 +44,7 @@ function AllocateSetup(Par::OneLoopParams)
     ])
 
     Buffs = BufferType(PropsBuffers, VertexBuffers)
-    return (X, Buffs, Par)
+    return (;X, Buffs, Par)
 end
 
 """Converts t step used for integrator to Λ. Inverse of T_to_t."""
@@ -93,6 +93,7 @@ function launchPMFRG!(
     overwrite_Checkpoints = false::Bool,
     CheckPointSteps = 1,
     ObservableType = ObservablesChi,
+    Lam = 0.,
     kwargs...,
 )
 
@@ -103,7 +104,7 @@ function launchPMFRG!(
     )
 
     (; T_max, T_min, accuracy) = Par.NumericalParams
-    save_func(State, t, integrator) = getObservables(ObservableType, State, t_to_T(t), Par)
+    save_func(State, t, integrator) = getObservables(ObservableType, State, t_to_T(t), Par, Lam)
 
     saved_values = SavedValues(eltype(State), ObservableType)
     i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
@@ -154,7 +155,7 @@ function launchPMFRG!(
     t0 = T_to_t(T_max)
     tend = get_t_min(T_min)
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
-    problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
+    problem = ODEProblem(Deriv_subst!, State, (t0, tend), (;setup...,Lam))
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     @time sol = solve(
         problem,

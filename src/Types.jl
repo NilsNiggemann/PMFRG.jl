@@ -201,9 +201,9 @@ struct Observables{T}
     MaxVc::Vector{T}
 end
 
-function getObservables(::Type{Observables}, State::ArrayPartition, T, Par)
+function getObservables(::Type{Observables}, State::ArrayPartition, T, Par, Lam)
     f_int, gamma, Va, Vb, Vc = State.x
-    chi = getChi(State, T, Par)
+    chi = getChi(State, T, Par, Lam)
     MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
@@ -219,9 +219,9 @@ struct ObservablesChi{T}
     MaxVc::Vector{T}
 end
 
-function getObservables(::Type{ObservablesChi}, State::ArrayPartition, T, Par)
+function getObservables(::Type{ObservablesChi}, State::ArrayPartition, T, Par, Lam)
     f_int, gamma, Va, Vb, Vc = State.x
-    chinu = getChi(State, T, Par, Par.NumericalParams.N)
+    chinu = getChi(State, T, Par, Par.NumericalParams.N, Lam)
     chi = chinu[:, 1]
     MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]

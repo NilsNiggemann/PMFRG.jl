@@ -1,11 +1,11 @@
-function getDeriv!(Deriv, State, setup::Tuple{BubbleType,Ty,OneLoopParams}, T) where {Ty}
-    (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+function getDeriv!(Deriv, State, setup::NamedTuple, T)
+    (; X, Buffs, Par, Lam) = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
-    getDFint!(Workspace, T)
-    get_Self_Energy!(Workspace, T)
+    getDFint!(Workspace, T, Lam)
+    get_Self_Energy!(Workspace, T, Lam)
 
-    getXBubble!(Workspace, T)
+    getXBubble!(Workspace, T, Lam)
 
     symmetrizeBubble!(Workspace.X, Par)
 
@@ -16,19 +16,19 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,Ty,OneLoopParams}, T) w
 end
 
 
-function getDFint!(Workspace::PMFRGWorkspace, T::Real)
+function getDFint!(Workspace::PMFRGWorkspace, T::Real, Lam)
     (; State, Deriv, Par) = Workspace
     (; lenIntw_acc) = Par.NumericalParams
     NUnique = Par.System.NUnique
 
     @inline γ(x, nw) = gamma_(State.γ, x, nw)
-    @inline iG(x, nw) = iG_(State.γ, x, T, nw)
-    @inline iS(x, nw) = iS_(State.γ, x, T, nw)
+    @inline iG(x, nw) = iG_(State.γ, x, T, nw, Lam)
+    @inline iS(x, nw) = iS_(State.γ, x, T, nw, Lam)
 
     for x = 1:NUnique
         sumres = 0.0
         for nw = -lenIntw_acc:lenIntw_acc-1
-            sumres += iS(x, nw) / iG(x, nw) * iG0(nw, T) * γ(x, nw)
+            sumres += iS(x, nw) / iG(x, nw) * iG0(nw, T, Lam) * γ(x, nw)
         end
         Deriv.f_int[x] = -3 / 2 * sumres
     end
@@ -90,19 +90,19 @@ function compute1PartBubble!(Dgamma::AbstractArray, ΓorX, Prop, Par)
     setZero!(Dgamma)
     addTo1PartBubble!(Dgamma, ΓorX, Prop, Par)
 end
-function get_Self_Energy!(Workspace::PMFRGWorkspace, T)
+function get_Self_Energy!(Workspace::PMFRGWorkspace, T, Lam)
     Par = Workspace.Par
-    @inline iS(x, nw) = iS_(Workspace.State.γ, x, T, nw) / 2
+    @inline iS(x, nw) = iS_(Workspace.State.γ, x, T, nw, Lam) / 2
     compute1PartBubble!(Workspace.Deriv.γ, Workspace.State.Γ, iS, Par)
 end
 
-function getXBubble!(Workspace::PMFRGWorkspace, T)
+function getXBubble!(Workspace::PMFRGWorkspace, T, Lam)
     Par = Workspace.Par
     (; N, lenIntw, np_vec) = Par.NumericalParams
     PropsBuffers = Workspace.Buffer.Props
     VertexBuffers = Workspace.Buffer.Vertex
-    iG(x, nw) = iG_(Workspace.State.γ, x, T, nw)
-    iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, T, nw)
+    iG(x, nw) = iG_(Workspace.State.γ, x, T, nw, Lam)
+    iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, T, nw, Lam)
 
     function getKataninProp!(BubbleProp, nw1, nw2)
         for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
@@ -470,16 +470,16 @@ function symmetrizeVertex!(Γ::VertexType, Par)
 end
 
 ##
-getChi(State::ArrayPartition, T::Real, Par::PMFRGParams, Numax) =
-    getChi(State.x[2], State.x[5], T, Par, Numax)
-getChi(State::ArrayPartition, T::Real, Par::PMFRGParams) =
-    getChi(State.x[2], State.x[5], T, Par)
+getChi(State::ArrayPartition, T::Real, Par::PMFRGParams, Numax, Lam) =
+    getChi(State.x[2], State.x[5], T, Par, Numax, Lam)
+getChi(State::ArrayPartition, T::Real, Par::PMFRGParams, Lam) =
+    getChi(State.x[2], State.x[5], T, Par, Lam)
 
-function getChi(gamma::AbstractArray, Γc::AbstractArray, T::Real, Par::PMFRGParams, Numax)
+function getChi(gamma::AbstractArray, Γc::AbstractArray, T::Real, Par::PMFRGParams, Numax, Lam)
     (; N, lenIntw_acc, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
-    @inline iG(x, w) = iG_(gamma, x, T, w)
+    @inline iG(x, w) = iG_(gamma, x, T, w, Lam)
     @inline Vc_(Rij, s, t, u) = V_(Γc, Rij, s, t, u, invpairs[Rij], N)
 
     Chi = zeros(_getFloatType(Par), Npairs, N)
@@ -506,11 +506,11 @@ function getChi(gamma::AbstractArray, Γc::AbstractArray, T::Real, Par::PMFRGPar
     return (Chi)
 end
 
-function getChi(gamma::AbstractArray, Γc::AbstractArray, T::Real, Par::PMFRGParams)
+function getChi(gamma::AbstractArray, Γc::AbstractArray, T::Real, Par::PMFRGParams, Lam)
     (; N, lenIntw_acc) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
-    @inline iG(x, w) = iG_(gamma, x, T, w)
+    @inline iG(x, w) = iG_(gamma, x, T, w, Lam)
     @inline Vc_(Rij, s, t, u) = V_(Γc, Rij, s, t, u, invpairs[Rij], N)
 
     Chi = zeros(_getFloatType(Par), Npairs)

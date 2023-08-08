@@ -414,7 +414,7 @@ function saveMainOutput(
     try
         save(Filename)
     catch e
-        newName = UniqueDirName(Filename)
+        newName = UniqueFileName(Filename)
         @warn "Writing to $Filename errored with exception $(string(e))! Writing to $newName instead."
         save(newName)
     end

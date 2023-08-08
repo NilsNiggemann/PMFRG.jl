@@ -1,0 +1,3 @@
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+PMFRG = "37d616f8-0bcb-4e18-9a76-f5d18f52650d"

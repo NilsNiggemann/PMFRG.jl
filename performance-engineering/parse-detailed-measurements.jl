@@ -8,6 +8,11 @@ function parse_file(filename)
     open(filename) do file
         lines = readlines(file)
 
+        total_time = [ l for l in lines if contains(l,"seconds") ][end-1] |>
+                     split |>
+                     first |>
+                     x -> parse(Float32,x)
+
         detailed_measurement_lines = [l for l in lines if contains(l, "tag:64")]
 
         timed_func_names = Set([split(l)[1] for l in detailed_measurement_lines])
@@ -19,11 +24,20 @@ function parse_file(filename)
                              if split(l)[1] == func_name])
             for func_name in timed_func_names]
 
+
         measurement_stats = [
             (funcname = row.func_name,
              mean = mean(row.measurements),
              std = std(row.measurements))
             for row in measurements]
+
+        push!(measurement_stats,
+              (funcname = "Total Time",
+               mean = total_time,
+               std = 0))
+
+        push!(timed_func_names,
+              "Total Time")
 
         return (stats = measurement_stats,
                 func_names = timed_func_names)
@@ -55,9 +69,8 @@ function make_dfs(filenames)
 	df = DataFrame(rows)
 
 	dfs = [ (funcname = funcname,
-             df = select(filter(row -> row["FuncName"] == funcname,
-                                df),
-                         "Nthreads", "Mean", "Std"))
+             df = filter(row -> row["FuncName"] == funcname, df) |>
+                  x -> select(x, "Nthreads", "Mean", "Std"))
             for funcname in fnames ]
 end
 
@@ -77,7 +90,8 @@ function plot_dfs(dfs, savename)
 	    display(p)
  	end
 	p = plot!(yaxis = :log10, xaxis=:log10, minorticks = true, minorgrid= true)
-	ylims!(1.0e-4,10) # Adjust
+	ylims!(1.0e-4,1.0e4) # Adjust
+    println("Saving $savename")
     savefig(savename)
     return p
 end
@@ -89,5 +103,6 @@ the data files
 function main(directory)
     filenames = [ joinpath(directory,f) for f in readdir(directory) ]
     dfs = make_dfs(filenames)
-    plot_dfs(dfs,"scaling-by-function.png")
+    plot_dfs(dfs,"scaling-by-function.pdf")
+
 end

@@ -1,17 +1,27 @@
 function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) where {T}
+
+    println("Calling getDeriv!")
+    println("Size of Deriv: $(Base.summarysize(Deriv))")
+    println("Size of State: $(Base.summarysize(State))")
+    println("Size of X: $(Base.summarysize(setup[1]))")
+    println("==============================================================")
+   
     (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
-    getDFint!(Workspace, Lam)
-    get_Self_Energy!(Workspace, Lam)
+    Npairs = Par.System.Npairs
+    tag = "tag:$Npairs"
 
-    getXBubble!(Workspace, Lam)
+    @time "getDFint! $tag" getDFint!(Workspace, Lam)
+    @time "get_Self_Energy! $tag" get_Self_Energy!(Workspace, Lam)
 
-    symmetrizeBubble!(Workspace.X, Par)
+    @time "getXBubble! $tag" getXBubble!(Workspace, Lam)
 
-    addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
-    symmetrizeVertex!(Workspace.Deriv.Γ, Par)
-    # flush(stdout)
+    @time "symmetrizeBubble! $tag" symmetrizeBubble!(Workspace.X, Par)
+
+    @time "addToVertexFromBubble! $tag" addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
+    @time "symmetrizeVertex! $tag" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
+    flush(stdout)
     return
 end
 

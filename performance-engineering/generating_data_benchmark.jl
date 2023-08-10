@@ -7,7 +7,7 @@ using SpinFRGLattices.SquareLattice
 # For NLen = 5, all correlations C_{ij} are zero 
 #if sites i and j are separated by more than 5 nearest neighbor bonds.
 NLenToy = 5 
-NLen = 20
+NLen = 14 
 J1 = 1
 J2 = 0.1
 # Construct a vector of couplings: 
@@ -59,7 +59,7 @@ Par = Params( #create a group of all parameters to pass them to the FRG Solver
     System, # geometry, this is always required
     OneLoop(), # method. OneLoop() is the default
     T=0.5, # Temperature for the simulation.
-    N=50, # Number of positive Matsubara frequencies for the four-point vertex.
+    N=25, # Number of positive Matsubara frequencies for the four-point vertex.
     accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
     # For further optional arguments, see documentation of 'NumericalParams'
     MinimalOutput=true,

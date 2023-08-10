@@ -156,6 +156,7 @@ function launchPMFRG!(
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
     problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
+    println("Starting solve")
     @time sol = solve(
         problem,
         method,

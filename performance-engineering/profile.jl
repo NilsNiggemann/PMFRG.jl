@@ -6,7 +6,6 @@ using SpinFRGLattices, PMFRG
 using SpinFRGLattices.SquareLattice
 
 using Profile
-using PProf
 
 print("All modules loaded")
 # Number of nearest neighbor bonds
@@ -15,7 +14,8 @@ print("All modules loaded")
 # if sites i and j are separated by more
 # than 5 nearest neighbor bonds.
 
-NLen = 5
+NLenToy = 5
+NLen = 14
 
 # Construct a vector of couplings: nearest neighbor coupling
 # is J1 (J2) and further couplings to zero.
@@ -26,23 +26,26 @@ J2 = 0.5
 couplings = [J1, J2]
 
 # create a structure that contains all information about the geometry of the problem.
+SystemToy = getSquareLattice(NLenToy, couplings)
 System = getSquareLattice(NLen, couplings)
 
 #create a group of all parameters to pass them to the FRG Solver
 # For further optional arguments, see documentation of 'NumericalParams'
 ParSmall = Params(
-    System,        # geometry, this is always required
+    SystemToy,        # geometry, this is always required
     OneLoop(),     # method. OneLoop() is the default
     T=0.5,         # Temperature for the simulation.
     N=10,          # Number of positive Matsubara frequencies for the four-point vertex.
     accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
+    MinimalOutput=true,
 )
-ParNormal = Params(
+Par = Params(
     System,        # geometry, this is always required
     OneLoop(),     # method. OneLoop() is the default
     T=0.5,         # Temperature for the simulation.
-    N=50,          # Number of positive Matsubara frequencies for the four-point vertex.
+    N=25,          # Number of positive Matsubara frequencies for the four-point vertex.
     accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
+    MinimalOutput=true,
 )
 
 
@@ -66,8 +69,8 @@ function profile_solvefrg()
 
     rm("profile-playground/", recursive=true)
 
-    mainFile = "profile-playground/" * PMFRG.generateFileName(ParNormal, "_testFile")
-    @profile Solution, saved_values = SolveFRG(ParNormal,
+    mainFile = "profile-playground/" * PMFRG.generateFileName(Par, "_testFile")
+    @profile Solution, saved_values = SolveFRG(Par,
         MainFile=mainFile,
         CheckpointDirectory=flowpath,
         method=DP5(),
@@ -77,7 +80,9 @@ function profile_solvefrg()
 end
 
 
-function profile_and_show()
+function profile_and_save()
     profile_solvefrg()
-    pprof()
+    open("profile-threads=$(Threads.nthreads())","w") do s
+        Profile.print(IOContext(s, :displaysize => (24,500)))
+    end
 end

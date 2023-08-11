@@ -5,12 +5,13 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) 
     println("Size of State: $(Base.summarysize(State))")
     println("Size of X: $(Base.summarysize(setup[1]))")
     println("==============================================================")
-   
-    (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
-    Npairs = Par.System.Npairs
+    Npairs = setup[3].System.Npairs
     tag = "tag:$Npairs"
+
+  
+    @time "setup $tag" (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    @time "workspace $tag" Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
     @time "getDFint! $tag" getDFint!(Workspace, Lam)
     @time "get_Self_Energy! $tag" get_Self_Energy!(Workspace, Lam)

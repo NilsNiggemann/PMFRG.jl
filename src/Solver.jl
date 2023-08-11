@@ -96,6 +96,9 @@ function launchPMFRG!(
 )
 
     Par = setup[end]
+    Npairs = Par.System.Npairs
+    tag = "tag:$Npairs"
+
     typeof(CheckpointDirectory) == String && (
         CheckpointDirectory =
             setupDirectory(CheckpointDirectory, Par, overwrite = overwrite_Checkpoints)
@@ -103,7 +106,7 @@ function launchPMFRG!(
 
     (; Lam_max, Lam_min, accuracy) = Par.NumericalParams
     save_func(State, t, integrator) =
-        getObservables(ObservableType, State, t_to_Lam(t), Par)
+        @time "save_func $tag" getObservables(ObservableType, State, t_to_Lam(t), Par)
 
     saved_values = SavedValues(eltype(State), ObservableType)
     i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
@@ -149,7 +152,7 @@ function launchPMFRG!(
         tdir = -1,
     )
     outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
-    unstable_check(dt, u, p, t) = maximum(abs, u) > MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
+    unstable_check(dt, u, p, t) = @time "unstable_check $tag" maximum(abs, u) > MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
 
     t0 = Lam_to_t(Lam_max)
     tend = get_t_min(Lam_min)

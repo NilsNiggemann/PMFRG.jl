@@ -27,12 +27,14 @@ function parse_file(filename)
 
         measurement_stats = [
             (funcname = row.func_name,
+             total = sum(row.measurements),
              mean = mean(row.measurements),
              std = std(row.measurements))
             for row in measurements]
 
         push!(measurement_stats,
               (funcname = "Total Time",
+               total = total_time,
                mean = total_time,
                std = 0))
 
@@ -55,6 +57,7 @@ function parse_list(filenames)
              rows =
              [(Nthreads = get_nthreads(parse.fname),
                FuncName = row.funcname,
+               Total = row.total,
                Mean = row.mean,
                Std = row.std)
                for parse in all_parses
@@ -62,7 +65,7 @@ function parse_list(filenames)
 end
 
 
-function make_dfs(filenames)
+function make_dfs_err(filenames)
 
     (;fnames, rows) = parse_list(filenames)
 
@@ -74,25 +77,40 @@ function make_dfs(filenames)
             for funcname in fnames ]
 end
 
+function make_dfs(filenames)
+
+    (;fnames, rows) = parse_list(filenames)
+
+	df = DataFrame(rows)
+
+	dfs = [ (funcname = funcname,
+             df = filter(row -> row["FuncName"] == funcname, df) |>
+                  x -> select(x, "Nthreads", "Total"))
+            for funcname in fnames ]
+end
+
+
 function plot_dfs(dfs, savename)
 
     plot()
 
 	for d in dfs
 	    p = scatter!(d.df.Nthreads,
-                     d.df.Mean,
-                     yerror = d.df.Std,
+                     d.df.Total,
+                     #yerror = d.df.Std,
                      label = d.funcname)
 	    display(p)
-        value_at_1 = filter(row -> row.Nthreads == 1, d.df).Mean[1]
+        value_at_1 = filter(row -> row.Nthreads == 1, d.df).Total[1]
         color = p.subplots[1].series_list[end].plotattributes[:linecolor]
         p = plot!( 1:152 #= Adjust =#, x -> value_at_1 / x, label = nothing, linecolor = color )
 	    display(p)
  	end
 	p = plot!(yaxis = :log10, xaxis=:log10, minorticks = true, minorgrid= true)
 	ylims!(1.0e-4,1.0e4) # Adjust
+    title!("Total time by function (N=25,Nlen=14)")
     println("Saving $savename")
     savefig(savename)
+
     return p
 end
 

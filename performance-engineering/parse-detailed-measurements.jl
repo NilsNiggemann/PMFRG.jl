@@ -28,6 +28,7 @@ function parse_file(filename)
         measurement_stats = [
             (funcname = row.func_name,
              total = sum(row.measurements),
+             total_std = std(row.measurements)/mean(row.measurements)*sum(row.measurements),
              mean = mean(row.measurements),
              std = std(row.measurements))
             for row in measurements]
@@ -35,6 +36,7 @@ function parse_file(filename)
         push!(measurement_stats,
               (funcname = "Total Time",
                total = total_time,
+               total_std = 0,
                mean = total_time,
                std = 0))
 
@@ -58,6 +60,7 @@ function parse_list(filenames)
              [(Nthreads = get_nthreads(parse.fname),
                FuncName = row.funcname,
                Total = row.total,
+               TotalStd = row.total_std,
                Mean = row.mean,
                Std = row.std)
                for parse in all_parses
@@ -65,7 +68,7 @@ function parse_list(filenames)
 end
 
 
-function make_dfs_err(filenames)
+function make_dfs_mean(filenames)
 
     (;fnames, rows) = parse_list(filenames)
 
@@ -85,7 +88,7 @@ function make_dfs(filenames)
 
 	dfs = [ (funcname = funcname,
              df = filter(row -> row["FuncName"] == funcname, df) |>
-                  x -> select(x, "Nthreads", "Total"))
+                  x -> select(x, "Nthreads", "Total", "TotalStd"))
             for funcname in fnames ]
 end
 
@@ -97,7 +100,7 @@ function plot_dfs(dfs, savename)
 	for d in dfs
 	    p = scatter!(d.df.Nthreads,
                      d.df.Total,
-                     #yerror = d.df.Std,
+                     yerror = d.df.TotalStd,
                      label = d.funcname)
 	    display(p)
         value_at_1 = filter(row -> row.Nthreads == 1, d.df).Total[1]

@@ -18,10 +18,10 @@ exit
 import Pkg
 ROOT = "/home/hk-project-scs/hs2454/PMFRG/"
 Pkg.activate(ROOT * "TestProject" )
-usin ThreadPinning
+using ThreadPinning
 println("Before Thread pinning:")
 threadinfo()
-pinthreads(:core)
+pinthreads(:cores)
 println("After Thread pinning:")
 threadinfo()
 

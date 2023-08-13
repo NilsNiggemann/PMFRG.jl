@@ -165,6 +165,27 @@ This model is too large for profiling:
 |      152 |    576.8 | 
 |       76 |    665.7 |
 
+#### Scaling with N (76 threads, NLen=14)
 
+Wondering 
+Take 1 (cpuonly partition)
 
+| N  | Time (s)| Retake 1 |
+|----|---------|----------|
+| 20 |    10.5 |     14.6 |
+| 21 |    12.4 |     15.9 | 
+| 22 |    14.7 |     20.8 |
+| 23 |    17.1 |     23.4 |
+| 24 |    20.0 |     27.5 |
+| 25 |    23.1 |     34.3 |
 
+Recompiling and relaunching (accelerated partition)
+
+| N  | Time (s)|
+|----|---------|
+| 20 |    14.8 |
+| 21 |    15.9 |
+| 22 |    20.7 |
+| 23 |    23.3 |
+| 24 |    27.2 |
+| 25 |    33.8 |

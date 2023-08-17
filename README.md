@@ -12,9 +12,10 @@ It is advised to create a reproducible environment for each project, see also ht
 (@v1.8) pkg> activate TestProject
 Activating new project at `~/TestProject`
 
+(TestProject) pkg> add https://github.com/NilsNiggemann/SpinFRGLattices.jl.git
 (TestProject) pkg> add https://github.com/NilsNiggemann/PMFRG.jl.git
 ```
- 
+Note that the dependency `SpinFRGLattices` needs to be added first for the package manager to resolve the correct version. 
 ## Usage
 After the package is installed to a local environment it can be loaded in a Julia session with  `using PMFRG`. The following contains a minimal working example:
 ```

@@ -7,8 +7,7 @@ using SpinFRGLattices,
     LoopVectorization,
     StructArrays,
     HDF5,
-    H5Zblosc,
-    FLoops
+    H5Zblosc
 
 using SpinFRGLattices.StaticArrays
 
@@ -39,7 +38,8 @@ export saveState,
     readGeometry,
     readObservables,
     getUnfinishedJobs,
-    generateFileName
+    generateFileName,
+    generateMainFile
 
 
 include("TwoLoop/TwoLoopPMFRG.jl")

@@ -18,6 +18,23 @@ exit
 import Pkg
 ROOT = "/home/hk-project-scs/hs2454/PMFRG/"
 Pkg.activate(ROOT * "TestProject" )
+# Printing all dependencies in job log.
+deps = Pkg.dependencies()
+for dep in deps
+    println(dep.first)
+    for field in fieldnames(typeof(dep.second))
+	values = getfield(dep.second,field)
+	print("    ",field)
+        if typeof(values) == Dict{String,Base.UUID}
+	    for k in values
+	        println(k)
+            end
+        else
+            print(values,"\n")		
+	end
+    end
+end
+
 using ThreadPinning
 println("Before Thread pinning:")
 threadinfo()

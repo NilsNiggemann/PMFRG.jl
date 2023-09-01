@@ -1,10 +1,34 @@
-#!/usr/bin/env julia
-# This example comes from README.md
+#!/bin/bash
+#=
+#SBATCH --partition cpuonly
+#SBATCH --time 30
+#SBATCH --exclusive
+#SBATCH --constraint=HWPERF
+#SBATCH --nodes 1
 
-using SpinFRGLattices, PMFRG
-using SpinFRGLattices.SquareLattice
+PERF_GROUP=$1
+
+set -o nounset
+module use "$HOME/modules"
+module load julia/1.9.2
+
+julia --optimize=3 \
+      --threads 76 \
+      ${BASH_SOURCE[0]} \
+      "$@"
+exit
+
+=#
+
+import Pkg
+ROOT = "/home/hk-project-scs/hs2454/PMFRG/"
+Pkg.activate(ROOT * "TestProject" )
 
 using LIKWID
+using SpinFRGLattices, PMFRG
+using SpinFRGLattices.SquareLattice
+using Serialization
+
 using ThreadPinning
 pinthreads(:cores)
 
@@ -51,6 +75,7 @@ Par = Params(
 
 
 function profile_likwid_solvefrg(group)
+    println("Profiling group $group")
 
     # specify a file name for main Output
     mainFile = "profile-playground/" * PMFRG.generateFileName(ParSmall, "_testFile")
@@ -79,7 +104,12 @@ function profile_likwid_solvefrg(group)
 
     return metrics, events
 
-
 end
+
+output = Dict( (group,profile_likwid_solvefrg(group)) for group in ARGS)
+outfile = "likwid-profile.jldata"
+println("Saving all metrics data in $outfile")
+Serialization.serialize(outfile, output)
+
 
 

@@ -37,10 +37,10 @@ end
 
 using ThreadPinning
 println("Before Thread pinning:")
-threadinfo()
+threadinfo(color=false)
 pinthreads(:cores)
 println("After Thread pinning:")
-threadinfo()
+threadinfo(color=false)
 
 workdir = "dir$(Threads.nthreads())"
 mkdir(workdir)

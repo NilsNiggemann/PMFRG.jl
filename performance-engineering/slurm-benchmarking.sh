@@ -14,7 +14,7 @@ julia --optimize=3 \
       --threads $SLURM_CPUS_PER_TASK \
       ${BASH_SOURCE[0]} &
 
-for _ in {1..10}
+while [ $(jobs | grep julia | wc -l) -eq 1 ] 
 do
 echo "frequencies:" >> freqmeas_$SLURM_JOB_ID
 likwid-setFrequencies -p >> freqmeas_$SLURM_JOB_ID

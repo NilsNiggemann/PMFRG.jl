@@ -8,9 +8,15 @@ set -o nounset
 module use "$HOME/modules"
 module load julia/1.9.3
 
+echo "frequencies at start:"
+grep "cpu MHz" /proc/cpuinfo
+
 julia --optimize=3 \
       --threads $SLURM_CPUS_PER_TASK \
       ${BASH_SOURCE[0]}
+
+echo "frequencies at end:"
+grep "cpu MHz" /proc/cpuinfo
 exit
 
 =#

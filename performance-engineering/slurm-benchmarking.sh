@@ -16,8 +16,10 @@ julia --optimize=3 \
 
 while [ $(jobs | grep julia | wc -l) -eq 1 ] 
 do
+jobs >> lol_$SLURM_JOB_ID
 echo "frequencies:" >> freqmeas_$SLURM_JOB_ID
-likwid-setFrequencies -p >> freqmeas_$SLURM_JOB_ID
+grep 'cpu MHz' /proc/cpuinfo >> freqmeas_$SLURM_JOB_ID
+likwid-setFrequencies -p >> likwid-freqmeas_$SLURM_JOB_ID
 sleep 5
 done
 

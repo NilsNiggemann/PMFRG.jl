@@ -6,7 +6,7 @@
 
 set -o nounset
 module use "$HOME/modules"
-module load julia/1.9.2
+module load julia/1.9.3
 
 julia --optimize=3 \
       --threads $SLURM_CPUS_PER_TASK \
@@ -46,3 +46,8 @@ workdir = "dir$(Threads.nthreads())"
 mkdir(workdir)
 cd(workdir)
 include(ROOT * "PMFRG.jl/performance-engineering/generating_data_benchmark.jl")
+
+println("Pinning after the run:")
+threadinfo(color=false)
+
+

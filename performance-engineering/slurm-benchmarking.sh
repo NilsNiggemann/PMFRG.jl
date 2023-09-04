@@ -3,6 +3,8 @@
 #SBATCH --partition cpuonly
 #SBATCH --time 25
 #SBATCH --nodes 1
+#SBATCH --constraint=HWPERF
+#SBATCH --exclusive
 
 set -o nounset
 module use "$HOME/modules"

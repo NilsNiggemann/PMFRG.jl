@@ -15,7 +15,7 @@ julia --optimize=3 \
 for _ in {1..10}
 do
 echo "frequencies:" >> freqmeas_$SLURM_JOB_ID
-grep "cpu MHz" /proc/cpuinfo >> freqmeas_$SLURM_JOB_ID
+likwid-setFrequencies -p >> freqmeas_$SLURM_JOB_ID
 sleep 5
 done
 

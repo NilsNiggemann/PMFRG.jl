@@ -10,9 +10,9 @@ PERF_GROUP=$1
 
 set -o nounset
 module use "$HOME/modules"
-module load julia/1.9.2
+module load julia/1.9.3
 
-julia --optimize=3 \
+srun julia --optimize=3 \
       --threads 76 \
       ${BASH_SOURCE[0]} \
       "$@"

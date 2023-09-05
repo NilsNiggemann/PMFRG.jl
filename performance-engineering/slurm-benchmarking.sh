@@ -3,12 +3,15 @@
 #SBATCH --partition cpuonly
 #SBATCH --time 25
 #SBATCH --nodes 1
-#SBATCH --constraint=HWPERF
 #SBATCH --exclusive
+#SBATCH --dependency singleton
+#SBATCH --job-name pmfrg-benchmark
 
 set -o nounset
 module use "$HOME/modules"
 module load julia/1.9.3
+
+rm -rf  dir$SLURM_CPUS_PER_TASK 
 
 srun julia --optimize=3 \
       --threads $SLURM_CPUS_PER_TASK \

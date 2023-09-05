@@ -10,18 +10,9 @@ set -o nounset
 module use "$HOME/modules"
 module load julia/1.9.3
 
-julia --optimize=3 \
+srun julia --optimize=3 \
       --threads $SLURM_CPUS_PER_TASK \
       ${BASH_SOURCE[0]} &
-
-while [ $(jobs | grep julia | wc -l) -eq 1 ] 
-do
-jobs >> lol_$SLURM_JOB_ID
-echo "frequencies:" >> freqmeas_$SLURM_JOB_ID
-grep 'cpu MHz' /proc/cpuinfo >> freqmeas_$SLURM_JOB_ID
-likwid-setFrequencies -p >> likwid-freqmeas_$SLURM_JOB_ID
-sleep 5
-done
 
 wait
 exit

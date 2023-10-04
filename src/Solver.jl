@@ -76,7 +76,7 @@ Allowed keyword arguments (with default values):
 
 """
 SolveFRG(Par; kwargs...) =
-    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDeriv!; kwargs...)
+    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDeriv!; alias_u0 = true, kwargs...)
 
 function launchPMFRG!(
     State,
@@ -154,7 +154,7 @@ function launchPMFRG!(
     t0 = T_to_t(T_max)
     tend = get_t_min(T_min)
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
-    problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
+    problem = ODEProblem{true}(Deriv_subst!, State, (t0, tend), setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     @time sol = solve(
         problem,

@@ -1,6 +1,7 @@
 Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 ##
 _getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T_min)
+_getFloatType(::OneLoopParams{T}) where {T<:AbstractFloat} = T
 
 function InitializeState(Par::PMFRGParams)
     (; N, Ngamma) = Par.NumericalParams
@@ -30,22 +31,23 @@ function getChannel(Buffs::AbstractVector{<:T}) where {T}
     return BufferChannel
 end
 
-function AllocateSetup(Par::OneLoopParams)
-    (; Npairs, NUnique) = Par.System
+function AllocateSetup(Par::OneLoopParams{T},::Val{NUnique}) where {T<:AbstractFloat,NUnique}
+    (; Npairs) = Par.System
     println("One Loop:")
     ##Allocate Memory:
     X = BubbleType(Par)
-    floattype = _getFloatType(Par) #get type of float, i.e. Float64
     VertexBuffers =
-        getChannel([VertexBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
+        getChannel([VertexBufferType(T, Npairs) for _ = 1:Threads.nthreads()])
     PropsBuffers = getChannel([
-        MMatrix{NUnique,NUnique,floattype,NUnique * NUnique}(undef) for
+        MMatrix{NUnique,NUnique,T,NUnique * NUnique}(undef) for
         _ = 1:Threads.nthreads()
     ])
 
     Buffs = BufferType(PropsBuffers, VertexBuffers)
     return (X, Buffs, Par)
 end
+
+AllocateSetup(Par) = AllocateSetup(Par, Val(Par.System.NUnique))
 
 """Converts t step used for integrator to Λ. Inverse of T_to_t."""
 t_to_T(t) = exp(t)

@@ -230,18 +230,12 @@ function getObservables(::Type{ObservablesChi}, State::ArrayPartition, T, Par)
 end
 
 struct VertexBufferType{T}
-    Va12::Vector{T}
-    Vb12::Vector{T}
-    Vc12::Vector{T}
-
-    Va34::Vector{T}
-    Vb34::Vector{T}
-    Vc34::Vector{T}
-
-    Vc21::Vector{T}
-    Vc43::Vector{T}
+    Va_ki_kj::Array{T,5}
+    Vb_ki_kj::Array{T,5}
+    Vc_ki_kj::Array{T,5}
 end
-VertexBufferType(type, Npairs) = VertexBufferType((zeros(type, Npairs) for _ = 1:8)...)
+VertexBufferType(type, Nsum,N) = VertexBufferType((zeros(type, Nsum,2,2,N,N) for _ = 1:3)...)
+
 ##
 RecursiveArrayTools.ArrayPartition(x::StateType) =
     ArrayPartition(x.f_int, x.γ, x.Γ.a, x.Γ.b, x.Γ.c)

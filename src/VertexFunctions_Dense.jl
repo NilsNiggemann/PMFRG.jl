@@ -62,7 +62,7 @@ Returns value of vertex, swaps sites i <-> j by reading from inverted pairs when
     return @inbounds Vertex[Rj, ns+1, nt+1, nu+1]
 end
 
-@inline function bufferV_!(
+@inline function OLDbufferV_!(
     Cache,
     Vertex::AbstractArray,
     ns::Integer,

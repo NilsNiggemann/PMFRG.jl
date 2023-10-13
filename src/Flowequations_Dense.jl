@@ -96,6 +96,93 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, T)
     compute1PartBubble!(Workspace.Deriv.γ, Workspace.State.Γ, iS, Par)
 end
 
+function getX!(Workspace::PMFRGWorkspace, T)
+    Par = Workspace.Par
+    (; N, lenIntw, np_vec) = Par.NumericalParams
+    PropsBuffers = Workspace.Buffer.Props
+    VertexBuffers = Workspace.Buffer.Vertex
+
+    @sync begin
+        for is = 1:N, Rij = 1:Par.System.Npairs
+            fillAllVertexBuffers!(VertexBuffers, is, Rij, Workspace)
+            ns = np_vec[is]
+            # Workspace.X.a .= Buffer.Va12[begin]
+            for nw = -lenIntw:lenIntw-1 # Matsubara sum
+                bufferProp!(PropsBuffers, nw, ns, Workspace)
+                for it = 1:N, iu = 1:N
+                    nt = np_vec[it]
+                    nu = np_vec[iu]
+                    (!Par.Options.usesymmetry || nu > nt) && continue
+                    (ns + nt + nu) % 2 == 0 && continue # skip unphysical bosonic frequency combinations
+                    Threads.@spawn addX!(Workspace, is, it, iu, nw, PropsBuffers, VertexBuffers)# add to X-type bubble functions
+                end
+            end
+        end
+    end
+end
+
+function bufferV_!(V_ki_kj,Vertex,is,Rij,Par)
+    (; Nsum, siteSum, invpairs) = Par.System
+
+    @views for k_spl = 1:Nsum[Rij]
+        ki = siteSum.ki[k_spl,Rij]
+        kj = siteSum.kj[k_spl,Rij]
+        ik = invpairs[ki]
+        jk = invpairs[kj]
+
+    #   V[k,side,swapsites,nt,nu]
+        V_ki_kj[k_spl,1,1,:,:] .= Vertex[ki, is, :, :] # first index is the site index, second is for either ki or kj, third is for invpairs
+        V_ki_kj[k_spl,1,2,:,:] .= Vertex[ik, is, :, :]
+
+        V_ki_kj[k_spl,2,1,:,:] .= Vertex[kj, is, :, :]
+        V_ki_kj[k_spl,2,2,:,:] .= Vertex[jk, is, :, :]
+    end
+
+    return V_ki_kj
+end
+
+function getBufferView(V_ki_kj,side,ns,nt,nu,N)
+    ns, nt, nu, swapsites = convertFreqArgs(ns, nt, nu, N)
+    # @assert (ns+nt+nu) %2 != 0 "$ns + $nt +  $nu = $(ns+nt+nu)"
+    it = nt + 1
+    iu = nu + 1
+
+    if swapsites
+        return @view V_ki_kj[:,side,2,it,iu]
+    else
+        return @view V_ki_kj[:,side,1,it,iu]
+    end
+end
+
+getBufferView_ki(Vki_kj,ns,nt,nu,N) = getBufferView(Vki_kj,1,ns,nt,nu,N)
+getBufferView_kj(Vki_kj,ns,nt,nu,N) = getBufferView(Vki_kj,2,ns,nt,nu,N)
+
+function fillAllVertexBuffers!(VertexBuffers,is,Rij,Workspace)
+    (;Par,State) = Workspace
+    (;Va_ki_kj, Vb_ki_kj, Vc_ki_kj) = VertexBuffers
+
+    bufferV_!(Va_ki_kj,State.Γ.a,is,Rij,Par)
+    bufferV_!(Vb_ki_kj,State.Γ.b,is,Rij,Par)
+    bufferV_!(Vc_ki_kj,State.Γ.c,is,Rij,Par)
+end
+
+function bufferProp!(PropBuffer,nw,ns,Workspace)
+    Par = Workspace.Par
+    (; Nsum, siteSum) = Par.System
+
+    iG(x, nw) = iG_(Workspace.State.γ, x, T, nw)
+    iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, T, nw)
+
+    @views for k_spl = 1:Nsum[Rij]
+        m = siteSum.m[k_spl,Rij]
+        xk = siteSum.xk[k_spl,Rij]
+        PropBuffer[k_spl] = iSKat(xk, nw) * iG(xk, nw+ns) * m
+    end
+    return PropBuffer
+end
+
+
+
 function getXBubble!(Workspace::PMFRGWorkspace, T)
     Par = Workspace.Par
     (; N, lenIntw, np_vec) = Par.NumericalParams
@@ -161,10 +248,10 @@ function addX!(
     iu::Integer,
     nwpr::Integer,
     Props,
-    Buffer,
+    VertexBuffer,
 )
     (; State, X, Par) = Workspace
-    (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
+    (; Va_ki_kj, Vb_ki_kj, Vc_ki_kj) = VertexBuffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
 
@@ -173,16 +260,6 @@ function addX!(
     nu = np_vec[iu]
     wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
 
-    bufferV_!(Va12, State.Γ.a, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vb12, State.Γ.b, ns, wpw1, wpw2, invpairs, N)
-    bufferV_!(Vc12, State.Γ.c, ns, wpw1, wpw2, invpairs, N)
-
-    bufferV_!(Va34, State.Γ.a, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vb34, State.Γ.b, ns, wmw3, wmw4, invpairs, N)
-    bufferV_!(Vc34, State.Γ.c, ns, wmw3, wmw4, invpairs, N)
-
-    bufferV_!(Vc21, State.Γ.c, ns, wpw2, wpw1, invpairs, N)
-    bufferV_!(Vc43, State.Γ.c, ns, wmw4, wmw3, invpairs, N)
     # get fields of siteSum struct as Matrices for better use of LoopVectorization
     S_ki = siteSum.ki
     S_kj = siteSum.kj

@@ -36,13 +36,10 @@ function AllocateSetup(Par::OneLoopParams{T},::Val{NUnique}) where {T<:AbstractF
     println("One Loop:")
     ##Allocate Memory:
     X = BubbleType(Par)
-    VertexBuffers =
-        getChannel([VertexBufferType(T, Npairs) for _ = 1:Threads.nthreads()])
-    PropsBuffers = getChannel([
-        MMatrix{NUnique,NUnique,T,NUnique * NUnique}(undef) for
-        _ = 1:Threads.nthreads()
-    ])
-
+    maxNsum = maximum(Par.System.Nsum)
+    VertexBuffers = VertexBufferType(T, maxNsum,Par.NumericalParams.N)
+    PropsBuffers = zeros(maxNsum)
+    
     Buffs = BufferType(PropsBuffers, VertexBuffers)
     return (X, Buffs, Par)
 end

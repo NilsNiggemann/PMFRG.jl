@@ -103,19 +103,19 @@ function getX!(Workspace::PMFRGWorkspace, T)
     (; N, np_vec) = Par.NumericalParams
     PropsBuffers = Workspace.Buffer.Props
     VertexBuffers = Workspace.Buffer.Vertex
-    @sync begin
-        for is = 1:N
-            ns = np_vec[is]
-            for Rij = 1:Par.System.Npairs
-                bufferPropagator!(PropsBuffers,Rij, ns, Workspace,T)
-                bufferVertices!(VertexBuffers, Rij, is, Workspace)
+    for is = 1:N
+        ns = np_vec[is]
+        for Rij = 1:Par.System.Npairs
+            bufferPropagator!(PropsBuffers,Rij, ns, Workspace,T)
+            bufferVertices!(VertexBuffers, Rij, is, Workspace)
+            @sync begin
                 for it = 1:N, iu = 1:N
                     nt = np_vec[it]
                     nu = np_vec[iu]
-                    # (Par.Options.usesymmetry && nu > nt) && continue
                     (ns + nt + nu) % 2 == 0 && continue # skip unphysical bosonic frequency combinations
-                    if (!Par.Options.usesymmetry || nu <= nt)
-                        Threads.@spawn begin
+                    Threads.@spawn begin
+                        # (Par.Options.usesymmetry && nu > nt) && continue
+                        if (!Par.Options.usesymmetry || nu <= nt)
                             addX!(Workspace, Rij, is, it, iu, PropsBuffers, VertexBuffers)# add to X-type bubble functions
                         end
                     end
@@ -276,10 +276,9 @@ function addX!(
             Xc_sum += (+Vc12[k] * Vc34[k] + Vc21[k] * Vc43[k]) * PropsBuff[k]
         end
     end
-    X.a[Rij, is, it, iu] += Xa_sum
-    X.b[Rij, is, it, iu] += Xb_sum
-    X.c[Rij, is, it, iu] += Xc_sum
-    return
+    X.a[Rij, is, it, iu] = Xa_sum
+    X.b[Rij, is, it, iu] = Xb_sum
+    X.c[Rij, is, it, iu] = Xc_sum
 end
 
 function addXTilde!(

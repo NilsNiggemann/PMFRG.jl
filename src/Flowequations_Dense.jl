@@ -262,7 +262,7 @@ function addX!(
         Vc21 = getBufferView_ki(Vc_ki_kj, ns, wpw2, wpw1, N, Nsum)
         Vc43 = getBufferView_kj(Vc_ki_kj, ns, wmw4, wmw3, N, Nsum)
 
-        #= @turbo unroll = 1  =#for k in eachindex(Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43,PropsBuff)
+        @turbo unroll = 1 for k in eachindex(Va12,Vb12,Vc12,Va34,Vb34,Vc34,Vc21,Vc43,PropsBuff)
             #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
             Xa_sum += (+Va12[k] * Va34[k] + Vb12[k] * Vb34[k] * 2) * PropsBuff[k]
 

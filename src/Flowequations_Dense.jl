@@ -5,8 +5,7 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,Ty,OneLoopParams}, T) w
     getDFint!(Workspace, T)
     get_Self_Energy!(Workspace, T)
 
-    getX!(Workspace, T)
-    getXTilde!(Workspace,T)
+    getXBubble!(Workspace,T)
     symmetrizeBubble!(Workspace.X, Par)
 
     addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
@@ -14,7 +13,10 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,Ty,OneLoopParams}, T) w
     # flush(stdout)
     return
 end
-
+function getXBubble!(Workspace,T)
+    getX!(Workspace, T)
+    getXTilde!(Workspace,T)
+end
 
 function getDFint!(Workspace::PMFRGWorkspace, T::Real)
     (; State, Deriv, Par) = Workspace
@@ -110,10 +112,12 @@ function getX!(Workspace::PMFRGWorkspace, T)
                 for it = 1:N, iu = 1:N
                     nt = np_vec[it]
                     nu = np_vec[iu]
-                    (!Par.Options.usesymmetry || nu > nt) && continue
+                    # (Par.Options.usesymmetry && nu > nt) && continue
                     (ns + nt + nu) % 2 == 0 && continue # skip unphysical bosonic frequency combinations
-                    Threads.@spawn begin
-                        addX!(Workspace, Rij, is, it, iu, PropsBuffers, VertexBuffers)# add to X-type bubble functions
+                    if (!Par.Options.usesymmetry || nu <= nt)
+                        Threads.@spawn begin
+                            addX!(Workspace, Rij, is, it, iu, PropsBuffers, VertexBuffers)# add to X-type bubble functions
+                        end
                     end
                 end
             end
@@ -124,7 +128,7 @@ end
 function bufferPropagator!(PropBuffer,Rij,ns,Workspace,T)
     Par = Workspace.Par
     (; Nsum, siteSum) = Par.System
-
+    setZero!(PropBuffer)
     iG(x, nw) = iG_(Workspace.State.γ, x, T, nw)
     iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, T, nw)
 
@@ -140,9 +144,9 @@ function bufferPropagator!(PropBuffer,Rij,ns,Workspace,T)
     return PropBuffer
 end
 
-function bufferV_!(V_ki_kj,Vertex,Rij,is,Par)
+function bufferV!(V_ki_kj,Vertex,Rij,is,Par)
     (; Nsum, siteSum, invpairs) = Par.System
-
+    setZero!(V_ki_kj)
     @views for k_spl = 1:Nsum[Rij]
         ki = siteSum.ki[k_spl,Rij]
         kj = siteSum.kj[k_spl,Rij]
@@ -180,9 +184,9 @@ function bufferVertices!(VertexBuffers,Rij,is,Workspace)
     (;Par,State) = Workspace
     (;Va_ki_kj, Vb_ki_kj, Vc_ki_kj) = VertexBuffers
 
-    bufferV_!(Va_ki_kj,State.Γ.a,Rij,is,Par)
-    bufferV_!(Vb_ki_kj,State.Γ.b,Rij,is,Par)
-    bufferV_!(Vc_ki_kj,State.Γ.c,Rij,is,Par)
+    bufferV!(Va_ki_kj,State.Γ.a,Rij,is,Par)
+    bufferV!(Vb_ki_kj,State.Γ.b,Rij,is,Par)
+    bufferV!(Vc_ki_kj,State.Γ.c,Rij,is,Par)
 end
 
 

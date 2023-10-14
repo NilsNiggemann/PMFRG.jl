@@ -38,7 +38,8 @@ function AllocateSetup(Par::OneLoopParams{T},::Val{NUnique}) where {T<:AbstractF
     X = BubbleType(Par)
     maxNsum = maximum(Par.System.Nsum)
     VertexBuffers = VertexBufferType(T, maxNsum,Par.NumericalParams.N)
-    MatsNumRange = -Par.lenIntw:Par.lenIntw-1
+    lenIntw = Par.NumericalParams.lenIntw
+    MatsNumRange = -lenIntw:lenIntw-1
     PropsBuffers = zeros(maxNsum,length(MatsNumRange))
     
     Buffs = BufferType(PropsBuffers, VertexBuffers)

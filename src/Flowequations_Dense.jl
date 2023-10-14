@@ -113,12 +113,8 @@ function getX!(Workspace::PMFRGWorkspace, T)
                     nt = np_vec[it]
                     nu = np_vec[iu]
                     (ns + nt + nu) % 2 == 0 && continue # skip unphysical bosonic frequency combinations
-                    Threads.@spawn begin
-                        # (Par.Options.usesymmetry && nu > nt) && continue
-                        if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(Workspace, Rij, is, it, iu, PropsBuffers, VertexBuffers)# add to X-type bubble functions
-                        end
-                    end
+                    nu >nt && Par.Options.usesymmetry && continue
+                    Threads.@spawn addX!(Workspace, Rij, is, it, iu, PropsBuffers, VertexBuffers)# add to X-type bubble functions
                 end
             end
         end
@@ -253,7 +249,7 @@ function addX!(
     
     for (iw,nwpr) in enumerate(-lenIntw:lenIntw-1) # Matsubara sum
         wpw1, wpw2, wmw3, wmw4 = mixedFrequencies(ns, nt, nu, nwpr)
-        PropsBuff = @view PropsBuffers[:,iw]
+        PropsBuff = @view PropsBuffers[1:Nsum,iw]
 
         Va12 = getBufferView_ki(Va_ki_kj, ns, wpw1, wpw2, N, Nsum)
         Vb12 = getBufferView_ki(Vb_ki_kj, ns, wpw1, wpw2, N, Nsum)

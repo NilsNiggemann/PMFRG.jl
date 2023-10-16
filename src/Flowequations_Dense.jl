@@ -140,21 +140,27 @@ function bufferPropagator!(PropBuffer,Rij,ns,Workspace,T)
     return PropBuffer
 end
 
-function bufferV!(V_ki_kj,Vertex,Rij,is,Par)
+Base.@propagate_inbounds function bufferV!(V_ki_kj,Vertex,Rij,is,Par)
     (; Nsum, siteSum, invpairs) = Par.System
     setZero!(V_ki_kj)
-    @views for k_spl = 1:Nsum[Rij]
-        ki = siteSum.ki[k_spl,Rij]
-        kj = siteSum.kj[k_spl,Rij]
-        ik = invpairs[ki]
-        jk = invpairs[kj]
+    Base.require_one_based_indexing(V_ki_kj,Vertex)
+    @boundscheck size(V_ki_kj) === (Nsum[Rij],2,2,Par.NumericalParams.N,Par.NumericalParams.N)
+    @boundscheck size(V_ki_kj) === (Nsum[Rij],2,2,Par.NumericalParams.N,Par.NumericalParams.N)
+    @inbounds @simd for iu in axes(Vertex,4)
+        for it in axes(Vertex,3)
+            for k_spl = 1:Nsum[Rij]
+                ki = siteSum.ki[k_spl,Rij]
+                kj = siteSum.kj[k_spl,Rij]
+                ik = invpairs[ki]
+                jk = invpairs[kj]
+            #   V[k,side,swapsites,nt,nu]
+                V_ki_kj[k_spl,1,1,it,iu] = Vertex[ki,is, it, iu] # first index is the site index, second is for either ki or kj, third is for invpairs
+                V_ki_kj[k_spl,1,2,it,iu] = Vertex[ik,is, it, iu]
 
-    #   V[k,side,swapsites,nt,nu]
-        V_ki_kj[k_spl,1,1,:,:] .= Vertex[ki, is, :, :] # first index is the site index, second is for either ki or kj, third is for invpairs
-        V_ki_kj[k_spl,1,2,:,:] .= Vertex[ik, is, :, :]
-
-        V_ki_kj[k_spl,2,1,:,:] .= Vertex[kj, is, :, :]
-        V_ki_kj[k_spl,2,2,:,:] .= Vertex[jk, is, :, :]
+                V_ki_kj[k_spl,2,1,it,iu] = Vertex[kj,is, it, iu]
+                V_ki_kj[k_spl,2,2,it,iu] = Vertex[jk,is, it, iu]
+            end
+        end
     end
 
     return V_ki_kj

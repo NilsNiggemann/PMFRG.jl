@@ -110,12 +110,19 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
+include("./mpi/MPI_Detail.jl")
+using .MPI_Detail: partitions
+
 function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
     (; N) = Par.NumericalParams
-    isrange = 1:N
-    itrange = 1:N
-    getXBubblePartition!(Workspace,Lam,isrange,itrange)
+    ispartitions = 3
+    itpartitions = 3
+    for isrange in partitions(N,ispartitions)
+        for itrange in partitions(N,itpartitions)
+            getXBubblePartition!(Workspace,Lam,isrange,itrange)
+        end
+    end
 end
 
 

@@ -196,12 +196,12 @@ Recompiling and relaunching (accelerated partition)
   1a. MPI-ize getXBubble! 
      1. Create regression tests using Recorder.jl.
         Make sure that the recorded test cases are significant
-        (e.g., the recorded arrays are not full of zeros, for example)
+        (e.g., the recorded arrays are not full of zeros, for example) [DONE]
      2. Create getXBubblePartition! that works only on a part of the array,
         use that inside getXBubble!, verify correctness 
         with the recorded test cases.
         getXBubblePartition should contain all the possible functionality
-        that does not require MPI calls.
+        that does not require MPI calls. [Almost DONE]
   1b. Add MPI setup to original program
     1. Add MPI initialization and finalization in test script
        using only non MPI-functions.

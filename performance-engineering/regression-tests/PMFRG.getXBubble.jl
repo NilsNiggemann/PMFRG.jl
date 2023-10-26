@@ -1,7 +1,8 @@
 using PMFRG
 using Test
 using Serialization
-data = deserialize("regression_tests_PMFRG.getXBubble.data")
+thisdir = dirname(@__FILE__)
+data = deserialize(joinpath(thisdir,"PMFRG.getXBubble.data"))
 
 
 #"Function that flattens 'args' into a Vector{Any}, so that "

@@ -20,6 +20,7 @@ using .MPI_Detail: fences, starts, ends, partitions
 
     @testset verbose=true "Test for partitions" begin
         @test partitions(10,3) == [1:3,4:7,8:10]
+        @test length(partitions(2,3)) == 3 # One partition will be empty
     end
 
 
@@ -31,5 +32,7 @@ using .MPI_Detail: fences, starts, ends, partitions
         @test set_partitions_lengths(9,3) == Set([3])
         @test set_partitions_lengths(17,6) == Set([2,3])
         @test set_partitions_lengths(30,29) == Set([1,2])
+        @test set_partitions_lengths(10,9) == Set([1,2])
+        @test set_partitions_lengths(10,11) ==  Set([0,1]) # One partition will be empty
     end
 end

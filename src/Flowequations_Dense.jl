@@ -116,15 +116,14 @@ using .MPI_Detail: partitions
 function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
     (; N) = Par.NumericalParams
-    ispartitions = 3
-    itpartitions = 3
+    ispartitions = 3 # DEBUG
+    itpartitions = 3 # DEBUG
     for isrange in partitions(N,ispartitions)
         for itrange in partitions(N,itpartitions)
             getXBubblePartition!(Workspace,Lam,isrange,itrange)
         end
     end
 end
-
 
 function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange,itrange)
     Par = Workspace.Par

@@ -1,3 +1,9 @@
+# Usage:
+#
+# mpiexecjl -prepend-rank --project=./Playground -n 2 julia ./PMFRG.jl/performance-engineering/generate_data_example_mpi.jl
+#
+# where Playground is a project/environment where PMFRG is added as a dev dependency.
+# and it is assumed that mpiexecjl is in PATH (otherwise usually ~/.julia/bin)
 using SpinFRGLattices, PMFRG
 using SpinFRGLattices.SquareLattice
 

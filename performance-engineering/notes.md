@@ -212,20 +212,24 @@ Recompiling and relaunching (accelerated partition)
         
   1b. Add MPI setup to original program
     1. Create functions to broadcast portions of arrays
-       (already using MPI)
+       (already using MPI). 
+       This is trivial but a working example must be produced [DONE]
     2. Add MPI initialization and finalization in test script
        using only non MPI-functions.
        Conflicts on external resources must be solved somehow
        (e.g., making so that each process writes in his own directory,
        named after the process itself, or some other solution).
-       No MPI-ized functions should be implemented [IN PROGRESS]
+       No MPI-ized functions should be implemented [DONE on one example]
     3. Implement MPI version of getXBubble!, called getXBubbleMPI!,
        as a drop-in replacement for getXBubble!,
        that should work without any changes 
-       in the script with the MPI setup.
+       in the script with the MPI setup. [DONE?]
        1. Create mpi test for getXBubbleMPI!,
-          using regression test case data from getXBubble!
+          using regression test case data from getXBubble! [DONE]
      
+  1c. CRUCIAL: Add all the tests to the test suite
+      (a bit tricky with the mpi ones)
+
   2. Allow superposition of communication and computation
      by assigning more portions to each rank (review 1a.3)
      and either use one `MPI_Ibcast` per portion 

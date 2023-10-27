@@ -123,6 +123,33 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     end
 end
 
+using MPI
+function getXBubbleMPI!(Workspace::PMFRGWorkspace, Lam)
+    Par = Workspace.Par
+    (; N) = Par.NumericalParams
+    nranks = MPI.Comm_size(MPI.COMM_WORLD)
+    rank = MPI.Comm_rank(MPI.COMM_WORLD)
+
+
+    isrange, itrange, iurange = get_ranges((N,N,N), nranks, rank)
+    getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
+
+    (;X) = Workspace
+
+    for root in 0:(nranks-1)
+        isrange, itrange, iurange = get_ranges((N,N,N), nranks, root)
+        MPI.Bcast!((@view X.a[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+        MPI.Bcast!((@view X.b[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+        MPI.Bcast!((@view X.c[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+
+        MPI.Bcast!((@view X.Ta[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+        MPI.Bcast!((@view X.Tb[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+        MPI.Bcast!((@view X.Tc[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+        MPI.Bcast!((@view X.Td[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+    end
+end
+
+
 function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange,itrange,iurange)
     Par = Workspace.Par
     (; T, N, lenIntw, np_vec) = Par.NumericalParams

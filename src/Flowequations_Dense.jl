@@ -111,21 +111,19 @@ end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
 include("./mpi/MPI_Detail.jl")
-using .MPI_Detail: partitions
+using .MPI_Detail: get_ranges
 
 function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
     (; N) = Par.NumericalParams
-    ispartitions = 3 # DEBUG
-    itpartitions = 3 # DEBUG
-    for isrange in partitions(N,ispartitions)
-        for itrange in partitions(N,itpartitions)
-            getXBubblePartition!(Workspace,Lam,isrange,itrange)
-        end
+    nranks = 8 # DEBUG
+    for rank in 0:(nranks-1)
+        isrange, itrange, iurange = get_ranges((N,N,N), nranks, rank)
+        getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
     end
 end
 
-function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange,itrange)
+function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange,itrange,iurange)
     Par = Workspace.Par
     (; T, N, lenIntw, np_vec) = Par.NumericalParams
     PropsBuffers = Workspace.Buffer.Props
@@ -149,7 +147,7 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange,itrange)
 				# Workspace.X.a .= Buffer.Va12[begin]
 				for nw in -lenIntw:lenIntw-1 # Matsubara sum
 					sprop = getKataninProp!(BubbleProp,nw,nw+ns)
-					for iu in 1:N
+					for iu in iurange
 						nu = np_vec[iu]
 						if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
 							continue

@@ -1,6 +1,6 @@
 using Test
-include("./MPI_Detail.jl")
-using .MPI_Detail: fences, starts, ends, partitions
+include("./partition.jl")
+using .Partition: fences, starts, ends, partitions
 
 @testset verbose=true "Test for fencing routines" begin
     @testset verbose=true "Tests for fence" begin

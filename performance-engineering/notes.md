@@ -201,24 +201,33 @@ Recompiling and relaunching (accelerated partition)
         use that inside getXBubble!, verify correctness 
         with the recorded test cases.
         getXBubblePartition should contain all the possible functionality
-        that does not require MPI calls. [Almost DONE]
+        that does not require MPI calls. [DONE]
         OPEN ISSUE: how much logic should be outside 
         of getXBubblePartition! ?
         This is related to 1b.2.
+     3. map between partitions of is,it,iu ranges and mpi ranks. [DONE]
+        (computing ranges might be a little expensive, 
+        if so better to cache them,
+        perhaps with Memoize.jl? Measure first)
         
   1b. Add MPI setup to original program
-    1. Add MPI initialization and finalization in test script
+    1. Create functions to broadcast portions of arrays
+       (already using MPI)
+    2. Add MPI initialization and finalization in test script
        using only non MPI-functions.
        Conflicts on external resources must be solved somehow
        (e.g., making so that each process writes in his own directory,
        named after the process itself, or some other solution).
        No MPI-ized functions should be implemented [IN PROGRESS]
-    2. Implement MPI version of getXBubble!, called getXBubbleMPI!,
+    3. Implement MPI version of getXBubble!, called getXBubbleMPI!,
        as a drop-in replacement for getXBubble!,
        that should work without any changes 
        in the script with the MPI setup.
        1. Create mpi test for getXBubbleMPI!,
           using regression test case data from getXBubble!
      
-        
+  2. Allow superposition of communication and computation
+     by assigning more portions to each rank (review 1a.3)
+     and either use one `MPI_Ibcast` per portion 
+     or one `MPI_Isend` / `MPI_Irecv` per portion for rank.
   

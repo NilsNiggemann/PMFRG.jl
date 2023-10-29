@@ -1,4 +1,4 @@
-# At the moment I am running this via
+# This script can be run via
 # ~/.julia/bin/mpiexecjl --project=./Playground
 #                        -n 2
 #                        julia <this file>

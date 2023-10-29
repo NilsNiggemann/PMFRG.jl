@@ -226,9 +226,13 @@ Recompiling and relaunching (accelerated partition)
        in the script with the MPI setup. [DONE?]
        1. Create mpi test for getXBubbleMPI!,
           using regression test case data from getXBubble! [DONE]
+       2. MPI.Initialized() can be called 
+          to determine which version
+          (either getXBubbleMPI or getXBubble)
+          can be called. 
      
   1c. CRUCIAL: Add all the tests to the test suite
-      (a bit tricky with the mpi ones)
+      (a bit tricky with the mpi ones) [IN PROGRESS]
 
   2. Allow superposition of communication and computation
      by assigning more portions to each rank (review 1a.3)

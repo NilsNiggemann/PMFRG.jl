@@ -17,6 +17,7 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) 
     @time "get_Self_Energy! $tag" get_Self_Energy!(Workspace, Lam)
 
     @time "getXBubble! $tag" getXBubble!(Workspace, Lam)
+    #@time "getXBubbleMPI! $tag" getXBubbleMPI!(Workspace, Lam)
 
     @time "symmetrizeBubble! $tag" symmetrizeBubble!(Workspace.X, Par)
 

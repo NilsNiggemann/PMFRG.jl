@@ -35,12 +35,14 @@ function compare_arguments_post(args_post_exp, args_post)
     result
 end
 
-@testset verbose = true "Tests for getXBubble!" begin
-        @testset for i = 1:length(data["return_value"])
-                return_value = (data["return_value"])[i]
-                arguments = (data["arguments"])[i]
-                arguments_post = (data["arguments_post"])[i]
-                PMFRG.getXBubble!(arguments...)
-                @test compare_arguments_post(arguments, arguments_post)
-                end
-    end
+function test_getXBubble()
+    @testset verbose = true "Tests for getXBubble!" begin
+            @testset for i = 1:length(data["return_value"])
+                    return_value = (data["return_value"])[i]
+                    arguments = (data["arguments"])[i]
+                    arguments_post = (data["arguments_post"])[i]
+                    PMFRG.getXBubble!(arguments...)
+                    @test compare_arguments_post(arguments, arguments_post)
+                    end
+        end
+end

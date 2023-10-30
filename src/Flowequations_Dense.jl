@@ -17,7 +17,6 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) 
     @time "get_Self_Energy! $tag" get_Self_Energy!(Workspace, Lam)
 
     @time "getXBubble! $tag" getXBubble!(Workspace, Lam)
-    #@time "getXBubbleMPI! $tag" getXBubbleMPI!(Workspace, Lam)
 
     @time "symmetrizeBubble! $tag" symmetrizeBubble!(Workspace.X, Par)
 
@@ -128,40 +127,34 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
     compute1PartBubble!(Workspace.Deriv.γ, Workspace.State.Γ, iS, Par)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
-
+using MPI
 function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
     (; N) = Par.NumericalParams
-    nranks = 8 # DEBUG
-    for rank in 0:(nranks-1)
+
+    if MPI.Initialized()
+        nranks = MPI.Comm_size(MPI.COMM_WORLD)
+        rank = MPI.Comm_rank(MPI.COMM_WORLD)
+
+
         isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
         getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
-    end
-end
 
-using MPI
-function getXBubbleMPI!(Workspace::PMFRGWorkspace, Lam)
-    Par = Workspace.Par
-    (; N) = Par.NumericalParams
-    nranks = MPI.Comm_size(MPI.COMM_WORLD)
-    rank = MPI.Comm_rank(MPI.COMM_WORLD)
+        (;X) = Workspace
 
+        for root in 0:(nranks-1)
+            isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, root)
+            MPI.Bcast!((@view X.a[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.b[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.c[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
 
-    isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
-    getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
-
-    (;X) = Workspace
-
-    for root in 0:(nranks-1)
-        isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, root)
-        MPI.Bcast!((@view X.a[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
-        MPI.Bcast!((@view X.b[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
-        MPI.Bcast!((@view X.c[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
-
-        MPI.Bcast!((@view X.Ta[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
-        MPI.Bcast!((@view X.Tb[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
-        MPI.Bcast!((@view X.Tc[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
-        MPI.Bcast!((@view X.Td[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.Ta[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.Tb[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.Tc[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.Td[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
+        end
+    else
+        getXBubblePartition!(Workspace,Lam,1:N,1:N,1:N)
     end
 end
 

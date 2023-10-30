@@ -234,7 +234,12 @@ Recompiling and relaunching (accelerated partition)
   1c. CRUCIAL: Add all the tests to the test suite
       (a bit tricky with the mpi ones) [DONE]
 
-  2. Allow superposition of communication and computation
+  2. Using MPI.Initialized(), 
+     move the logic of getXBubbleMPI! inside getXBubble!
+     in an `if MPI.Initialized()` conditional
+     and remove getXBubbleMPI!. [DONE]
+
+  3. Allow superposition of communication and computation
      by assigning more portions to each rank (review 1a.3)
      and either use one `MPI_Ibcast` per portion 
      or one `MPI_Isend` / `MPI_Irecv` per portion for rank.

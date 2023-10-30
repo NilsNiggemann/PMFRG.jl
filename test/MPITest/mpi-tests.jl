@@ -37,7 +37,7 @@ function test_mpi()
 
     @testset verbose=true "MPI tests - external executables" begin
         dir=dirname(@__FILE__)
-        run_mpi_script(joinpath(dir,"regression-tests","PMFRG.getXBubbleMPI.jl"),
+        run_mpi_script(joinpath(dir,"..","RegressionTests","PMFRG.getXBubbleMPI.jl"),
                        2,
                        "Regression test - getXBubbleMPI")
 

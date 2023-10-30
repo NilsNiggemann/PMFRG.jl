@@ -48,7 +48,7 @@ end
                 return_value = (data["return_value"])[i]
                 arguments = (data["arguments"])[i]
                 arguments_post = (data["arguments_post"])[i]
-                PMFRG.getXBubbleMPI!(arguments...)
+                PMFRG.getXBubble!(arguments...)
                 @test compare_arguments_post(arguments, arguments_post)
                 end
     end

@@ -1,5 +1,5 @@
 function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) where {T}
-
+#=
     println("Calling getDeriv!")
     println("Size of Deriv: $(Base.summarysize(Deriv))")
     println("Size of State: $(Base.summarysize(State))")
@@ -24,6 +24,24 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) 
     @time "addToVertexFromBubble! $tag" addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
     @time "symmetrizeVertex! $tag" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
     flush(stdout)
+=#
+    (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
+
+    getDFint!(Workspace, Lam)
+    get_Self_Energy!(Workspace, Lam)
+
+    getXBubble!(Workspace, Lam)
+
+
+    symmetrizeBubble!(Workspace.X, Par)
+
+    addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
+    symmetrizeVertex!(Workspace.Deriv.Γ, Par)
+    flush(stdout)
+
+
+
     return
 end
 
@@ -111,15 +129,12 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
-include("./mpi/MPI_Detail.jl")
-using .MPI_Detail: get_ranges
-
 function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
     (; N) = Par.NumericalParams
     nranks = 8 # DEBUG
     for rank in 0:(nranks-1)
-        isrange, itrange, iurange = get_ranges((N,N,N), nranks, rank)
+        isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
         getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
     end
 end
@@ -132,13 +147,13 @@ function getXBubbleMPI!(Workspace::PMFRGWorkspace, Lam)
     rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 
-    isrange, itrange, iurange = get_ranges((N,N,N), nranks, rank)
+    isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
     getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
 
     (;X) = Workspace
 
     for root in 0:(nranks-1)
-        isrange, itrange, iurange = get_ranges((N,N,N), nranks, root)
+        isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, root)
         MPI.Bcast!((@view X.a[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
         MPI.Bcast!((@view X.b[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
         MPI.Bcast!((@view X.c[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)

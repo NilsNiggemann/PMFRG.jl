@@ -105,8 +105,7 @@ function launchPMFRG!(
     )
 
     (; Lam_max, Lam_min, accuracy) = Par.NumericalParams
-    save_func(State, t, integrator) =
-        @time "save_func $tag" getObservables(ObservableType, State, t_to_Lam(t), Par)
+    save_func(State, t, integrator) = getObservables(ObservableType, State, t_to_Lam(t), Par)
 
     saved_values = SavedValues(eltype(State), ObservableType)
     i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
@@ -127,7 +126,7 @@ function launchPMFRG!(
     function verboseOutput(State, t, integrator)
         Lam = t_to_Lam(t)
         println("Time taken for output saving: ")
-        @time bareOutput(State, t, integrator)
+        bareOutput(State, t, integrator)
         println("")
         writeOutput(State, saved_values, Lam, Par)
     end
@@ -152,7 +151,7 @@ function launchPMFRG!(
         tdir = -1,
     )
     outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
-    unstable_check(dt, u, p, t) = @time "unstable_check $tag" maximum(abs, u) > MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
+    unstable_check(dt, u, p, t) = maximum(abs, u) > MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
 
     t0 = Lam_to_t(Lam_max)
     tend = get_t_min(Lam_min)
@@ -160,7 +159,7 @@ function launchPMFRG!(
     problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     println("Starting solve")
-    @time sol = solve(
+    sol = solve(
         problem,
         method,
         reltol = accuracy,

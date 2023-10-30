@@ -1,11 +1,11 @@
 using MPI
 using Test
 
+include("./test_decompose.jl")
+include("./test_partition.jl")
+include("./test_best_partition.jl")
 
-include("../src/mpi/test_decompose.jl")
-include("../src/mpi/test_partition.jl")
-include("../src/mpi/test_best_partition.jl")
-
+function test_mpi()
 @testset verbose=true "MPI tests" begin
     @testset verbose=true "Unit tests for MPI functionality" begin
         test_1D_partition()
@@ -26,14 +26,12 @@ include("../src/mpi/test_best_partition.jl")
 
         print_header()
         @testset verbose=true "$testname" begin
-            mpiexec() do exe  # MPI wrapper
-                p = run(ignorestatus(`$exe
-                                      -n $n
-                                      $(Base.julia_cmd())
-                                      --project=$(Base.active_project())
-                                      $script`))
-                @test success(p)
-            end
+            p = run(ignorestatus(`$(mpiexec())
+                                  -n $n
+                                  $(Base.julia_cmd())
+                                  --project=$(Base.active_project())
+                                  $script`))
+            @test success(p)
         end
     end
 
@@ -43,7 +41,7 @@ include("../src/mpi/test_best_partition.jl")
                        2,
                        "Regression test - getXBubbleMPI")
 
-        run_mpi_script(joinpath(dir,"..","src","mpi","test_chunk_communication.jl"),
+        run_mpi_script(joinpath(dir,"test_chunk_communication.jl"),
                        4,
                        "Ibcast! communication example - test_chunk_communication.jl")
 
@@ -52,4 +50,5 @@ include("../src/mpi/test_best_partition.jl")
                        "Generate Data Example")
 
     end
+end
 end

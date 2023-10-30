@@ -232,7 +232,7 @@ Recompiling and relaunching (accelerated partition)
           can be called. 
      
   1c. CRUCIAL: Add all the tests to the test suite
-      (a bit tricky with the mpi ones) [IN PROGRESS]
+      (a bit tricky with the mpi ones) [DONE]
 
   2. Allow superposition of communication and computation
      by assigning more portions to each rank (review 1a.3)

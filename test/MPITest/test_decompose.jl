@@ -1,5 +1,5 @@
 using Test
-include("./decompose.jl")
+include("../../src/mpi/decompose.jl")
 using .Decompose: decompose
 
 

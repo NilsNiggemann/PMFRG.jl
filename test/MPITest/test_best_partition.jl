@@ -1,5 +1,5 @@
 using Test
-include("./best_partition.jl")
+include("../../src/mpi/best_partition.jl")
 using .BestPartition: find_best_ND_partition, get_ranges
 
 function test_partitioning_tools()

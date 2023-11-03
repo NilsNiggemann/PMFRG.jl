@@ -7,7 +7,8 @@ using SpinFRGLattices,
     LoopVectorization,
     StructArrays,
     HDF5,
-    H5Zblosc
+    H5Zblosc,
+    TimerOutputs
 
 using SpinFRGLattices.StaticArrays
 

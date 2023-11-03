@@ -1,45 +1,18 @@
+
 function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) where {T}
-#=
-    println("Calling getDeriv!")
-    println("Size of Deriv: $(Base.summarysize(Deriv))")
-    println("Size of State: $(Base.summarysize(State))")
-    println("Size of X: $(Base.summarysize(setup[1]))")
-    println("==============================================================")
+    @timeit_debug "setup" (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+    @timeit_debug "workspace" Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
-    Npairs = setup[3].System.Npairs
-    tag = "tag:$Npairs"
+    @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
+    @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 
-  
-    @time "setup $tag" (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    @time "workspace $tag" Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
+    @timeit_debug "getXBubble!" getXBubble!(Workspace, Lam)
 
-    @time "getDFint! $tag" getDFint!(Workspace, Lam)
-    @time "get_Self_Energy! $tag" get_Self_Energy!(Workspace, Lam)
+    @timeit_debug "symmetrizeBubble!" symmetrizeBubble!(Workspace.X, Par)
 
-    @time "getXBubble! $tag" getXBubble!(Workspace, Lam)
-
-    @time "symmetrizeBubble! $tag" symmetrizeBubble!(Workspace.X, Par)
-
-    @time "addToVertexFromBubble! $tag" addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
-    @time "symmetrizeVertex! $tag" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
+    @timeit_debug "addToVertexFromBubble!" addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
+    @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
     flush(stdout)
-=#
-    (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-    Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
-
-    getDFint!(Workspace, Lam)
-    get_Self_Energy!(Workspace, Lam)
-
-    getXBubble!(Workspace, Lam)
-
-
-    symmetrizeBubble!(Workspace.X, Par)
-
-    addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
-    symmetrizeVertex!(Workspace.Deriv.Γ, Par)
-    flush(stdout)
-
-
 
     return
 end

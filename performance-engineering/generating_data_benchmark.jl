@@ -1,5 +1,6 @@
 using SpinFRGLattices, PMFRG
 using SpinFRGLattices.SquareLattice
+using TimerOutputs
 
 
 # Number of nearest neighbor bonds 
@@ -71,6 +72,8 @@ rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
 flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
 
+TimerOutput.enable_debug_timings()
+reset_timer!()
 @time Solution, saved_values = SolveFRG(
     Par,
     MainFile=mainFile,
@@ -80,4 +83,5 @@ flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
     CheckPointSteps=3,
 );
 
+print_timer()
 println("Done")

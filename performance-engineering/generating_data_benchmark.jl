@@ -3,6 +3,8 @@ using SpinFRGLattices.SquareLattice
 using TimerOutputs
 
 
+TimerOutputs.enable_debug_timings(PMFRG)
+
 # Number of nearest neighbor bonds 
 # up to which correlations are treated in the lattice. 
 # For NLen = 5, all correlations C_{ij} are zero 
@@ -72,7 +74,6 @@ rm(tempdir, recursive=true, force=true)
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile") # specify a file name for main Output
 flowpath = "$tempdir/flows/" # specify path for vertex checkpoints
 
-TimerOutput.enable_debug_timings()
 reset_timer!()
 @time Solution, saved_values = SolveFRG(
     Par,

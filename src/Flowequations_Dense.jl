@@ -100,6 +100,7 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
     compute1PartBubble!(Workspace.Deriv.γ, Workspace.State.Γ, iS, Par)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
+
 using MPI
 function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
@@ -109,14 +110,15 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
         nranks = MPI.Comm_size(MPI.COMM_WORLD)
         rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-
-        isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
-        getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
-
+        @timeit_debug "get_ranges" isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
+        @timeit_debug "partition" getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
+	
         (;X) = Workspace
 
-        for root in 0:(nranks-1)
+	
+        @timeit_debug "communication" for root in 0:(nranks-1)
             isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, root)
+
             MPI.Bcast!((@view X.a[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
             MPI.Bcast!((@view X.b[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
             MPI.Bcast!((@view X.c[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)

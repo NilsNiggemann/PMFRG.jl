@@ -1,5 +1,5 @@
 using Test
-include("../../src/SymmetricTUArray.jl")
+include("../../src/SymmPhysTUArray.jl")
 
 @testset verbose=true "SymmetricTUArray tests" begin
     @testset verbose=true "size and length" begin

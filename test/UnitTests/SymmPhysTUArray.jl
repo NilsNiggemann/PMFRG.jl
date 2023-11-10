@@ -284,13 +284,13 @@ include("../../src/SymmPhysTUArray.jl")
         @testset verbose=true "proper constraints on parity" begin
             @testset "Even type" begin
                 arr = SymmPhysTUArray{Float64}(3,4,5,Even)
-                @test_throws BoundsError arr[2,3,4,4]
-                @test arr[2,3,4,3] isa Any
+                @test_throws ParityError arr[2,3,4,4]
+                @test arr[2,3,4,3] isa Any # does not throw
             end
             @testset "Odd type" begin
                 arr = SymmPhysTUArray{Float64}(3,4,5,Odd)
-                @test_throws BoundsError arr[2,3,4,3]
-                @test arr[2,3,4,4] isa Any
+                @test_throws ParityError arr[2,3,4,3]
+                @test arr[2,3,4,4] isa Any # does not throw
             end
         end
         @test begin

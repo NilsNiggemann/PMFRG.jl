@@ -167,9 +167,14 @@ function _rstu_eo_idx(Npairs::Int, rij::Int,s_extent::Int, is::Int, it::Int, iu:
     _rstu_eo_offset(Npairs, rij,s_extent, is, it, iu)+1
 end
 
-function _check_stu_parity(A::SymmPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
+struct ParityError{A,I} <: Exception
+    a::A
+    i::I
+end
+
+@inline function _check_stu_parity(A::SymmPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
     if mod(is+it+iu, 2) != A.parity
-        throw(BoundsError(A,[is,it,iu]))
+        throw(ParityError(A,[is,it,iu]))
     end
 end
 

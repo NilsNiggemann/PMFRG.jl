@@ -11,6 +11,12 @@ include("../../src/SymmPhysTUArray.jl")
     end
 
     @testset verbose=true "Length calculation" begin
+    @testset verbose=true "show does not throw exceptions" begin
+        arr = SymmPhysTUArray{Float64}(3,4,5,Even)
+        tmpbuf = IOBuffer()
+        @test show(tmpbuf,arr) isa Any
+    end
+
 	    function calc_n_e_o(Ns,Ntu)
             e,o = 0,0
             for iu in 1:Ntu, it in 1:iu, is in 1:Ns

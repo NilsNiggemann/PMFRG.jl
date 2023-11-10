@@ -43,6 +43,38 @@ function Base.length(A::SymmPhysTUArray{T}) where T
     A.length
 end
 
+function full_repr(arr::SymmPhysTUArray{T}) where T
+    full_repr = Array{Union{T,Missing},4}(undef,(arr.Npairs,
+                                                 arr.s_extent,
+                                                 arr.tu_extent,
+                                                 arr.tu_extent))
+    for idx in eachindex(IndexCartesian(),full_repr)
+        rij,is,it,iu = Tuple(idx)
+        parity =(is+it+iu)%2
+        if parity == arr.parity
+            full_repr[rij,is,it,iu] = arr[rij,is,it,iu]
+        else
+            full_repr[rij,is,it,iu] = Missing()
+        end
+    end
+    full_repr
+end
+
+
+"""Method to display a SymmPhysTUArray in the REPL"""
+function Base.show(io::IOContext{Base.TTY},
+                   ::MIME{Symbol("text/plain")},
+                   arr::SymmPhysTUArray{T}) where T
+    unused = MIME{Symbol("text/plain")}()
+    show(io,unused,full_repr(arr))
+end
+
+"""Generic show method (more testable)"""
+function Base.show(io::IO,
+                   arr::SymmPhysTUArray{T}) where T
+    show(io,full_repr(arr))
+end
+
 
 function _tu_offset(it::Int, iu::Int)
     if it > iu

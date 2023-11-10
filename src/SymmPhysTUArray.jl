@@ -1,7 +1,11 @@
 
 @enum Parity Even Odd
 
-"""A 4-dimensional array that is symmetric in the 2 last dimensions."""
+"""A 4-dimensional array of sizes [Npairs,Ns,Ntu]
+   that is symmetric in the 2 last dimensions [t,u],
+   and contains only elements for which s+t+u
+   has the given parity.
+"""
 struct SymmPhysTUArray{T} <: AbstractArray{T,4}
     v::Vector{T} # The 3rd and 4rd dimensions are unrolled
 

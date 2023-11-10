@@ -10,13 +10,13 @@ include("../../src/SymmPhysTUArray.jl")
         #arr = SymmPhysTUArray{Float64}(3,3,5,Even)
     end
 
-    @testset verbose=true "Length calculation" begin
     @testset verbose=true "show does not throw exceptions" begin
         arr = SymmPhysTUArray{Float64}(3,4,5,Even)
         tmpbuf = IOBuffer()
         @test show(tmpbuf,arr) isa Any
     end
 
+    @testset verbose=false "Length calculation" begin
 	    function calc_n_e_o(Ns,Ntu)
             e,o = 0,0
             for iu in 1:Ntu, it in 1:iu, is in 1:Ns
@@ -293,16 +293,24 @@ include("../../src/SymmPhysTUArray.jl")
                 @test arr[2,3,4,4] isa Any # does not throw
             end
         end
-        @test begin
-            arr = SymmPhysTUArray{Float64}(3,4,5,Even)
-            arr[2,3,4,3] = 42.0
-            arr[2,3,4,3] == 42.0
-        end
-
-        @test begin
-            arr = SymmPhysTUArray{Float64}(3,4,5,Even)
-            arr[2,3,1,4] = 42.0
-            arr[2,3,4,1] == 42.0
+        @testset verbose=true "what you put is what you get back" begin
+            @testset verbose=true "Even partition" begin
+                @testset "same site" begin
+                    arr = SymmPhysTUArray{Float64}(3,4,5,Even)
+                    arr[2,3,4,3] = 42.0
+                    @test arr[2,3,4,3] == 42.0
+                end
+                @testset "symmetric equivalent" begin
+                    arr = SymmPhysTUArray{Float64}(3,4,5,Even)
+                    arr[2,3,1,4] = 42.0
+                    @test arr[2,3,4,1] == 42.0
+                end
+                @testset "does conversion" begin
+                    arr = SymmPhysTUArray{Float64}(3,4,5,Even)
+                    arr[2,3,1,4] = 42 # Int
+                    @test arr[2,3,4,1] == 42.0
+                end
+            end
         end
     end
 end

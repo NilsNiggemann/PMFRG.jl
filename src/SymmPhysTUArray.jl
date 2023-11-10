@@ -172,7 +172,7 @@ struct ParityError{A,I} <: Exception
     i::I
 end
 
-@inline function _check_stu_parity(A::SymmPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
+function _check_stu_parity(A::SymmPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
     if mod(is+it+iu, 2) != A.parity
         throw(ParityError(A,[is,it,iu]))
     end
@@ -184,9 +184,9 @@ function Base.setindex!(A::SymmPhysTUArray{T},
                         Rij::Int64,
                         is::Int64,
                         it::Int64,
-                        iu::Int64) where {T, S<:T}
+                        iu::Int64) where {T,S}
     _check_stu_parity(A,is,it,iu)
-    A.v[_rstu_eo_idx(A.Npairs,Rij,A.s_extent,is,it,iu)] = val
+    A.v[_rstu_eo_idx(A.Npairs,Rij,A.s_extent,is,it,iu)] = T(val)
 end
 
 function Base.getindex(A::SymmPhysTUArray{T},

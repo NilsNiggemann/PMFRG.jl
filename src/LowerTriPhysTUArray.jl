@@ -1,12 +1,15 @@
-
 @enum Parity Even Odd
 
-"""A 4-dimensional array of sizes [Npairs,Ns,Ntu]
-   that is symmetric in the 2 last dimensions [t,u],
-   and contains only elements for which s+t+u
-   has the given parity.
+"""A 4-dimensional array of sizes [Npairs,Ns,Ntu,Ntu]
+   that contains only the elements for which:
+   - iu <= it (or it <= iu)
+   - is+it+iu has the given parity.
+   Whether the array stores
+   the elements for which iu <= it
+   or the elements for which it <= iu
+   depends on the implementation of the indexing functions.
 """
-struct SymmPhysTUArray{T} <: AbstractArray{T,4}
+struct LowerTriPhysTUArray{T} <: AbstractArray{T,4}
     v::Vector{T} # The 3rd and 4rd dimensions are unrolled
 
     Npairs::Int64 # Int32 should be more than enough
@@ -18,16 +21,16 @@ struct SymmPhysTUArray{T} <: AbstractArray{T,4}
     parity::Int64 # Needs only 0 or 1 actually
 end
 
-function SymmPhysTUArray{T}(Npairs::Int,
+function LowerTriPhysTUArray{T}(Npairs::Int,
                             s_extent::Int,
                             tu_extent::Int,
                             parity::Parity) where T
 
-    eo_arr = [n_eo_elements_in_lower_half_stu(s_extent,tu_extent)...]
+    eo_arr = [n_eo_elements_in_tri_half_stu(s_extent,tu_extent)...]
     parity_idx = if parity == Even 1 else 2 end
 
     length = eo_arr[parity_idx]*Npairs
-    SymmPhysTUArray(Vector{T}(undef,length),
+    LowerTriPhysTUArray(Vector{T}(undef,length),
                     Npairs,
                     s_extent,
                     tu_extent,
@@ -35,57 +38,51 @@ function SymmPhysTUArray{T}(Npairs::Int,
                     if parity == Even 0 else 1 end)
 end
 
-function Base.size(A::SymmPhysTUArray{T}) where T
+function Base.size(A::LowerTriPhysTUArray{T}) where T
     A.Npairs,A.s_extent,A.tu_extent,A.tu_extent
 end
 
-function Base.length(A::SymmPhysTUArray{T}) where T
+function Base.length(A::LowerTriPhysTUArray{T}) where T
     A.length
 end
 
-function full_repr(arr::SymmPhysTUArray{T}) where T
+"""Function to convert at LowerTriPhysTUArray
+   to a full array, for printing (and REPL testing)
+"""
+function full_repr(arr::LowerTriPhysTUArray{T}) where T
     full_repr = Array{Union{T,Missing},4}(undef,(arr.Npairs,
                                                  arr.s_extent,
                                                  arr.tu_extent,
                                                  arr.tu_extent))
     for idx in eachindex(IndexCartesian(),full_repr)
         rij,is,it,iu = Tuple(idx)
-        parity =(is+it+iu)%2
-        if parity == arr.parity
+        try
             full_repr[rij,is,it,iu] = arr[rij,is,it,iu]
-        else
-            full_repr[rij,is,it,iu] = Missing()
+        catch e
+            if e isa ParityError || e isa TriHalfError
+                full_repr[rij,is,it,iu] = Missing()
+            else
+                throw(e)
+            end
         end
     end
     full_repr
 end
 
-
-"""Method to display a SymmPhysTUArray in the REPL"""
+"""Method to display a LowerTriPhysTUArray in the REPL"""
 function Base.show(io::IOContext{Base.TTY},
                    ::MIME{Symbol("text/plain")},
-                   arr::SymmPhysTUArray{T}) where T
+                   arr::LowerTriPhysTUArray{T}) where T
     unused = MIME{Symbol("text/plain")}()
     show(io,unused,full_repr(arr))
 end
 
 """Generic show method (more testable)"""
 function Base.show(io::IO,
-                   arr::SymmPhysTUArray{T}) where T
+                   arr::LowerTriPhysTUArray{T}) where T
     show(io,full_repr(arr))
 end
 
-
-function _tu_offset(it::Int, iu::Int)
-    if it > iu
-        a_offset = iu - 1
-        b_offset = it - 1
-    else
-        a_offset = it - 1
-        b_offset = iu - 1
-    end
-    return a_offset + Int((b_offset+1)*b_offset/2)
-end
 
 """Number of even and odd elements in the lower half
    (including the diagonal) of a square array of size Ntu x Ntu
@@ -104,7 +101,7 @@ end
 """Number of even and odd elements in the lower half of the tu-plane
    (including the diagonal plane) of a Ns x Ntu x Ntu array
 """
-function n_eo_elements_in_lower_half_stu(Ns::Int,Ntu::Int)
+function n_eo_elements_in_tri_half_stu(Ns::Int,Ntu::Int)
     all_lower_tu_half = Int(Ntu*(Ntu+1)/2)
     Ns_half = Int(floor(Ns/2))
     common = Ns_half*all_lower_tu_half
@@ -120,66 +117,74 @@ function n_eo_elements_in_lower_half_stu(Ns::Int,Ntu::Int)
     end
 end
 
-function _tu_eo_offset(it::Int, iu::Int)
-    if it < iu
-        a_offset = it - 1
-        b_offset = iu - 1
-    else
-        a_offset = iu - 1
-        b_offset = it - 1
-    end
-    parity = (iu + it)%2
-    e,o = n_eo_elements_in_lower_half_tu(b_offset)
-    eoarr = [e,o]
-
-    return eoarr[parity+1] + Int(floor(a_offset/2))
+# From https://docs.juliahub.com/Exceptions/IC1nl/0.1.0/manual/guide/
+mutable struct TriHalfError <: Exception
+    it::Int
+    iu::Int
+end
+function Base.showerror(io::IO, e::TriHalfError)
+    print(io,"TriangularHalfError:")
+    print(io," Data not stored for index it > iu ($(e.it) > $(e.iu))")
 end
 
-function _stu_offset(s_extent::Int, is::Int, it::Int, iu::Int)
-    s_offset = is-1
-    _tu_offset( it, iu)*s_extent+s_offset
-end
-
+"""Function used to compute the OFFSET in the [s,t,u] sector of a given element
+   in a LowerTriPhysTUArray.
+   It is assumed that iu <= it, otherwise an exception will be thrown.
+"""
 function _stu_eo_offset(s_extent::Int, is::Int, it::Int, iu::Int)
-    if it < iu
-        a_offset = it - 1
-        b_offset = iu - 1
-    else
+    if iu <= it
         a_offset = iu - 1
         b_offset = it - 1
+    else
+        throw(TriHalfError(it,iu))
     end
     s_offset = is - 1
     parity = (is+it+iu)%2
 
-    e,o = n_eo_elements_in_lower_half_stu(s_extent,b_offset)
+    e,o = n_eo_elements_in_tri_half_stu(s_extent,b_offset)
 
     eoarr = [e,o]
     return eoarr[parity+1] + Int(floor((a_offset*s_extent+s_offset)/2))
 
 end
 
+"""Function used to compute the OFFSET in the [Rij, s,t,u] sector of a given element
+   in a LowerTriPhysTUArray.
+"""
 function _rstu_eo_offset(Npairs::Int, rij::Int,s_extent::Int, is::Int, it::Int, iu::Int)
     rij_offset = rij - 1
     _stu_eo_offset(s_extent,is,it,iu)*Npairs + rij_offset
 end
 
+"""
+    _rstu_eo_idx(Npairs::Int, rij::Int,s_extent::Int, is::Int, it::Int, iu::Int)
+
+Function used to compute the INDEX in the [Rij, s,t,u] sector of a given element
+   in a LowerTriPhysTUArray.
+"""
 function _rstu_eo_idx(Npairs::Int, rij::Int,s_extent::Int, is::Int, it::Int, iu::Int)
     _rstu_eo_offset(Npairs, rij,s_extent, is, it, iu)+1
 end
 
-struct ParityError{A,I} <: Exception
+mutable struct ParityError{A,I} <: Exception
     a::A
     i::I
 end
 
-function _check_stu_parity(A::SymmPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
+function Base.showerror(io::IO, e::ParityError)
+    parity = (e.i[1]+e.i[2]+e.i[3])%2
+    print(io,"ParityError: data not stored for $(e.i), parity $(parity) ")
+    println(io,"in array with parity $(e.a.parity):")
+    Base.show(io,e.a)
+end
+
+function _check_stu_parity(A::LowerTriPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
     if mod(is+it+iu, 2) != A.parity
         throw(ParityError(A,[is,it,iu]))
     end
 end
 
-
-function Base.setindex!(A::SymmPhysTUArray{T},
+function Base.setindex!(A::LowerTriPhysTUArray{T},
                         val::S,
                         Rij::Int64,
                         is::Int64,
@@ -189,7 +194,7 @@ function Base.setindex!(A::SymmPhysTUArray{T},
     A.v[_rstu_eo_idx(A.Npairs,Rij,A.s_extent,is,it,iu)] = T(val)
 end
 
-function Base.getindex(A::SymmPhysTUArray{T},
+function Base.getindex(A::LowerTriPhysTUArray{T},
                        Rij::Int64,
                        is::Int64,
                        it::Int64,

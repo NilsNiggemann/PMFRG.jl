@@ -114,7 +114,8 @@ import .LowerTriPhysTUArray: n_eo_elements_in_tri_half_stu,
                                                           (24,20),
                                                           (20,24),
                                                           (24,24),
-                                                          (25,25)]
+                                                          (25,25),
+                                                          ]
                         idxe, idxo = 0,0
                         for it in 1:tu_extent
                             for iu in 1:it
@@ -144,13 +145,18 @@ import .LowerTriPhysTUArray: n_eo_elements_in_tri_half_stu,
                 @test get_rij(15,_rstu_eo_idx(15, rij, 3, 2, 2, 2)) == rij
             end
         end
-        @testset "get_is" begin
-            Ns = 3
-            Ntu = 3
-            for is in 1:Ns, it in 1:Ntu, iu in 1:it
-                @test get_istu(15,
-                               Ns,
-                               _rstu_eo_idx(15, 5, 13, is, it, iu)) == (is,it,iu)
+        @testset "get_istu, Npairs = 1" begin
+            for s_extent = 1:13, Ntu=1:13
+                Npairs = 13
+                for is in 1:s_extent, it in 1:Ntu, iu in 1:it
+                    rstu_eo_idx = _rstu_eo_idx(Npairs, 12, s_extent, is, it, iu)
+                    parity = (is+it+iu)%2
+                    isev, itev, iuev = get_istu(Npairs,
+                                   s_extent,
+                                   rstu_eo_idx,
+                                   parity)
+                    @test (isev,itev, iuev) == (is,it,iu)
+                end
             end
         end
     end

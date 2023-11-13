@@ -1,5 +1,6 @@
 module LowerTriPhysTUArray
 export Even, Odd, lowerTriPhysTUArray
+using Test
 
 @enum Parity Even Odd
 
@@ -136,18 +137,21 @@ end
 """
 function _stu_eo_offset(s_extent::Int, is::Int, it::Int, iu::Int)
     if iu <= it
-        a_offset = iu - 1
-        b_offset = it - 1
+        iu_offset = iu - 1
+        it_offset = it - 1
     else
         throw(TriHalfError(it,iu))
     end
     s_offset = is - 1
     parity = (is+it+iu)%2
 
-    e,o = n_eo_elements_in_tri_half_stu(s_extent,b_offset)
+    e,o = n_eo_elements_in_tri_half_stu(s_extent,it_offset)
+    it_contribution = [e,o][parity+1]
+    iu_contribution = Int(floor(iu_offset*s_extent/2))
+    is_contribution = Int(floor(s_offset/2))
+    parity_contribution = Int(floor(((iu_offset*s_extent)%2 + s_offset%2)/2))
 
-    eoarr = [e,o]
-    return eoarr[parity+1] + Int(floor((a_offset*s_extent+s_offset)/2))
+    return it_contribution + iu_contribution + is_contribution + parity_contribution
 
 end
 
@@ -178,8 +182,34 @@ function get_rij(Npairs::Int,rstu_eo_idx::Int)
     rij_offset + 1
 end
 
-function get_istu(Npairs::Int, s_extent::Int,  rstu_eo_idx::Int )
-    1,1,1 # FIXME
+function get_istu(Npairs::Int, s_extent::Int,  rstu_eo_idx::Int , parity::Int)
+    rstu_eo_offset = rstu_eo_idx - 1
+    stu_eo_offset = Int(floor(rstu_eo_offset/Npairs))
+
+    it_contribution = 0
+    it_offset = 0
+
+    while it_contribution <= stu_eo_offset # TODO: make this smarter
+        it_offset += 1
+        it_contribution = n_eo_elements_in_tri_half_stu(s_extent,it_offset)[parity+1]
+        #@show it_offset, it_contribution
+    end
+    it_offset -= 1
+    it_contribution = n_eo_elements_in_tri_half_stu(s_extent,it_offset)[parity+1]
+
+    it = it_offset + 1 #
+
+    su_eo_offset = stu_eo_offset - it_contribution
+
+    iu = Int(floor((su_eo_offset*2+((parity+it)%2))/s_extent)) + 1
+    if s_extent % 2 == 0
+       is = (su_eo_offset*2+(1-(parity+it+iu)%2))%s_extent + 1
+    else
+       is = (su_eo_offset*2+((parity+it)%2))%s_extent + 1
+    end
+    #@show rstu_eo_idx, stu_eo_offset, it_offset, it_contribution, su_eo_offset
+
+    is,it,iu
 end
 
 mutable struct ParityError{A,I} <: Exception

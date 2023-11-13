@@ -1,9 +1,21 @@
 using Test
 include("../../src/LowerTriPhysTUArray.jl")
+using .LowerTriPhysTUArray
+import .LowerTriPhysTUArray: n_eo_elements_in_tri_half_stu,
+    TriHalfError,
+    ParityError,
+    _stu_eo_offset,
+    _rstu_eo_offset,
+    _rstu_eo_idx,
+    get_rij,
+    get_istu
+
+
+
 
 @testset verbose=true "LowerHalfPhysTUArray tests" begin
     @testset verbose=true "size and length" begin
-        arr = LowerTriPhysTUArray{Float64}(3,4,5,Even)
+        arr = lowerTriPhysTUArray{Float64}(3,4,5,Even)
         @test Base.size(arr) == (3,4,5,5)
         @test Base.length(arr) == 3*4*5*(5+1)/2 / 2
 
@@ -11,7 +23,7 @@ include("../../src/LowerTriPhysTUArray.jl")
     end
 
     @testset verbose=true "show does not throw exceptions" begin
-        arr = LowerTriPhysTUArray{Float64}(3,4,5,Even)
+        arr = lowerTriPhysTUArray{Float64}(3,4,5,Even)
         tmpbuf = IOBuffer()
         @test show(tmpbuf,arr) isa Any
     end
@@ -39,7 +51,7 @@ include("../../src/LowerTriPhysTUArray.jl")
                                                 (5,25,24,Odd),
                                                 (5,24,25,Even),
                                                 (5,24,25,Odd)]
-            arr = LowerTriPhysTUArray{Float64}(Npairs,Ns,Ntu,parity)
+            arr = lowerTriPhysTUArray{Float64}(Npairs,Ns,Ntu,parity)
             parity_idx = if parity == Even 1 else 2 end
             @test Base.length(arr) == calc_n_e_o(Ns,Ntu)[parity_idx] * Npairs
         end
@@ -126,15 +138,31 @@ include("../../src/LowerTriPhysTUArray.jl")
         end
     end
 
+    @testset verbose=true "inverse indexing functions" begin
+        @testset "get_rij" begin
+            for rij in 1:15
+                @test get_rij(15,_rstu_eo_idx(15, rij, 3, 2, 2, 2)) == rij
+            end
+        end
+        @testset "get_is" begin
+            Ns = 3
+            Ntu = 3
+            for is in 1:Ns, it in 1:Ntu, iu in 1:it
+                @test get_istu(15,
+                               Ns,
+                               _rstu_eo_idx(15, 5, 13, is, it, iu)) == (is,it,iu)
+            end
+        end
+    end
     @testset verbose=true "setindex! and getindex" begin
         @testset verbose=true "proper constraints on parity" begin
             @testset "Even type" begin
-                arr = LowerTriPhysTUArray{Float64}(3,4,5,Even)
+                arr = lowerTriPhysTUArray{Float64}(3,4,5,Even)
                 @test_throws ParityError arr[2,3,4,4]
                 @test arr[2,3,4,3] isa Any # does not throw
             end
             @testset "Odd type" begin
-                arr = LowerTriPhysTUArray{Float64}(3,4,5,Odd)
+                arr = lowerTriPhysTUArray{Float64}(3,4,5,Odd)
                 @test_throws ParityError arr[2,3,4,3]
                 @test arr[2,3,4,4] isa Any # does not throw
             end
@@ -142,12 +170,12 @@ include("../../src/LowerTriPhysTUArray.jl")
         @testset verbose=true "what you put is what you get back" begin
             @testset verbose=true "Even partition" begin
                 @testset "same site" begin
-                    arr = LowerTriPhysTUArray{Float64}(3,4,5,Even)
+                    arr = lowerTriPhysTUArray{Float64}(3,4,5,Even)
                     arr[2,3,4,3] = 42.0
                     @test arr[2,3,4,3] == 42.0
                 end
                 @testset "does conversion" begin
-                    arr = LowerTriPhysTUArray{Float64}(3,4,5,Even)
+                    arr = lowerTriPhysTUArray{Float64}(3,4,5,Even)
                     arr[2,3,4,3] = 42 # Int
                     @test arr[2,3,4,3] == 42.0
                 end

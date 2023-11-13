@@ -1,3 +1,6 @@
+module LowerTriPhysTUArray
+export Even, Odd, lowerTriPhysTUArray
+
 @enum Parity Even Odd
 
 """A 4-dimensional array of sizes [Npairs,Ns,Ntu,Ntu]
@@ -9,7 +12,7 @@
    or the elements for which it <= iu
    depends on the implementation of the indexing functions.
 """
-struct LowerTriPhysTUArray{T} <: AbstractArray{T,4}
+struct lowerTriPhysTUArray{T} <: AbstractArray{T,4}
     v::Vector{T} # The 3rd and 4rd dimensions are unrolled
 
     Npairs::Int64 # Int32 should be more than enough
@@ -21,7 +24,7 @@ struct LowerTriPhysTUArray{T} <: AbstractArray{T,4}
     parity::Int64 # Needs only 0 or 1 actually
 end
 
-function LowerTriPhysTUArray{T}(Npairs::Int,
+function lowerTriPhysTUArray{T}(Npairs::Int,
                             s_extent::Int,
                             tu_extent::Int,
                             parity::Parity) where T
@@ -30,7 +33,7 @@ function LowerTriPhysTUArray{T}(Npairs::Int,
     parity_idx = if parity == Even 1 else 2 end
 
     length = eo_arr[parity_idx]*Npairs
-    LowerTriPhysTUArray(Vector{T}(undef,length),
+    lowerTriPhysTUArray(Vector{T}(undef,length),
                     Npairs,
                     s_extent,
                     tu_extent,
@@ -38,18 +41,18 @@ function LowerTriPhysTUArray{T}(Npairs::Int,
                     if parity == Even 0 else 1 end)
 end
 
-function Base.size(A::LowerTriPhysTUArray{T}) where T
+function Base.size(A::lowerTriPhysTUArray{T}) where T
     A.Npairs,A.s_extent,A.tu_extent,A.tu_extent
 end
 
-function Base.length(A::LowerTriPhysTUArray{T}) where T
+function Base.length(A::lowerTriPhysTUArray{T}) where T
     A.length
 end
 
 """Function to convert at LowerTriPhysTUArray
    to a full array, for printing (and REPL testing)
 """
-function full_repr(arr::LowerTriPhysTUArray{T}) where T
+function full_repr(arr::lowerTriPhysTUArray{T}) where T
     full_repr = Array{Union{T,Missing},4}(undef,(arr.Npairs,
                                                  arr.s_extent,
                                                  arr.tu_extent,
@@ -72,14 +75,14 @@ end
 """Method to display a LowerTriPhysTUArray in the REPL"""
 function Base.show(io::IOContext{Base.TTY},
                    ::MIME{Symbol("text/plain")},
-                   arr::LowerTriPhysTUArray{T}) where T
+                   arr::lowerTriPhysTUArray{T}) where T
     unused = MIME{Symbol("text/plain")}()
     show(io,unused,full_repr(arr))
 end
 
 """Generic show method (more testable)"""
 function Base.show(io::IO,
-                   arr::LowerTriPhysTUArray{T}) where T
+                   arr::lowerTriPhysTUArray{T}) where T
     show(io,full_repr(arr))
 end
 
@@ -156,6 +159,8 @@ function _rstu_eo_offset(Npairs::Int, rij::Int,s_extent::Int, is::Int, it::Int, 
     _stu_eo_offset(s_extent,is,it,iu)*Npairs + rij_offset
 end
 
+
+
 """
     _rstu_eo_idx(Npairs::Int, rij::Int,s_extent::Int, is::Int, it::Int, iu::Int)
 
@@ -164,6 +169,17 @@ Function used to compute the INDEX in the [Rij, s,t,u] sector of a given element
 """
 function _rstu_eo_idx(Npairs::Int, rij::Int,s_extent::Int, is::Int, it::Int, iu::Int)
     _rstu_eo_offset(Npairs, rij,s_extent, is, it, iu)+1
+end
+
+
+function get_rij(Npairs::Int,rstu_eo_idx::Int)
+    rstu_eo_offset = rstu_eo_idx-1
+    rij_offset = rstu_eo_offset % Npairs
+    rij_offset + 1
+end
+
+function get_istu(Npairs::Int, s_extent::Int,  rstu_eo_idx::Int )
+    1,1,1 # FIXME
 end
 
 mutable struct ParityError{A,I} <: Exception
@@ -178,13 +194,13 @@ function Base.showerror(io::IO, e::ParityError)
     Base.show(io,e.a)
 end
 
-function _check_stu_parity(A::LowerTriPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
+function _check_stu_parity(A::lowerTriPhysTUArray{T}, is::Int,it::Int,iu::Int) where T
     if mod(is+it+iu, 2) != A.parity
         throw(ParityError(A,[is,it,iu]))
     end
 end
 
-function Base.setindex!(A::LowerTriPhysTUArray{T},
+function Base.setindex!(A::lowerTriPhysTUArray{T},
                         val::S,
                         Rij::Int64,
                         is::Int64,
@@ -194,11 +210,12 @@ function Base.setindex!(A::LowerTriPhysTUArray{T},
     A.v[_rstu_eo_idx(A.Npairs,Rij,A.s_extent,is,it,iu)] = T(val)
 end
 
-function Base.getindex(A::LowerTriPhysTUArray{T},
+function Base.getindex(A::lowerTriPhysTUArray{T},
                        Rij::Int64,
                        is::Int64,
                        it::Int64,
                        iu::Int64) where T
     _check_stu_parity(A,is,it,iu)
     A.v[_rstu_eo_idx(A.Npairs,Rij,A.s_extent,is,it,iu)]
+end
 end

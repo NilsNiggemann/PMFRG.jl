@@ -59,11 +59,11 @@ function Threadsfill!(Tensor::AbstractArray, val)
 end
 
 """fills an array with zeros"""
-setZero!(a::AbstractArray{T,N}) where {T,N} = fill!(a, zero(T))
+setZero!(a::AbstractArray{T,N}) where {T,N} = @tturbo a .= zero(T)
 
 function setZero!(PartArr::ArrayPartition)
     for arr in PartArr.x
-        fill!(arr, 0.0)
+        @tturbo arr .= 0.0
     end
 end
 
@@ -71,7 +71,7 @@ end
 """Recursively sets structure to zero"""
 function setZero!(a::T) where {T<:VertexOrBubble}
     for f in fieldnames(T)
-        setZero!(getfield(a, f))
+        @tturbo getfield(a,f) .= 0.0
     end
     return a
 end

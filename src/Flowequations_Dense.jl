@@ -1,5 +1,6 @@
 
 function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) where {T}
+    @timeit_debug "getDeriv!" begin
     @timeit_debug "setup" (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
     @timeit_debug "workspace" Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
@@ -13,6 +14,7 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) 
     @timeit_debug "addToVertexFromBubble!" addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
     @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
     flush(stdout)
+    end
 
     return
 end
@@ -110,14 +112,15 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
         nranks = MPI.Comm_size(MPI.COMM_WORLD)
         rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
-        @timeit_debug "get_ranges" isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
+
+        @timeit_debug "get_ranges" iurange, itrange, isrange = MPI_Detail.get_ranges((N,N,N), nranks, rank)
         @timeit_debug "partition" getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange)
 	
         (;X) = Workspace
 
 	
         @timeit_debug "communication" for root in 0:(nranks-1)
-            isrange, itrange, iurange = MPI_Detail.get_ranges((N,N,N), nranks, root)
+            iurange, itrange, isrange = MPI_Detail.get_ranges((N,N,N), nranks, root)
 
             MPI.Bcast!((@view X.a[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)
             MPI.Bcast!((@view X.b[:,isrange,itrange,iurange]), root, MPI.COMM_WORLD)

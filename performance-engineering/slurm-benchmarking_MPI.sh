@@ -20,16 +20,22 @@ module use "$HOME/modules"
 module load mpi/openmpi/4.1 
 module load julia/1.9.3
 
+export ZES_ENABLE_SYSMAN=1
+export OMPI_MCA_coll_hcoll_enable="0"
+export UCX_ERROR_SIGNALS="SIGILL,SIGBUS,SIGFPE"
+
 MPIEXEC="/home/hk-project-scs/hs2454/.julia/bin/mpiexecjl --project=$PROJECT"
 SCRIPT="$ROOT/PMFRG.jl/performance-engineering/slurm-benchmarking_MPI.sh"
 
 COMMAND=($MPIEXEC -n $SLURM_NTASKS 
-         julia # --project="$PROJECT" 
+         julia --project="$PROJECT" 
          --optimize=3 
          --threads $SLURM_CPUS_PER_TASK 
 	 $SCRIPT) 
 echo ${COMMAND[@]} 
 ${COMMAND[@]} 
+
+
 
 wait
 exit

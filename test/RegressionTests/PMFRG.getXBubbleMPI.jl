@@ -36,7 +36,9 @@ function compare_arguments_post(args_post_exp, args_post)
         expval = getfield(Xexp,field)
         if val != expval
             print("Test failed: $field differs :")
-            print("Absolute Difference : ", sum( abs.(val.-expval)), "\n")
+            print("Absolute Difference: ", sum( abs.(val.-expval)), "\n")
+            print("Number of wrong values: ", sum( (val .!= expval)), "\n")
+            print("size of field:", size(val))
             result = false
         end
     end

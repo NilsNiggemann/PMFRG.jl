@@ -87,7 +87,7 @@ using .BestPartitionTriangle: _get_ranges_tu,
             stu_ranges = get_all_ranges_stu(N,nranks,parity)
             @testset for it in 1:N, iu in 1:it, is in 1:N
                 if (it+iu+is)%2 == parity
-                    for (itrange,iurange,isrange)  in stu_ranges
+                    for (isrange,itrange,iurange)  in stu_ranges
                         if (is in isrange &&
                             it in itrange &&
                             iu in iurange)
@@ -145,7 +145,9 @@ using .BestPartitionTriangle: _get_ranges_tu,
             all_ranges = get_all_ranges_stu(N,nranks,parity)
             if imbalance >= 0.10
                 println("N:$N, nranks:$nranks, parity:$parity - imbalance = $imbalance")
-                println(all_ranges)
+                for (rank,ranges) in enumerate(all_ranges)
+                    println("Rank $(rank-1): $ranges")
+                end
             end
             @test imbalance <= 0.15
         end

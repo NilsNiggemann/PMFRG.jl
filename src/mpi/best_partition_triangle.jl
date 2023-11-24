@@ -30,6 +30,7 @@ function _get_ranges_tu(N,nranks_tu, rank_tu)
     end
 
     start+1:stop , 1:stop
+
 end
 
 
@@ -79,7 +80,7 @@ function get_imbalance_from_ranges(N::Int,
                                    parity::Int)
     min_nsites = typemax(Int64)
     max_nsites = 0
-    for (irank,(itrange,iurange,isrange)) in enumerate(all_ranges)
+    for (irank,(isrange,itrange,iurange)) in enumerate(all_ranges)
         nsites = _count_sites(itrange,iurange,isrange,parity)
         min_nsites = (nsites<min_nsites) ? nsites : min_nsites
         max_nsites = (nsites>max_nsites) ? nsites : max_nsites
@@ -118,7 +119,7 @@ function get_all_ranges_stu(N,nranks,parity)
             rank_tu = div(rank, nranks_s, RoundToZero)
             range_s = partitions(N,nranks_s)[1+rank_s]
             range_tu = _get_ranges_tu(N,nranks_tu,rank_tu)
-            range_stu = (range_tu..., range_s)
+            range_stu = (range_s, range_tu...)
             push!(all_ranges,range_stu)
         end
         candidate_imbalance = get_imbalance_from_ranges(N,nranks,all_ranges,parity)

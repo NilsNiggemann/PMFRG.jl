@@ -2,6 +2,14 @@ module BestPartitionTriangle
 include("./partition.jl")
 import .Partition: partitions
 
+struct TooManyRanksError <: Exception
+    rank_tu::Int
+    N::Int
+end
+
+function Base.show(io::IO,e::TooManyRanksError)
+    println(io, "Too many ranks ($(e.rank_tu)) for N=$(e.N)")
+end
 
 """Returns the t and u ranges for a given rank out of nranks,
    trying to produce the most balanced partition
@@ -15,37 +23,74 @@ function _get_ranges_tu(N,nranks_tu, rank_tu)
     nsites_after_target = round(nsites_per_rank*(rank_tu+1))
 
     start = argmin(x -> abs(get_number_of_sites(x) - nsites_before_target),0:N)
-    end_ = argmin(x -> abs(get_number_of_sites(x) - nsites_after_target),1:N)
+    stop = argmin(x -> abs(get_number_of_sites(x) - nsites_after_target),1:N)
 
-    start+1:end_ , 1:end_
+    if start+1 > N
+        throw(TooManyRanksError(rank_tu,N))
+    end
+
+    start+1:stop , 1:stop
 end
 
-function get_imbalance_from_ranges(N,nranks,all_ranges,parity)
+
+function _count_sites(itrange,iurange,isrange,parity)
+    @assert iurange.start == 1
+    @assert iurange.stop == itrange.stop
+    function nsites_even_srange(itrange,isrange)
+        (itrange.start+itrange.stop)*length(itrange)/2 *length(isrange)/2
+    end
+    if length(isrange) %2 == 0
+        nsites_even_srange(itrange,isrange)
+    else
+        # tu slice
+        triangle_side = itrange.stop - itrange.start + 1
+        # rectangle
+        sir_a = div(triangle_side * itrange.start,2,RoundFromZero)
+        sir_b = div(triangle_side * itrange.start,2,RoundToZero)
+
+        if triangle_side % 2 == 1 && itrange.start % 2 == 1
+
+            parity_of_corners = (itrange.start+1) % 2
+            sir_e, sir_o = [sir_a,sir_b][ [parity_of_corners + 1,
+                                          2 - parity_of_corners]]
+        else
+            sir_e = sir_a
+            sir_o = sir_b
+        end
+        # triangle
+        # sit_e, sit_o: sites in triangle (t+u even/odd)
+        sit_e, sit_o = _get_number_of_sites_eo(triangle_side-1 )
+
+        # sip_e, sip_o: sites in traPeze (t+u even/odd)
+        sip_e = sir_e + sit_e
+        sip_o = sir_o + sit_o
+
+        nsites_base = nsites_even_srange(itrange,isrange.start:(isrange.stop-1))
+        #nsites_base + [sip_e,sip_o][parity + 1] # NOPE
+        eo_parity = (isrange.stop + parity)%2
+        nsites_base + [sip_e,sip_o][1+eo_parity]
+    end
+end
+
+
+function get_imbalance_from_ranges(N::Int,
+                                   nranks::Int,
+                                   all_ranges,
+                                   parity::Int)
     min_nsites = typemax(Int64)
     max_nsites = 0
     for (irank,(itrange,iurange,isrange)) in enumerate(all_ranges)
-        nsites = 0
-        for is in isrange, it in itrange, iu in iurange
-            if iu <= it && (is+it+iu)%2 == parity
-                nsites += 1
-            end
-        end
+        nsites = _count_sites(itrange,iurange,isrange,parity)
         min_nsites = (nsites<min_nsites) ? nsites : min_nsites
         max_nsites = (nsites>max_nsites) ? nsites : max_nsites
     end
-    if max_nsites == 0
-        println("max_nsites == 0 : $N,$nranks,$parity")
-    end
-
-    if min_nsites ==  typemax(Int64)
-        println("min_nsites == $(typemax(Int64)) : $N,$nranks,$parity")
-    end
-    return (max_nsites - min_nsites)/max_nsites
+    return (max_nsites - min_nsites) / max_nsites
 end
+
+
 
 """Returns an estimate of the load imbalance among the ranks,
    in the range 0.0-1.0.
-   This is a ~O(N^3) function that iterates on all the sites of interest.
  """
 function get_imbalance(N,nranks,get_ranges_func,parity)
     all_ranges = [get_ranges_func(N,nranks,parity,irank) for irank in 0:(nranks-1)]
@@ -61,22 +106,32 @@ function _split_nranks_in_s_and_tu(nranks)
 end
 
 
-function get_ranges_stu(N,nranks,parity,rank)
+function get_all_ranges_stu(N,nranks,parity)
     imbalance = 1.0
 
+    all_ranges_best = []
+
     for (nranks_s,nranks_tu) in _split_nranks_in_s_and_tu(nranks)
-        rank_s = rank % nranks_s
-        rank_tu = div(rank, nranks_s, RoundToZero)
-        range_s = partitions(N,nranks_s)[1+rank_s]
-        range_tu = _get_ranges_tu(N,nranks_tu,rank_tu)
-        range_stu = (range_s, range_tu...)
+        all_ranges = Vector{Tuple{UnitRange,UnitRange,UnitRange}}()
+        for rank in 0:(nranks-1)
+            rank_s = rank % nranks_s
+            rank_tu = div(rank, nranks_s, RoundToZero)
+            range_s = partitions(N,nranks_s)[1+rank_s]
+            range_tu = _get_ranges_tu(N,nranks_tu,rank_tu)
+            range_stu = (range_tu..., range_s)
+            push!(all_ranges,range_stu)
+        end
+        candidate_imbalance = get_imbalance_from_ranges(N,nranks,all_ranges,parity)
+        if candidate_imbalance < imbalance
+            all_ranges_best = all_ranges
+            imbalance = candidate_imbalance
+        end
     end
-    # FAKE implementation
-    if rank == 0
-        1:N,1:N,1:N
-    else
-        1:0, 1:0, 1:0
-    end
+    all_ranges_best
+end
+
+function get_ranges_stu(N,nranks,parity,irank)
+    get_all_ranges_stu(N,nranks,parity)[irank+1]
 end
 
 
@@ -88,13 +143,16 @@ end
 
 """Returns the number of sites having iu<=it<=Ntu with a given parity."""
 function _get_number_of_sites_eo(Ntu)
-    nhalf = Int(floor(Ntu/2))
     total_elements = get_number_of_sites(Ntu)
+    even = if (Ntu % 2 == 0)
+        nhalf = Ntu/2
+        2*nhalf*(nhalf+1)/2
+    else
+        nhalf = (Ntu-1)/2
+        2*nhalf*(nhalf+1)/2 + nhalf + 1
+    end
 
-    a = nhalf*(nhalf+1)
-    b = total_elements - a
-
-    even, odd = if Ntu%2 == 0 a,b else b,a end
+    odd = total_elements - even
     even, odd
 end
 end

@@ -123,7 +123,7 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
 
         @timeit_debug "get_ranges" all_ranges = MPI_Detail.get_all_ranges_stu(N, nranks, parity)
         iurange_full = 1:N
-        isrange, itrange, iurange_restrict = all_ranges[rank+1]
+        isrange, itrange, _ = all_ranges[rank+1]
         @timeit_debug "partition" getXBubblePartition!(Workspace,Lam,isrange,itrange,iurange_full)
 	
         (;X) = Workspace
@@ -131,6 +131,7 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam)
 	
         @timeit_debug "communication" for root in 0:(nranks-1)
             isrange, itrange, iurange_restrict = all_ranges[root+1]
+            iurange_abc = Par.Options.usesymmetry ? iurange_restrict : iurange_full
 
             MPI.Bcast!((@view X.a[:,isrange,itrange,iurange_restrict]), root, MPI.COMM_WORLD)
             MPI.Bcast!((@view X.b[:,isrange,itrange,iurange_restrict]), root, MPI.COMM_WORLD)

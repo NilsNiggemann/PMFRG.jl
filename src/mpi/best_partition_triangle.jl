@@ -93,7 +93,7 @@ end
    in the range 0.0-1.0.
  """
 function get_imbalance(N,nranks,get_ranges_func,parity)
-    all_ranges = [get_ranges_func(N,nranks,parity,irank) for irank in 0:(nranks-1)]
+    all_ranges = get_ranges_func(N,nranks,parity)
     get_imbalance_from_ranges(N,nranks,all_ranges,parity)
 end
 
@@ -129,12 +129,6 @@ function get_all_ranges_stu(N,nranks,parity)
     end
     all_ranges_best
 end
-
-function get_ranges_stu(N,nranks,parity,irank)
-    get_all_ranges_stu(N,nranks,parity)[irank+1]
-end
-
-
 
 """Returns the number of sites having iu<=it<=Ntu"""
 function get_number_of_sites(Ntu)

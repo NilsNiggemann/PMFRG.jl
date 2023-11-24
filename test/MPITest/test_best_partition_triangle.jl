@@ -3,7 +3,7 @@ include("../../src/mpi/best_partition_triangle.jl")
 using .BestPartitionTriangle: _get_ranges_tu,
     _get_number_of_sites_eo,
     _split_nranks_in_s_and_tu,
-    get_ranges_stu,
+    get_all_ranges_stu,
     get_imbalance,
     _count_sites
 
@@ -84,7 +84,7 @@ using .BestPartitionTriangle: _get_ranges_tu,
             covered = Array{Int64,3}(undef,(N,N,N))
             covered .= 0
 
-            stu_ranges = [get_ranges_stu(N,nranks,parity,r) for r in 0:(nranks-1)]
+            stu_ranges = get_all_ranges_stu(N,nranks,parity)
             @testset for it in 1:N, iu in 1:it, is in 1:N
                 if (it+iu+is)%2 == parity
                     for (itrange,iurange,isrange)  in stu_ranges
@@ -134,16 +134,18 @@ using .BestPartitionTriangle: _get_ranges_tu,
     @testset "imbalance must be zero for a singe rank" begin
         @testset for N in 2:20, parity in 0:1
             nranks = 1
-            imbalance =  get_imbalance(N,nranks,get_ranges_stu,parity)
+            imbalance =  get_imbalance(N,nranks,get_all_ranges_stu,parity)
             @test imbalance == 0
         end
     end
 
     @testset "imbalance is <15% for relevant use cases" begin
         @testset for N in 10:5:50,nranks in 2:min(div(N,4),5), parity in 0:1
-            imbalance =  get_imbalance(N,nranks,get_ranges_stu,parity)
-            if imbalance >= 0.15
+            imbalance =  get_imbalance(N,nranks,get_all_ranges_stu,parity)
+            all_ranges = get_all_ranges_stu(N,nranks,parity)
+            if imbalance >= 0.10
                 println("N:$N, nranks:$nranks, parity:$parity - imbalance = $imbalance")
+                println(all_ranges)
             end
             @test imbalance <= 0.15
         end

@@ -8,6 +8,7 @@ using .BestPartitionTriangle: _get_ranges_tu,
     _count_sites
 
 
+function test_best_partition_triangle()
 @testset verbose=true "Tests for best triangle partition" begin
     @testset verbose=true "Simple manual cases" begin
         #                    N,nranks,rank
@@ -152,5 +153,7 @@ using .BestPartitionTriangle: _get_ranges_tu,
             @test imbalance <= 0.15
         end
     end
+
+end
 
 end

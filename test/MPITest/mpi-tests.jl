@@ -1,17 +1,13 @@
 using MPI
 using Test
 
-include("./test_decompose.jl") # TODO: remove
 include("./test_partition.jl")
-include("./test_best_partition.jl") # TODO: remove
 include("./test_best_partition_triangle.jl")
-
 function test_mpi()
 @testset verbose=true "MPI tests" begin
     @testset verbose=true "Unit tests for MPI functionality" begin
         test_1D_partition()
-        test_decompose()
-        test_partitioning_tools()
+        test_best_partition_triangle()
     end
 
     function run_mpi_script(script,n,testname)
@@ -53,5 +49,3 @@ function test_mpi()
     end
 end
 end
-
-test_mpi()

@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    runs-on: julia:1.9.3
+    steps:
+      - uses: actions/checkout@v3
+      - name: Format Check
+        run: |
+          julia -e 'using Pkg
+                    Pkg.add("JuliaFormatter")'
+          julia -e 'using JuliaFormatter 
+                    @assert format(".") "Code not properly formatted!"'
+      - name: Test
+        run: |
+          julia --threads=4 -e 'using Pkg                                                   
+                                Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
+                                Pkg.activate("/PMFRG.jl")
+                                Pkg.test()'
+

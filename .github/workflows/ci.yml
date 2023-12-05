@@ -15,12 +15,6 @@ jobs:
       image: julia:1.9.3
     steps:
       - uses: actions/checkout@v3
-      - name: Format Check
-        run: |
-          julia -e 'using Pkg
-                    Pkg.add("JuliaFormatter")'
-          julia -e 'using JuliaFormatter 
-                    @assert format(".") "Code not properly formatted!"'
       - name: Test
         run: |
           julia --threads=4 -e 'using Pkg                                                   
@@ -28,3 +22,10 @@ jobs:
                                 Pkg.activate("/PMFRG.jl")
                                 Pkg.test()'
 
+
+      - name: Format Check
+        run: |
+          julia -e 'using Pkg
+                    Pkg.add("JuliaFormatter")'
+          julia -e 'using JuliaFormatter 
+                    @assert format(".") "Code not properly formatted!"'

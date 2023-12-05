@@ -19,7 +19,7 @@ jobs:
         run: |
           julia --threads=4 -e 'using Pkg                                                   
                                 Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
-                                Pkg.activate("/PMFRG.jl")
+                                Pkg.activate(".")
                                 Pkg.test()'
 
 

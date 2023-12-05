@@ -432,7 +432,7 @@ function symmetrizeBubble!(X::BubbleType, Par::PMFRGParams)
                 X.a[Rij, is, it, iu] = -X.a[Rij, is, iu, it]
                 X.b[Rij, is, it, iu] = -X.b[Rij, is, iu, it]
                 X.c[Rij,is,it,iu] = (
-                + X.a[Rij,is,it,iu]+
+                + X.a[Rij,is,it,iu]
                 - X.b[Rij,is,it,iu]+
                 + X.c[Rij,is,iu,it])
             end

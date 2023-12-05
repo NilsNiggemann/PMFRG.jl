@@ -18,10 +18,9 @@ jobs:
       - name: Test
         run: |
           julia --threads=4 -e 'using Pkg                                                   
-                                Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
                                 Pkg.activate(".")
+                                Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
                                 Pkg.test()'
-
 
       - name: Format Check
         run: |

@@ -59,11 +59,11 @@ function Threadsfill!(Tensor::AbstractArray, val)
 end
 
 """fills an array with zeros"""
-setZero!(a::AbstractArray{T,N}) where {T,N} = fill!(a, zero(T))
+setZero!(a::AbstractArray{T,N}) where {T,N} = @tturbo a .= zero(T)
 
-function setZero!(PartArr::ArrayPartition)
+function setZero!(PartArr::ArrayPartition{T}) where {T}
     for arr in PartArr.x
-        fill!(arr, 0.0)
+        @tturbo arr .= zero(T)
     end
 end
 
@@ -75,7 +75,6 @@ function setZero!(a::T) where {T<:VertexOrBubble}
     end
     return a
 end
-
 function absmax(x)
     MaxAndPos = findmax(x)
     MinAndPos = findmin(x)

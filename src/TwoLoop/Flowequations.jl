@@ -46,32 +46,66 @@ Computes a two-particle bubble in the s-Channel given two four-point functions (
 Γ is assumed to be a vertex.
 To allow the computation using just the left part of a bubble, specification of the transpose is needed i.e. Transpose(X_L) = X_R and Transpose(X) = X, where X = XL + XR is the full bubble.
 """
-function addTo2PartBubble!(ResultBubble::BubbleType,X,XTransp,Γ::VertexType,getProp!::Function,addBTilde_Func!::Function,addB_Func!::Function,Par,Buffer)
-    (;N,lenIntw,np_vec) = Par.NumericalParams
-	@sync begin
-		for is in 1:N,it in 1:N
-			Threads.@spawn begin
+function addTo2PartBubble!(
+    ResultBubble::BubbleType,
+    X,
+    XTransp,
+    Γ::VertexType,
+    getProp!::Function,
+    addBTilde_Func!::Function,
+    addB_Func!::Function,
+    Par,
+    Buffer,
+)
+    (; N, lenIntw, np_vec) = Par.NumericalParams
+    @sync begin
+        for is = 1:N, it = 1:N
+            Threads.@spawn begin
                 BubbleProp = take!(Buffer.Props)# get pre-allocated thread-safe buffers
                 VBuffer = take!(Buffer.Vertex)
                 XBuffer = take!(Buffer.X)
                 ns = np_vec[is]
                 nt = np_vec[it]
-                for nw in -lenIntw:lenIntw-1 # Matsubara sum
-                    sprop = getProp!(BubbleProp,nw,nw+ns)
-                    for iu in 1:N
+                for nw = -lenIntw:lenIntw-1 # Matsubara sum
+                    sprop = getProp!(BubbleProp, nw, nw + ns)
+                    for iu = 1:N
                         nu = np_vec[iu]
-                        if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
+                        if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
                             continue
                         end
-                        addBTilde_Func!(ResultBubble,X,XTransp,Γ, is,it,iu,nw,Par,sprop)
-                        if(!Par.Options.usesymmetry || nu<=nt)
-                            addB_Func!(ResultBubble,X,XTransp,Γ,is,it,iu,nw,Par,sprop,VBuffer,XBuffer)
+                        addBTilde_Func!(
+                            ResultBubble,
+                            X,
+                            XTransp,
+                            Γ,
+                            is,
+                            it,
+                            iu,
+                            nw,
+                            Par,
+                            sprop,
+                        )
+                        if (!Par.Options.usesymmetry || nu <= nt)
+                            addB_Func!(
+                                ResultBubble,
+                                X,
+                                XTransp,
+                                Γ,
+                                is,
+                                it,
+                                iu,
+                                nw,
+                                Par,
+                                sprop,
+                                VBuffer,
+                                XBuffer,
+                            )
                         end
                     end
                 end
-                put!(Buffer.Props,BubbleProp)
-                put!(Buffer.Vertex,VBuffer)
-                put!(Buffer.X,XBuffer)
+                put!(Buffer.Props, BubbleProp)
+                put!(Buffer.Vertex, VBuffer)
+                put!(Buffer.X, XBuffer)
             end
         end
     end

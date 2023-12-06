@@ -61,9 +61,9 @@ end
 """fills an array with zeros"""
 setZero!(a::AbstractArray{T,N}) where {T,N} = @tturbo a .= zero(T)
 
-function setZero!(PartArr::ArrayPartition)
+function setZero!(PartArr::ArrayPartition{T}) where T
     for arr in PartArr.x
-        @tturbo arr .= 0.0
+        @tturbo arr .= zero(T)
     end
 end
 
@@ -71,7 +71,7 @@ end
 """Recursively sets structure to zero"""
 function setZero!(a::T) where {T<:VertexOrBubble}
     for f in fieldnames(T)
-        @tturbo getfield(a,f) .= 0.0
+        setZero!(getfield(a,f))
     end
     return a
 end

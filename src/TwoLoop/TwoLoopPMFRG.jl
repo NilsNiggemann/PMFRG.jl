@@ -11,9 +11,8 @@ function AllocateSetup(Par::TwoLoopParams)
     X = BubbleType(Par)
     Y = BubbleType(Par)
     floattype = _getFloatType(Par)
-    PropsBuffers = getChannel([
-        MMatrix{NUnique,NUnique,floattype}(undef) for _ = 1:Threads.nthreads()
-    ])
+    PropsBuffers =
+        getChannel([MMatrix{NUnique,NUnique,floattype}(undef) for _ = 1:Threads.nthreads()])
     VertexBuffers =
         getChannel([VertexBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
     BubbleBuffers =

@@ -234,7 +234,7 @@ function generateMainFile(Directory::String,Par::PMFRGParams, arg::String=""; sa
     FName = joinpath(Directory,generateFileName(Par,arg;kwargs...))
     
     unique && (FName = UniqueFileName(FName))
-    h5open(FName, "w") do f
+    h5open(FName, "cw") do f
         if savekeywords
             for (k, v) in kwargs
                 f[string(k)] = v

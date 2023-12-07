@@ -18,6 +18,8 @@ jobs:
           lfs: 'true'
       
       - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1.9.3'
       - name: Install dependencies and Test
         run: |
           julia --threads=4 -e 'using Pkg                                                   

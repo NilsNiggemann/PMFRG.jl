@@ -21,3 +21,11 @@ jobs:
                                 Pkg.activate(".")
                                 Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
                                 Pkg.test()'
+
+                                
+      - name: Formatting Check
+        run: |
+          julia -e 'using Pkg
+                    Pkg.add("JuliaFormatter")'
+          julia -e 'using JuliaFormatter 
+                    @assert format(".") "Code not properly formatted!"'

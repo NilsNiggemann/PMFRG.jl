@@ -132,6 +132,8 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange,itrange)
             BubbleProp[i, j] = iSKat(i, nw1) * iG(j, nw2) * T
         end
         return SMatrix(BubbleProp)
+    end
+    @sync begin
 		for is in isrange,it in itrange
 			Threads.@spawn begin
 				BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers

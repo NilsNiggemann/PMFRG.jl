@@ -15,9 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
-      - name: Install dependencies
+      - name: Install dependencies and Test
         run: |
-           julia -e 'using Pkg
-                     Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")'   
-      - uses: julia-actions/julia-runtest@v1
-
+          julia --threads=4 -e 'using Pkg                                                   
+                                Pkg.activate(".")
+                                Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
+                                Pkg.test()'

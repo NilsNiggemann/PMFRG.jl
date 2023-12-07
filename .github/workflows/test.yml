@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - main
+      - CI-LFS
   pull_request:
   workflow_dispatch:
   

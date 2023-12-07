@@ -22,10 +22,11 @@ jobs:
           version: '1.9.3'
       - name: Install dependencies and Test
         run: |
-          julia --threads=4 -e 'using Pkg                                                   
-                                Pkg.activate(".")
-                                Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
-                                Pkg.test()'
+          ls -lh test/RegressionTests
+          julia -e 'using Pkg                                                   
+                    Pkg.activate(".")
+                    Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
+                    Pkg.test()'
 
                                 
       - name: Formatting Check

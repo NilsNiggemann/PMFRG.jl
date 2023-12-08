@@ -19,8 +19,6 @@ jobs:
       - name: Check lsf  
         run: ls -lh test/RegressionTests
       - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1.9.3'
       - name: Install dependencies and Test
         run: |
           julia -e 'using Pkg                                                   

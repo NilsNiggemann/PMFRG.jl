@@ -105,34 +105,35 @@ function launchPMFRG!(
     )
 
     (; Lam_max, Lam_min, accuracy) = Par.NumericalParams
-    save_func(State, t, integrator) = getObservables(ObservableType, State, t_to_Lam(t), Par)
+    save_func(State, t, integrator) =
+        getObservables(ObservableType, State, t_to_Lam(t), Par)
 
     saved_values = SavedValues(eltype(State), ObservableType)
     i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function bareOutput(State, t, integrator)
         @timeit_debug "bareOutput" begin
-        Lam = t_to_Lam(t)
-        i += 1
-        i % CheckPointSteps == 0 && setCheckpoint(
-            CheckpointDirectory,
-            State,
-            saved_values,
-            Lam,
-            Par,
-            VertexCheckpoints,
-        )
-	end
+            Lam = t_to_Lam(t)
+            i += 1
+            i % CheckPointSteps == 0 && setCheckpoint(
+                CheckpointDirectory,
+                State,
+                saved_values,
+                Lam,
+                Par,
+                VertexCheckpoints,
+            )
+        end
     end
 
     function verboseOutput(State, t, integrator)
         @timeit_debug "verboseOutput" begin
-        Lam = t_to_Lam(t)
-        println("Time taken for output saving: ")
-        bareOutput(State, t, integrator)
-        println("")
-        writeOutput(State, saved_values, Lam, Par)
-	end
+            Lam = t_to_Lam(t)
+            println("Time taken for output saving: ")
+            bareOutput(State, t, integrator)
+            println("")
+            writeOutput(State, saved_values, Lam, Par)
+        end
     end
 
     function getOutputfunction(MinimalOutput)
@@ -205,13 +206,13 @@ end
 DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 
 function getObservables(::Type{Observables}, State::ArrayPartition, Lam, Par)
-    @timeit_debug "get_observables" begin 
-    f_int, gamma, Va, Vb, Vc = State.x
-    chi = getChi(State, Lam, Par)
-    MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    return Observables(chi, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
+    @timeit_debug "get_observables" begin
+        f_int, gamma, Va, Vb, Vc = State.x
+        chi = getChi(State, Lam, Par)
+        MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+        MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+        MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+        return Observables(chi, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
     end
 end
 

@@ -34,18 +34,18 @@ System = getSquareLattice(NLen, couplings)
 ParSmall = Params(
     SystemToy,        # geometry, this is always required
     OneLoop(),     # method. OneLoop() is the default
-    T=0.5,         # Temperature for the simulation.
-    N=10,          # Number of positive Matsubara frequencies for the four-point vertex.
-    accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
-    MinimalOutput=true,
+    T = 0.5,         # Temperature for the simulation.
+    N = 10,          # Number of positive Matsubara frequencies for the four-point vertex.
+    accuracy = 1e-3, #absolute and relative tolerance of the ODE solver.
+    MinimalOutput = true,
 )
 Par = Params(
     System,        # geometry, this is always required
     OneLoop(),     # method. OneLoop() is the default
-    T=0.5,         # Temperature for the simulation.
-    N=25,          # Number of positive Matsubara frequencies for the four-point vertex.
-    accuracy=1e-3, #absolute and relative tolerance of the ODE solver.
-    MinimalOutput=true,
+    T = 0.5,         # Temperature for the simulation.
+    N = 25,          # Number of positive Matsubara frequencies for the four-point vertex.
+    accuracy = 1e-3, #absolute and relative tolerance of the ODE solver.
+    MinimalOutput = true,
 )
 
 
@@ -60,29 +60,33 @@ function profile_solvefrg()
 
     # First run to ensure we have the compiled code
     # and we are not profiling the jit compiler instead.
-    Solution, saved_values = SolveFRG(ParSmall,
-        MainFile=mainFile,
-        CheckpointDirectory=flowpath,
-        method=DP5(),
-        VertexCheckpoints=[],
-        CheckPointSteps=3)
+    Solution, saved_values = SolveFRG(
+        ParSmall,
+        MainFile = mainFile,
+        CheckpointDirectory = flowpath,
+        method = DP5(),
+        VertexCheckpoints = [],
+        CheckPointSteps = 3,
+    )
 
-    rm("profile-playground/", recursive=true)
+    rm("profile-playground/", recursive = true)
 
     mainFile = "profile-playground/" * PMFRG.generateFileName(Par, "_testFile")
-    @profile Solution, saved_values = SolveFRG(Par,
-        MainFile=mainFile,
-        CheckpointDirectory=flowpath,
-        method=DP5(),
-        VertexCheckpoints=[],
-        CheckPointSteps=3)
+    @profile Solution, saved_values = SolveFRG(
+        Par,
+        MainFile = mainFile,
+        CheckpointDirectory = flowpath,
+        method = DP5(),
+        VertexCheckpoints = [],
+        CheckPointSteps = 3,
+    )
 
 end
 
 
 function profile_and_save()
     profile_solvefrg()
-    open("profile-threads=$(Threads.nthreads())","w") do s
-        Profile.print(IOContext(s, :displaysize => (24,500)))
+    open("profile-threads=$(Threads.nthreads())", "w") do s
+        Profile.print(IOContext(s, :displaysize => (24, 500)))
     end
 end

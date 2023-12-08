@@ -31,7 +31,7 @@ Par = Params(
 
 tempdir = "temp"
 println("Removing data from previous runs ($tempdir)")
-rm(tempdir, recursive=true, force=true)
+rm(tempdir, recursive = true, force = true)
 # specify a file name for main Output
 mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile")
 # specify path for vertex checkpoints

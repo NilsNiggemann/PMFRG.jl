@@ -9,7 +9,7 @@ using Test
 using Serialization
 using MPI
 thisdir = dirname(@__FILE__)
-data = deserialize(joinpath(thisdir,"PMFRG.getXBubble.data"))
+data = deserialize(joinpath(thisdir, "PMFRG.getXBubble.data"))
 
 include("PMFRG.getXBubble.common.jl")
 

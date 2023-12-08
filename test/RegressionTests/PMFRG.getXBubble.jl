@@ -26,9 +26,13 @@ function compare_arguments_post(args_post_exp, args_post)
     for field in fieldnames(typeof(X))
         val = getfield(X,field)
         expval = getfield(Xexp,field)
+        # This might be too strict
+        @assert typeof(expval) == Array{Float64,4}
         if val != expval
-            print("Test failed: $field differs :")
-            print("Absolute Difference : ", sum( abs.(val.-expval)), "\n")
+            absdiff = abs.(val.-expval)
+            print("Test failed: $field differs: ")
+            print("Absolute Difference: ", sum(absdiff), ", ")
+            print("Max Difference: ", maximum(absdiff), "\n")
             result = false
         end
     end

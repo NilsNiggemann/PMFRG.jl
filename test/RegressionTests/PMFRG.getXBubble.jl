@@ -33,6 +33,11 @@ function compare_arguments_post(args_post_exp, args_post)
             print("Test failed: $field differs: ")
             print("Absolute Difference: ", sum(absdiff), ", ")
             print("Max Difference: ", maximum(absdiff), "\n")
+            different_val_places = val .!= expval
+            println("First computed values: ")
+            println(first(val[different_val_places],5))
+            println("First expected values: ")
+            println(first(expval[different_val_places],5))
             result = false
         end
     end

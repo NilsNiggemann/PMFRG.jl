@@ -1,5 +1,5 @@
 using Test
-include("../../src/mpi/best_partition_triangle.jl")
+include("../../ext/PMFRGMPIExt/mpi/best_partition_triangle.jl")
 using .BestPartitionTriangle:
     _get_ranges_tu,
     _get_number_of_sites_eo,

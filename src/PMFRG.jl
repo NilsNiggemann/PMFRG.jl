@@ -16,6 +16,7 @@ export SolveFRG, Params, OneLoopParams, BS3, Vern7, DP5, version, getChi, OneLoo
 version() = """v.2.1.8"""
 # Essentials
 include("Types.jl")
+include("MPI_Toggle.jl")
 include("OneLoopTypes.jl")
 include("VertexUtils.jl")
 
@@ -52,8 +53,7 @@ using FixedPoint
 include("MultiLoop/MultiLoopPMFRG.jl")
 export MultiLoop, Parquet, SolveParquet
 
-include("mpi/MPI_Detail.jl")
-import .MPI_Detail
+
 
 # export UnitTests
 

@@ -36,8 +36,12 @@ function compare_arguments_post(args_post_exp, args_post)
             different_val_places = val .!= expval
             println("First computed values: ")
             println(first(val[different_val_places],5))
+            println("First computed values - reinterpreted: ")
+            println(reinterpret(UInt64,first(val[different_val_places],5)))
             println("First expected values: ")
             println(first(expval[different_val_places],5))
+            println("First expected values - reinterpreted: ")
+            println(reinterpret(UInt64,first(expval[different_val_places],5)))
             result = false
         end
     end

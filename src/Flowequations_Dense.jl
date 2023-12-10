@@ -7,7 +7,7 @@ function getDeriv!(Deriv, State, setup::Tuple{BubbleType,T,OneLoopParams}, Lam) 
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
         @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 
-        @timeit_debug "getXBubble!" getXBubble!(Workspace, Lam, Par.UseMPI)
+        @timeit_debug "getXBubble!" getXBubble!(Workspace, Lam, Par)
 
         @timeit_debug "symmetrizeBubble!" symmetrizeBubble!(Workspace.X, Par)
 
@@ -106,10 +106,13 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
-function getXBubble!(Workspace::PMFRGWorkspace, Lam, _::WithoutMPI)
+function getXBubble!(Workspace::PMFRGWorkspace, Lam)
     Par = Workspace.Par
     (; N) = Par.NumericalParams
     getXBubblePartition!(Workspace, Lam, 1:N, 1:N, 1:N)
+end
+function getXBubble!(Workspace::PMFRGWorkspace, Lam, ::OneLoopParams)
+    getXBubble!(Workspace, Lam)
 end
 
 function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, iurange)

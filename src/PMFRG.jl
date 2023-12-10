@@ -16,7 +16,6 @@ export SolveFRG, Params, OneLoopParams, BS3, Vern7, DP5, version, getChi, OneLoo
 version() = """v.2.1.8"""
 # Essentials
 include("Types.jl")
-include("MPI_Toggle.jl")
 include("OneLoopTypes.jl")
 include("VertexUtils.jl")
 

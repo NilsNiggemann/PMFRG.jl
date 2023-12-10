@@ -9,29 +9,14 @@ struct OneLoopParams{F<:AbstractFloat,G<:Geometry} <: PMFRGParams
     System::G
     NumericalParams::NumericalParams{F}
     Options::OptionParams
-    UseMPI::Union{WithMPI,WithoutMPI}
 end
 
 
 """Construct a set of parameters used for an FRG calculation. 'System' refers to the geometry that is used for the calculation (see SpinFRGLattices).
 The second argument is the method, i.e. OneLoop() (default value), TwoLoop(), Parquet(). For possible optional keyword arguments see the docs of 'NumericalParams'.
 """
-Params(System::Geometry, ::OneLoop = OneLoop(); kwargs...) = OneLoopParams(
-    System,
-    NumericalParams(; kwargs...),
-    OptionParams(; kwargs...),
-    WithoutMPI(),
-) # Todo: make this error when an unknown kwarg is given!
-
-Params(System::Geometry, ::OneLoop, ::WithMPI; kwargs...) = OneLoopParams(
-    System,
-    NumericalParams(; kwargs...),
-    OptionParams(; kwargs...),
-    WithMPI(),
-) # Todo: make this error when an unknown kwarg is given!
-
-
-
+Params(System::Geometry, ::OneLoop = OneLoop(); kwargs...) =
+    OneLoopParams(System, NumericalParams(; kwargs...), OptionParams(; kwargs...)) # Todo: make this error when an unknown kwarg is given!
 
 getLoopOrder(P::OneLoopParams) = 1
 getPMFRGMethod(P::OneLoopParams) = OneLoop()

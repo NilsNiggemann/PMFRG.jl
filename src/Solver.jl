@@ -30,7 +30,7 @@ function getChannel(Buffs::AbstractVector{<:T}) where {T}
     return BufferChannel
 end
 
-function AllocateSetup(Par::OneLoopParams)
+function AllocateSetup(Par::AbstractOneLoopParams)
     (; Npairs, NUnique) = Par.System
     println("One Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:

@@ -242,12 +242,13 @@ function writeOutput(f_int, gamma, Va, Vb, Vc, obs, Lam, Par)
     end
     println(")")
     function givefreqs()
+        N <= 7 && return 1, 2, 3
         f1 = 1
-        f2 = div(N, 2) - 3
-        f3 = N - 5
+        f2 = max(1, div(N, 2) - 3)
+        f3 = max(1, N - 5)
 
         n1, n2, n3 = np_vec[f1], np_vec[f2], np_vec[f3]
-        while (n1 + n2 + n3) % 2 == 0 && f3 > 0
+        while (n1 + n2 + n3) % 2 == 0 && f3 > 1
             f3 -= 1
             n3 = np_vec[f3]
         end

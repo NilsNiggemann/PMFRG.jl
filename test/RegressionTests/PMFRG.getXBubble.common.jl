@@ -1,18 +1,9 @@
-function extractX(args)
-    Workspace, Lam = args
-    # We do not care about Par because it is immutable and constant
-    # and about Buffer because we do not care about the contents
-    (; State, Deriv, X) = Workspace
-
-    #(;a,b,c,Ta,Tb,Tc,Td) = X
-
-    return X
-end
-
-
 function compare_arguments_post(args_post_exp, args_post)
-    Xexp = args_post_exp[1].X
-    X = args_post[1].X
+    workspace_post_exp, _ = args_post_exp
+    workspace_post, _ = args_post
+
+    Xexp = workspace_post_exp.X
+    X = workspace_post.X
 
     result = true
     for field in fieldnames(typeof(X))

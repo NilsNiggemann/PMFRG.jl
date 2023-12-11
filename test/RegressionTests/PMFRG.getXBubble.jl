@@ -1,9 +1,9 @@
 using PMFRG
 using SpinFRGLattices.SquareLattice
 using Test
-using Serialization
+using JLD2
 thisdir = dirname(@__FILE__)
-data = deserialize(joinpath(thisdir, "PMFRG.getXBubble.data"))
+data = load_object(joinpath(thisdir, "PMFRG.getXBubble.data"))
 
 include("PMFRG.getXBubble.common.jl")
 
@@ -16,11 +16,13 @@ end
 function test_getXBubble()
     @testset verbose = true "Tests for getXBubble!" begin
         @testset for i = 1:length(data["return_value"])
-            return_value = (data["return_value"])[i]
-            arguments = (data["arguments"])[i]
-            arguments_post = (data["arguments_post"])[i]
-            PMFRG.getXBubble!(arguments..., fake_oneloop_pars())
-            @test compare_arguments_post(arguments, arguments_post)
+            workspace, lam, _ = (data["arguments"])[i]
+            workspace_post_exp, lam_post_exp, _ = (data["arguments_post"])[i]
+            PMFRG.getXBubble!(workspace, lam, fake_oneloop_pars())
+            @test compare_arguments_post(
+                (workspace_post_exp, lam_post_exp),
+                (workspace, lam),
+            )
         end
     end
 end

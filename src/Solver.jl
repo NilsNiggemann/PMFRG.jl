@@ -232,7 +232,7 @@ function writeOutput(f_int, gamma, Va, Vb, Vc, obs, Lam, Par)
     end
     println(")")
     function givefreqs()
-        N < 7 && return 1, 2, 3
+        N <= 7 && return 1, 2, 3
         f1 = 1
         f2 = max(1, div(N, 2) - 3)
         f3 = max(1, N - 5)

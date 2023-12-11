@@ -1,0 +1,33 @@
+name: Run tests
+
+on: 
+  push:
+    branches:
+      - master
+      - CI-LFS
+  pull_request:
+  workflow_dispatch:
+  
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          lfs: 'true'
+      - uses: julia-actions/setup-julia@v1
+      - name: Install dependencies and Test
+        run: |
+          julia -e 'using Pkg                                                   
+                    Pkg.activate(".")
+                    Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
+                    Pkg.test()'
+
+                                
+      - name: Formatting Check
+        run: |
+          julia -e 'using Pkg
+                    Pkg.add("JuliaFormatter")'
+          julia -e 'using JuliaFormatter 
+                    @assert format(".") "Code not properly formatted!"'

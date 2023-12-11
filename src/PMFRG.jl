@@ -52,8 +52,8 @@ using FixedPoint
 include("MultiLoop/MultiLoopPMFRG.jl")
 export MultiLoop, Parquet, SolveParquet
 
-include("mpi/MPI_Detail.jl")
-import .MPI_Detail
+include("MPITypes.jl")
+export UseMPI
 
 # export UnitTests
 

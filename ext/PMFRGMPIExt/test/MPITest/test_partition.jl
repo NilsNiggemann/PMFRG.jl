@@ -1,5 +1,5 @@
 using Test
-include("../../src/mpi/partition.jl")
+include("../../mpi/partition.jl")
 using .Partition: fences, starts, ends, partitions
 
 function test_1D_partition()

@@ -23,7 +23,7 @@ struct ParquetOptions{F<:AbstractFloat} <: AbstractOptions
     MinimalOutput::Bool
 end
 
-function ParquetOptions(;
+function getParquetOptions(;
     BSE_iters::Int = 40,
     SDE_iters::Int = 1000,
     SDE_tolerance::AbstractFloat = 1e-9,
@@ -45,7 +45,8 @@ function ParquetOptions(;
         SDE_vel,
         usesymmetry,
         MinimalOutput,
-    )
+    ),
+    kwargs
 end
 
 struct ParquetParams{F,G<:Geometry} <: PMFRGParams
@@ -54,20 +55,27 @@ struct ParquetParams{F,G<:Geometry} <: PMFRGParams
     Options::ParquetOptions{F}
 end
 
-Params(System::Geometry, O::MultiLoop; kwargs...) =
-    MultiLoopParams(System, NumericalParams(; kwargs...), OptionParams(; kwargs...), O.l)
+function Params(System::Geometry, O::MultiLoop; kwargs...)
+    MultiLoopParams(System, numpar_optpar_check(; kwargs...)..., O.l)
+end
 
 """Params constructor for parquet calculation. For all available params, see also PMFRG.ParquetOptions and PMFRG.NumericalParams."""
 function Params(System::Geometry, O::Parquet; eps = nothing, vel = 0.0, kwargs...)
     eps === nothing && (eps = getEpsilon(kwargs[:T]))
-    PO = ParquetOptions(;
+    numpar, kw_nonumpar = getNumericalParams(; kwargs...)
+    PO, kw_nooptpar = getParquetOptions(;
         BSE_epsilon = eps,
         SDE_epsilon = eps,
         BSE_vel = vel,
         SDE_vel = vel,
         kwargs...,
     )
-    ParquetParams(System, NumericalParams(; kwargs...), PO)
+
+    unrecognized_args = [kw for kw in keys(kw_nonumpar) if (kw in keys(kw_nooptpar))]
+    if length(unrecognized_args) != 0
+        throw(ArgumentError("Unexpected arguments: $unrecognized_args"))
+    end
+    ParquetParams(System, numpar, PO)
 end
 
 function getEpsilon(T)

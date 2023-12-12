@@ -1,10 +1,4 @@
 struct OneLoop end
-struct OptionParams <: AbstractOptions
-    usesymmetry::Bool
-    MinimalOutput::Bool
-end
-OptionParams(; usesymmetry::Bool = true, MinimalOutput::Bool = false, kwargs...) =
-    OptionParams(usesymmetry, MinimalOutput)
 struct OneLoopParams{F<:AbstractFloat,G<:Geometry} <: PMFRGParams
     System::G
     NumericalParams::NumericalParams{F}
@@ -15,8 +9,9 @@ end
 """Construct a set of parameters used for an FRG calculation. 'System' refers to the geometry that is used for the calculation (see SpinFRGLattices).
 The second argument is the method, i.e. OneLoop() (default value), TwoLoop(), Parquet(). For possible optional keyword arguments see the docs of 'NumericalParams'.
 """
-Params(System::Geometry, ::OneLoop = OneLoop(); kwargs...) =
-    OneLoopParams(System, NumericalParams(; kwargs...), OptionParams(; kwargs...)) # Todo: make this error when an unknown kwarg is given!
+function Params(System::Geometry, ::OneLoop = OneLoop(); kwargs...)
+    OneLoopParams(System, numpar_optpar_check(; kwargs...)...) # Todo: make this error when an unknown kwarg is given!
+end
 
 
 

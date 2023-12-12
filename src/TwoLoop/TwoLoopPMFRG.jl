@@ -24,8 +24,9 @@ include("Buffers.jl")
 include("Bubbles.jl")
 include("Flowequations.jl")
 
-Params(System::Geometry, O::TwoLoop; kwargs...) =
-    TwoLoopParams(System, NumericalParams(; kwargs...), OptionParams(; kwargs...))
+function Params(System::Geometry, O::TwoLoop; kwargs...)
+    TwoLoopParams(System, numpar_optpar_check(; kwargs...)...)
+end
 
 """
 Solves FRG as specified for parameters

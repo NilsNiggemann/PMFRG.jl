@@ -11,8 +11,8 @@ function test_SDE(
         usesymmetry = false,
         lenIntw = 800,
         lenIntw_acc = 1000,
-        maxIterSDE = 300,
-        maxIterBSE = 80,
+        SDE_iters = 300,
+        BSE_iters = 80,
         MinimalOutput = true,
     );
     tol = 1e-5,

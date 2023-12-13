@@ -37,22 +37,9 @@ function PMFRG.getXBubble!(Workspace::PMFRG.PMFRGWorkspace, Lam, ::PMFRG.MPIOneL
             isrange, itrange, iurange_restrict = all_ranges[root+1]
             iurange_abc = Par.Options.usesymmetry ? iurange_restrict : iurange_full
 
-            # FIXME: for a b c iurange_abc should be used, not iurange_restrict
-            MPI.Bcast!(
-                (@view X.a[:, isrange, itrange, iurange_restrict]),
-                root,
-                MPI.COMM_WORLD,
-            )
-            MPI.Bcast!(
-                (@view X.b[:, isrange, itrange, iurange_restrict]),
-                root,
-                MPI.COMM_WORLD,
-            )
-            MPI.Bcast!(
-                (@view X.c[:, isrange, itrange, iurange_restrict]),
-                root,
-                MPI.COMM_WORLD,
-            )
+            MPI.Bcast!((@view X.a[:, isrange, itrange, iurange_abc]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.b[:, isrange, itrange, iurange_abc]), root, MPI.COMM_WORLD)
+            MPI.Bcast!((@view X.c[:, isrange, itrange, iurange_abc]), root, MPI.COMM_WORLD)
 
             MPI.Bcast!(
                 (@view X.Ta[:, isrange, itrange, iurange_full]),

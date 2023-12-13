@@ -120,6 +120,7 @@ function getXBubble!(Workspace::PMFRGWorkspace, Lam, ::OneLoopParams)
     getXBubble!(Workspace, Lam)
 end
 
+"""writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
 function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, iurange)
     Par = Workspace.Par
     (; T, N, lenIntw, np_vec) = Par.NumericalParams

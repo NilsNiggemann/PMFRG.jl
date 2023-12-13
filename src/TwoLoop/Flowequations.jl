@@ -1,7 +1,7 @@
 function getDerivTwoLoop!(
     Deriv,
     State,
-    setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},
+    setup,
     Lam,
 ) where {T}
     X, Y, Buffs, Par = setup #use pre-allocated X and XTilde to reduce garbage collector time

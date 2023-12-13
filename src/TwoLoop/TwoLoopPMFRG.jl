@@ -18,7 +18,7 @@ function AllocateSetup(Par::TwoLoopParams)
     BubbleBuffers =
         getChannel([BubbleBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
     Buffs = BufferTypeTwoLoop(PropsBuffers, VertexBuffers, BubbleBuffers)
-    return (;X, Y, Buffs, Par)
+    return (; X, Y, Buffs, Par)
 end
 include("Buffers.jl")
 include("Bubbles.jl")

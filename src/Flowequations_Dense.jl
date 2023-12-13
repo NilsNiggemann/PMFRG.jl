@@ -1,12 +1,6 @@
-
-function getDeriv!(
-    Deriv,
-    State,
-    setup::Tuple{BubbleType,T,AbstractOneLoopParams},
-    Lam,
-) where {T}
+function getDeriv!(Deriv, State, setup, Lam)
     @timeit_debug "getDeriv!" begin
-        @timeit_debug "setup" (X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+        @timeit_debug "setup" (; X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
         @timeit_debug "workspace" Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)

@@ -44,7 +44,7 @@ function AllocateSetup(Par::AbstractOneLoopParams)
     ])
 
     Buffs = BufferType(PropsBuffers, VertexBuffers)
-    return (X, Buffs, Par)
+    return (; X, Buffs, Par)
 end
 
 """Converts t step used for integrator to Λ. Inverse of Lam_to_t."""
@@ -83,7 +83,7 @@ function launchPMFRG!(
     setup,
     Deriv!::Function;
     MainFile = nothing,
-    Group = DefaultGroup(setup[end]),
+    Group = DefaultGroup(setup.Par),
     CheckpointDirectory = nothing,
     method = DP5(),
     MaxVal = Inf,
@@ -95,9 +95,7 @@ function launchPMFRG!(
     kwargs...,
 )
 
-    Par = setup[end]
-    Npairs = Par.System.Npairs
-    tag = "tag:$Npairs"
+    Par = setup.Par
 
     typeof(CheckpointDirectory) == String && (
         CheckpointDirectory =

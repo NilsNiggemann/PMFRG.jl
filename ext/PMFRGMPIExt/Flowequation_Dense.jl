@@ -75,7 +75,7 @@ function PMFRG.getXBubble!(Workspace::PMFRG.PMFRGWorkspace, Lam, ::PMFRG.MPIOneL
             )
         end
     else
-        @warn "MPI package used but not initialized"
+        @warn "MPI package used but not initialized" maxlog=1
         PMFRG.getXBubblePartition!(Workspace, Lam, 1:N, 1:N, 1:N)
     end
 end

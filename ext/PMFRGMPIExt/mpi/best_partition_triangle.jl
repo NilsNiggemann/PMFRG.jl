@@ -16,20 +16,25 @@ end
    (where the weight is the number of sites of the given parity
    in the triangle where iu <= it).
 """
-function _get_ranges_tu(N, nranks_tu, rank_tu)
-    nsites = get_number_of_sites(N)
-    nsites_per_rank = nsites / nranks_tu
-    nsites_before_target = round(nsites_per_rank * rank_tu)
-    nsites_after_target = round(nsites_per_rank * (rank_tu + 1))
+function _get_ranges_tu(N::Int, nranks_tu::Int, rank_tu::Int)
+    nsites = get_number_of_sites_in_triangle(N)
 
-    start = argmin(x -> abs(get_number_of_sites(x) - nsites_before_target), 0:N)
-    stop = argmin(x -> abs(get_number_of_sites(x) - nsites_after_target), 1:N)
+    target_nsites_per_rank = nsites / nranks_tu
 
-    if start + 1 > N
+    nsites_before_target = round(target_nsites_per_rank * rank_tu)
+    nsites_after_target = round(target_nsites_per_rank * (rank_tu + 1))
+
+    t_start =
+        argmin(x -> abs(get_number_of_sites_in_triangle(x) - nsites_before_target), 0:N) + 1
+    t_stop = argmin(x -> abs(get_number_of_sites_in_triangle(x) - nsites_after_target), 1:N)
+
+    if t_start > N
         throw(TooManyRanksError(rank_tu, N))
     end
 
-    start+1:stop, 1:stop
+    u_start, u_stop = 1, t_stop
+
+    t_start:t_stop, u_start:u_stop
 
 end
 
@@ -95,26 +100,30 @@ function get_imbalance(N, nranks, get_ranges_func, parity)
 end
 
 
-
-# TODO: use factorization logic to decide the decomposition nranks_s * nranks_tu
-
-function _split_nranks_in_s_and_tu(nranks)
+function _all_ns_x_ntu_factorizations(nranks)
     [(nranks_s, div(nranks, nranks_s)) for nranks_s = 1:nranks if (nranks % nranks_s) == 0]
 end
 
-
-function get_all_ranges_stu(N, nranks, parity)
+"""
+For given values of N, nranks and parity choices,
+returns the ranges in s,t,u that correspond to the best balance partition,
+for all the ranks.
+"""
+function get_all_ranges_stu(N::Int, nranks::Int, parity::Int)
     imbalance = 1.0
 
-    all_ranges_best = []
+    all_ranges_best = Vector{Tuple{UnitRange{Int64},UnitRange{Int64},UnitRange{Int64}}}()
 
-    for (nranks_s, nranks_tu) in _split_nranks_in_s_and_tu(nranks)
+    for (nranks_s, nranks_tu) in _all_ns_x_ntu_factorizations(nranks)
         all_ranges = Vector{Tuple{UnitRange,UnitRange,UnitRange}}()
         for rank = 0:(nranks-1)
+
             rank_s = rank % nranks_s
-            rank_tu = div(rank, nranks_s, RoundToZero)
             range_s = partitions(N, nranks_s)[1+rank_s]
+
+            rank_tu = div(rank, nranks_s, RoundToZero)
             range_tu = _get_ranges_tu(N, nranks_tu, rank_tu)
+
             range_stu = (range_s, range_tu...)
             push!(all_ranges, range_stu)
         end
@@ -128,13 +137,13 @@ function get_all_ranges_stu(N, nranks, parity)
 end
 
 """Returns the number of sites having iu<=it<=Ntu"""
-function get_number_of_sites(Ntu)
+function get_number_of_sites_in_triangle(Ntu)
     Int(Ntu * (Ntu + 1) / 2)
 end
 
 """Returns the number of sites having iu<=it<=Ntu with a given parity."""
 function _get_number_of_sites_eo(Ntu)
-    total_elements = get_number_of_sites(Ntu)
+    total_elements = get_number_of_sites_in_triangle(Ntu)
     even = if (Ntu % 2 == 0)
         nhalf = Ntu / 2
         2 * nhalf * (nhalf + 1) / 2

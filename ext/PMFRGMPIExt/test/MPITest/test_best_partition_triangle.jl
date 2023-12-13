@@ -3,7 +3,7 @@ include("../../mpi/best_partition_triangle.jl")
 using .BestPartitionTriangle:
     _get_ranges_tu,
     _get_number_of_sites_eo,
-    _split_nranks_in_s_and_tu,
+    _all_ns_x_ntu_factorizations,
     get_all_ranges_stu,
     get_imbalance,
     _count_sites
@@ -64,8 +64,8 @@ function test_best_partition_triangle()
             end
         end
 
-        @testset "split nranks in nransk_tu x nranks_s" begin
-            all_pairs = _split_nranks_in_s_and_tu(50)
+        @testset "get all nranks_s x nranks_tu factorizations" begin
+            all_pairs = _all_ns_x_ntu_factorizations(50)
             @test (1, 50) in all_pairs
             @test (2, 25) in all_pairs
             for pair in all_pairs
@@ -156,3 +156,5 @@ function test_best_partition_triangle()
     end
 
 end
+
+test_best_partition_triangle() # DEBUG

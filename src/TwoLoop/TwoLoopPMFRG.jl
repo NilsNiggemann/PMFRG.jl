@@ -31,7 +31,7 @@ Params(System::Geometry, O::TwoLoop; kwargs...) =
 Solves FRG as specified for parameters
 """
 SolveFRG(Par::TwoLoopParams; kwargs...) =
-    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDeriv!; kwargs...)
+    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDerivTwoLoop!; kwargs...)
 
 generateFileName(Par::TwoLoopParams, Method::TwoLoop, arg::String = "") =
     _generateFileName(Par, "_l2" * arg)

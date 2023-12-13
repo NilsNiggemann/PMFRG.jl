@@ -1,4 +1,4 @@
-function getDeriv!(
+function getDerivTwoLoop!(
     Deriv,
     State,
     setup::Tuple{BubbleType,BubbleType,T,TwoLoopParams},
@@ -13,7 +13,7 @@ function getDeriv!(
     symmetrizeBubble!(Workspace.X, Par)
 
     addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)
-    getTwoLoopDeriv!(Workspace, Lam)
+    getYBubble!(Workspace, Lam)
 
     symmetrizeBubble!(Workspace.Y, Par)
     addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.Y)
@@ -22,7 +22,7 @@ function getDeriv!(
     return
 end
 
-function getTwoLoopDeriv!(Workspace::TwoLoopWorkspace, Lam)
+function getYBubble!(Workspace::TwoLoopWorkspace, Lam)
     (; X, Y, State, Par, Buffer) = Workspace
     getProp! = constructPropagatorFunction(Workspace, Lam)
     (; State, Par) = Workspace

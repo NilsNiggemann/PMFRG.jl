@@ -30,7 +30,10 @@ function getChannel(Buffs::AbstractVector{<:T}) where {T}
     return BufferChannel
 end
 
-function AllocateSetup(Par::AbstractOneLoopParams)
+function AllocateSetup(
+    Par::AbstractOneLoopParams,
+    ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded(),
+)
     (; Npairs, NUnique) = Par.System
     println("One Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:
@@ -44,7 +47,7 @@ function AllocateSetup(Par::AbstractOneLoopParams)
     ])
 
     Buffs = BufferType(PropsBuffers, VertexBuffers)
-    return (; X, Buffs, Par)
+    return (; X, Buffs, Par, ParallelizationScheme)
 end
 
 """Converts t step used for integrator to Λ. Inverse of Lam_to_t."""
@@ -75,8 +78,16 @@ Allowed keyword arguments (with default values):
                                                     # See the OrdinaryDiffEq documentation for further details.
 
 """
-SolveFRG(Par; kwargs...) =
-    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDeriv!; kwargs...)
+SolveFRG(
+    Par,
+    ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded();
+    kwargs...,
+) = launchPMFRG!(
+    InitializeState(Par),
+    AllocateSetup(Par, ParallelizationScheme),
+    getDeriv!;
+    kwargs...,
+)
 
 function launchPMFRG!(
     State,

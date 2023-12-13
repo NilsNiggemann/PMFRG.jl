@@ -38,7 +38,6 @@ System = getSquareLattice(NLen, couplings)
 # For further optional arguments, see documentation of 'NumericalParams'
 Par = Params(
     System,          # geometry, this is always required
-    UseMPI(),       # method. OneLoop() is the default
     T = 0.5,         # Temperature for the simulation.
     N = 10,          # Number of positive Matsubara frequencies for the four-point vertex.
     accuracy = 1e-3, # absolute and relative tolerance of the ODE solver.
@@ -54,6 +53,7 @@ flowpath = "$tempdir/flows/"
 
 Solution, saved_values = SolveFRG(
     Par,
+    UseMPI(),
     MainFile = mainFile,
     CheckpointDirectory = flowpath,
     method = DP5(),

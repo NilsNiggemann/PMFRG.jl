@@ -7,6 +7,10 @@ Options
 """
 abstract type PMFRGParams end
 abstract type PMFRGWorkspace end
+abstract type AbstractParallelizationScheme end
+
+struct MultiThreaded <: AbstractParallelizationScheme end
+struct UseMPI <: AbstractParallelizationScheme end
 
 """
 Struct to hold all relevant quantities that are needed throughout the computation. 

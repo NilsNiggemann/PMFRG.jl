@@ -1,4 +1,4 @@
-function getDerivTwoLoop!(Deriv, State, setup, Lam) where {T}
+function getDerivTwoLoop!(Deriv, State, setup, Lam)
     X, Y, Buffs, Par = setup #use pre-allocated X and XTilde to reduce garbage collector time
     Workspace = TwoLoopWorkspace(Deriv, State, X, Y, Buffs, Par)
 

@@ -1,7 +1,8 @@
 using PMFRG, MPI, TimerOutputs
 include("mpi/MPI_Detail.jl")
 import .MPI_Detail
-function PMFRG.getXBubble!(Workspace::PMFRG.PMFRGWorkspace, Lam, ::PMFRG.MPIOneLoopParams)
+
+function PMFRG.getXBubble!(Workspace::PMFRG.PMFRGWorkspace, Lam, ::PMFRG.UseMPI)
     Par = Workspace.Par
     (; N, np_vec) = Par.NumericalParams
 

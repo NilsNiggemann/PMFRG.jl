@@ -17,8 +17,7 @@ function test_best_partition_triangle()
         end
         @testset "ranges cover all sites" begin
             for N = 1:10, nranks = 1:min(5, N)
-                coverage = Array{Int,2}(undef, (N, N))
-                coverage .= 0
+                coverage = zeros(Int, N, N)
                 all_ranges = [_get_ranges_tu(N, nranks, irank) for irank = 0:(nranks-1)]
                 for it = 1:N, iu = 1:it
                     for (itrange, iurange) in all_ranges
@@ -83,8 +82,7 @@ function test_best_partition_triangle()
 
         @testset "all sites are covered, only once" begin
             for N = 2:10, nranks = 1:min(N, 5), parity = 0:1
-                covered = Array{Int64,3}(undef, (N, N, N))
-                covered .= 0
+                covered = zeros(Int, N, N, N)
 
                 stu_ranges = get_all_ranges_stu(N, nranks, parity)
                 @testset for it = 1:N, iu = 1:it, is = 1:N

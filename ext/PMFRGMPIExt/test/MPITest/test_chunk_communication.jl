@@ -16,8 +16,7 @@ nranks = MPI.Comm_size(comm)
 
 Npairs = 12
 N = 10
-full_array = Array{Float64,4}(undef, (Npairs, N, N, N))
-full_array .= rank
+full_array = fill(rank, Npairs, N, N, N)
 
 nprange = 1:Npairs
 isrange = 1:N

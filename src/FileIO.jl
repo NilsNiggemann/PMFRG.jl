@@ -406,7 +406,7 @@ saveMainOutput(
     saved_values::DiffEqCallbacks.SavedValues,
     Par::PMFRGParams,
     Group::String,
-) = saveMainOutput(Filename, Solution[end], saved_values, saved_values.t[end], Par, Group)
+) = saveMainOutput(Filename, Solution.u[end], saved_values, saved_values.t[end], Par, Group)
 
 function saveMainOutput(
     Filename::String,

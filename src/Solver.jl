@@ -185,7 +185,7 @@ function launchPMFRG!(
         kwargs...,
     )
     if !Par.Options.MinimalOutput
-        println(sol.destats)
+        println(sol.stats)
     end
     saved_values.t .= t_to_Lam.(saved_values.t)
     saveCurrentState(

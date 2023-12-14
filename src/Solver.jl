@@ -188,7 +188,13 @@ function launchPMFRG!(
         println(sol.destats)
     end
     saved_values.t .= t_to_Lam.(saved_values.t)
-    saveCurrentState(CheckpointDirectory, sol.u[end], saved_values, t_to_Lam(sol.t[end]), Par)
+    saveCurrentState(
+        CheckpointDirectory,
+        sol.u[end],
+        saved_values,
+        t_to_Lam(sol.t[end]),
+        Par,
+    )
     saveMainOutput(MainFile, sol, saved_values, Par, Group)
 
     SetCompletionCheckmark(CheckpointDirectory)

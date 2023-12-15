@@ -6,25 +6,32 @@ thisdir = dirname(@__FILE__)
 
 include("PMFRG.getXBubble.common.jl")
 
+
 function test_getXBubble()
-    data = load_object(joinpath(thisdir, "PMFRG.getXBubble.data"))
-    @testset verbose = true "Tests for getXBubble!" begin
-        @testset for i = 1:length(data["return_value"])
-            workspace, lam, _ = (data["arguments"])[i]
+    fname = joinpath(thisdir, "PMFRG.getXBubble.data.h5")
+    h5file = h5open(fname, "r")
+    try
+        @testset verbose = true "Tests for getXBubble!" begin
+            ncases =  read(h5file["Ncases"])
+            @testset for i = 1:ncases
 
-            (;X,State,Deriv) = workspace
-            Par = generate_test_params()
+                (; X, State, Deriv, Lam) = h5deserialize(h5file, "arguments", i)
+                X0 = X
 
-            (;Buffs) = PMFRG.AllocateSetup(Par)
-            workspace_post_exp, _, _ = (data["arguments_post"])[i]
-            PMFRG.getXBubble!(X,
-                              State,
-                              Deriv,
-                              Par,
-                              Buffs,
-                              lam,
-                              PMFRG.MultiThreaded())
-            @test compare_arguments_post(workspace_post_exp.X, X)
+
+                sumX = sum(sum(abs.(getfield(X, field))) for field in fieldnames(typeof(X)))
+                @assert sumX == 0.0 "X start value should be null"
+
+                Par = generate_test_params()
+
+                (; Buffs) = PMFRG.AllocateSetup(Par)
+                PMFRG.getXBubble!(X0, State, Deriv, Par, Buffs, Lam, PMFRG.MultiThreaded())
+
+                (; X) = h5deserialize(h5file, "arguments_post", i)
+                @test compare_arguments_post(X, X0)
+            end
         end
+    finally
+        close(h5file)
     end
 end

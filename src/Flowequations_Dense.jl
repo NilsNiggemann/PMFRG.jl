@@ -119,12 +119,17 @@ function getXBubble!(
 end
 
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
-function getXBubblePartition!(X::BubbleType,
-                              State::StateType,
-                              Deriv::StateType,
-                              Par,
-                              Buffers,
-                              Lam, isrange, itrange, iurange)
+function getXBubblePartition!(
+    X::BubbleType,
+    State::StateType,
+    Deriv::StateType,
+    Par,
+    Buffers,
+    Lam,
+    isrange,
+    itrange,
+    iurange,
+)
     (; T, N, lenIntw, np_vec) = Par.NumericalParams
     PropsBuffers = Buffers.Props
     VertexBuffers = Buffers.Vertex

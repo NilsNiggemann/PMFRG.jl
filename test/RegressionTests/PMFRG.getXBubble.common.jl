@@ -1,10 +1,4 @@
-function compare_arguments_post(args_post_exp, args_post)
-    workspace_post_exp, _ = args_post_exp
-    workspace_post, _ = args_post
-
-    Xexp = workspace_post_exp.X
-    X = workspace_post.X
-
+function compare_arguments_post(Xexp, X)
     result = true
     for field in fieldnames(typeof(X))
         val = getfield(X, field)

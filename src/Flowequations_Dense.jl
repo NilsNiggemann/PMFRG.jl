@@ -106,23 +106,30 @@ end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
 function getXBubble!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Deriv::StateType,
+    Par::PMFRGParams,
+    Buffer,
     Lam,
     ParallelizationScheme::MultiThreaded = MultiThreaded(),
 )
-    Par = Workspace.Par
     (; N) = Par.NumericalParams
-    getXBubblePartition!(Workspace, Lam, 1:N, 1:N, 1:N)
+    getXBubblePartition!(X, State, Deriv, Par, Buffer, Lam, 1:N, 1:N, 1:N)
 end
 
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""
-function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, iurange)
-    Par = Workspace.Par
+function getXBubblePartition!(X::BubbleType,
+                              State::StateType,
+                              Deriv::StateType,
+                              Par,
+                              Buffers,
+                              Lam, isrange, itrange, iurange)
     (; T, N, lenIntw, np_vec) = Par.NumericalParams
-    PropsBuffers = Workspace.Buffer.Props
-    VertexBuffers = Workspace.Buffer.Vertex
-    iG(x, nw) = iG_(Workspace.State.γ, x, Lam, nw, T)
-    iSKat(x, nw) = iSKat_(Workspace.State.γ, Workspace.Deriv.γ, x, Lam, nw, T)
+    PropsBuffers = Buffers.Props
+    VertexBuffers = Buffers.Vertex
+    iG(x, nw) = iG_(State.γ, x, Lam, nw, T)
+    iSKat(x, nw) = iSKat_(State.γ, Deriv.γ, x, Lam, nw, T)
 
     function getKataninProp!(BubbleProp, nw1, nw2)
         for i = 1:Par.System.NUnique, j = 1:Par.System.NUnique
@@ -145,9 +152,9 @@ function getXBubblePartition!(Workspace::PMFRGWorkspace, Lam, isrange, itrange, 
                         if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
                             continue
                         end
-                        addXTilde!(Workspace, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
+                        addXTilde!(X, State, Par, is, it, iu, nw, sprop) # add to XTilde-type bubble functions
                         if (!Par.Options.usesymmetry || nu <= nt)
-                            addX!(Workspace, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
+                            addX!(X, State, Par, is, it, iu, nw, sprop, Buffer)# add to X-type bubble functions
                         end
                     end
                 end
@@ -177,7 +184,9 @@ end
 adds part of X functions in Matsubara sum at nwpr containing the site summation for a set of s t and u frequencies. This is the most numerically demanding part!
 """
 function addX!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -185,7 +194,6 @@ function addX!(
     Props,
     Buffer,
 )
-    (; State, X, Par) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
@@ -237,7 +245,9 @@ function addX!(
 end
 ##
 function addXTilde!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -245,7 +255,6 @@ function addXTilde!(
     Props,
 )
 
-    (; State, X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, PairTypes, OnsitePairs) = Par.System
 
@@ -310,7 +319,9 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addXTilde!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -318,7 +329,6 @@ const SingleElementMatrix = Union{SMatrix{1,1},MMatrix{1,1}}
     Props::SingleElementMatrix,
 )
 
-    (; State, X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, invpairs, OnsitePairs) = Par.System
 
@@ -383,7 +393,9 @@ end
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addX!(
-    Workspace::PMFRGWorkspace,
+    X::BubbleType,
+    State::StateType,
+    Par,
     is::Integer,
     it::Integer,
     iu::Integer,
@@ -391,7 +403,6 @@ end
     Props::SingleElementMatrix,
     Buffer,
 )
-    (; State, X, Par) = Workspace
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System

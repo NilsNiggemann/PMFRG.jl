@@ -11,12 +11,20 @@ function test_getXBubble()
     @testset verbose = true "Tests for getXBubble!" begin
         @testset for i = 1:length(data["return_value"])
             workspace, lam, _ = (data["arguments"])[i]
-            workspace_post_exp, lam_post_exp, _ = (data["arguments_post"])[i]
-            PMFRG.getXBubble!(workspace, lam)
-            @test compare_arguments_post(
-                (workspace_post_exp, lam_post_exp),
-                (workspace, lam),
-            )
+
+            (;X,State,Deriv) = workspace
+            Par = generate_test_params()
+
+            (;Buffs) = PMFRG.AllocateSetup(Par)
+            workspace_post_exp, _, _ = (data["arguments_post"])[i]
+            PMFRG.getXBubble!(X,
+                              State,
+                              Deriv,
+                              Par,
+                              Buffs,
+                              lam,
+                              PMFRG.MultiThreaded())
+            @test compare_arguments_post(workspace_post_exp.X, X)
         end
     end
 end

@@ -3,11 +3,11 @@ using SpinFRGLattices.SquareLattice
 using Test
 using JLD2
 thisdir = dirname(@__FILE__)
-data = load_object(joinpath(thisdir, "PMFRG.getXBubble.data"))
 
 include("PMFRG.getXBubble.common.jl")
 
 function test_getXBubble()
+    data = load_object(joinpath(thisdir, "PMFRG.getXBubble.data"))
     @testset verbose = true "Tests for getXBubble!" begin
         @testset for i = 1:length(data["return_value"])
             workspace, lam, _ = (data["arguments"])[i]

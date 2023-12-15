@@ -39,6 +39,7 @@ include("TypeStability.jl")
 
 include("IOTests.jl")
 include("ParquetTest.jl")
+include("ParamsConstructorTest.jl")
 
 function testOneLoop(Obsacc = 1e-14)
     @testset "OneLoop" verbose = true begin
@@ -51,6 +52,9 @@ function testOneLoop(Obsacc = 1e-14)
         end
         @testset "Squagome" verbose = true begin
             test_SquagomeFRG(OneLoop(), Obsacc = Obsacc, tol = 1e-8)
+        end
+        @testset "Params constructor" verbose = true begin
+            test_params_wrong_kwargs_oneloop()
         end
     end
 end
@@ -67,6 +71,9 @@ function testTwoLoop(Obsacc = 1e-14)
         @testset "Squagome" verbose = true begin
             test_SquagomeFRG(TwoLoop(), Obsacc = Obsacc, tol = 1e-8)
         end
+        @testset "Params constructor" verbose = true begin
+            test_params_wrong_kwargs_twoloop()
+        end
     end
 end
 
@@ -74,5 +81,17 @@ function testParquet()
     @testset "Parquet" verbose = true begin
         test_DimerParquet(tol = 1e-6)
         test_SDE()
+        @testset "Params constructor" verbose = true begin
+            test_params_wrong_kwargs_parquet()
+        end
     end
+end
+
+function testMultiloop()
+    @testset "Multiloop" verbose = true begin
+        @testset "Params constructor" verbose = true begin
+            test_params_wrong_kwargs_multiloop()
+        end
+    end
+    return
 end

@@ -48,7 +48,7 @@ _convertToFloat(Primary::T, args...) where {T<:AbstractFloat} =
     convert.(T, (Primary, args...))
 _convertToFloat(Primary::Real, args...) = convert.(Float64, (Primary, args...))
 
-function NumericalParams(;
+function getNumericalParams(;
     T::Real = 0.5, # Temperature
     N::Integer = 24,
     Ngamma::Integer = N, #Number of gamma frequencies
@@ -78,9 +78,31 @@ function NumericalParams(;
         np_vec,
         np_vec_gamma,
         ex_freq,
-    )
+    ),
+    kwargs
 end
 abstract type AbstractOptions end
+
+struct OptionParams <: AbstractOptions
+    usesymmetry::Bool
+    MinimalOutput::Bool
+end
+function getOptionParams(; usesymmetry::Bool = true, MinimalOutput::Bool = false, kwargs...)
+    return OptionParams(usesymmetry, MinimalOutput), kwargs
+end
+
+function numpar_optpar_check(; kwargs...)
+    numpar, kw_nonumpar = getNumericalParams(; kwargs...)
+    optpar, kw_nooptpar = getOptionParams(; kwargs...)
+
+    unrecognized_args = [kw for kw in keys(kw_nonumpar) if (kw in keys(kw_nooptpar))]
+    if length(unrecognized_args) != 0
+        throw(ArgumentError("Unexpected arguments: $unrecognized_args"))
+    end
+    numpar, optpar
+end
+
+
 getPMFRGMethod(::Val{1}) = OneLoop()
 getPMFRGMethod(::Val{2}) = TwoLoop()
 getPMFRGMethod(::Val{n}) where {n} = MultiLoop(n)

@@ -6,15 +6,7 @@ function getDeriv!(Deriv, State, setup, Lam)
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
         @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 
-        @timeit_debug "getXBubble!" getXBubble!(
-            X,
-            Workspace.State,
-            Workspace.Deriv,
-            Par,
-            Buffs,
-            Lam,
-            setup.ParallelizationScheme,
-        )
+        @timeit_debug "getXBubble!" getXBubble!(Workspace, Lam, setup.ParallelizationScheme)
 
         @timeit_debug "symmetrizeBubble!" symmetrizeBubble!(Workspace.X, Par)
 
@@ -113,17 +105,19 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
 end
 # @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
-function getXBubble!(
-    X::BubbleType,
-    State::StateType,
-    Deriv::StateType,
-    Par::PMFRGParams,
-    Buffer,
-    Lam,
-    ParallelizationScheme::MultiThreaded = MultiThreaded(),
-)
-    (; N) = Par.NumericalParams
-    getXBubblePartition!(X, State, Deriv, Par, Buffer, Lam, 1:N, 1:N, 1:N)
+function getXBubble!(Workspace, Lam, ParallelizationScheme::MultiThreaded = MultiThreaded())
+    (; N) = Workspace.Par.NumericalParams
+    getXBubblePartition!(
+        Workspace.X,
+        Workspace.State,
+        Workspace.Deriv,
+        Workspace.Par,
+        Workspace.Buffer,
+        Lam,
+        1:N,
+        1:N,
+        1:N,
+    )
 end
 
 """writing to X and XTilde in Workspace, computes bubble diagrams within a range of frequencies given by isrange, itrange and iurange"""

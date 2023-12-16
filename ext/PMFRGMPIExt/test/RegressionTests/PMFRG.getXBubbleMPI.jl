@@ -28,7 +28,9 @@ MPI.Init()
 
         Par = generate_test_params()
         (; Buffs) = PMFRG.AllocateSetup(Par)
-        PMFRG.getXBubble!(X0, State, Deriv, Par, Buffs, Lam, UseMPI())
+        Workspace = PMFRG.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
+
+        PMFRG.getXBubble!(Workspace, Lam, UseMPI())
 
         (; X) = h5deserialize(h5file, "arguments_post", i)
         @test compare_arguments_post(X, X0)

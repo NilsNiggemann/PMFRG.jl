@@ -2,15 +2,8 @@ using PMFRG, MPI, TimerOutputs
 include("mpi/MPI_Detail.jl")
 import .MPI_Detail
 
-function PMFRG.getXBubble!(
-    X::PMFRG.BubbleType,
-    State::PMFRG.StateType,
-    Deriv::PMFRG.StateType,
-    Par::PMFRG.PMFRGParams,
-    Buffer,
-    Lam,
-    ::PMFRG.UseMPI,
-)
+function PMFRG.getXBubble!(Workspace, Lam, ::PMFRG.UseMPI)
+    (; X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
 
     if MPI.Initialized()
@@ -32,10 +25,10 @@ function PMFRG.getXBubble!(
         isrange, itrange, _ = all_ranges[rank+1]
         @timeit_debug "partition" PMFRG.getXBubblePartition!(
             X,
-            State,
-            Deriv,
+            Workspace.State,
+            Workspace.Deriv,
             Par,
-            Buffer,
+            Workspace.Buffer,
             Lam,
             isrange,
             itrange,

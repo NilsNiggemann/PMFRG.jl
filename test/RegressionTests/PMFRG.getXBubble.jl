@@ -25,7 +25,8 @@ function test_getXBubble()
                 Par = generate_test_params()
 
                 (; Buffs) = PMFRG.AllocateSetup(Par)
-                PMFRG.getXBubble!(X0, State, Deriv, Par, Buffs, Lam, PMFRG.MultiThreaded())
+                Workspace = PMFRG.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
+                PMFRG.getXBubble!(Workspace, Lam, PMFRG.MultiThreaded())
 
                 (; X) = h5deserialize(h5file, "arguments_post", i)
                 @test compare_arguments_post(X, X0)

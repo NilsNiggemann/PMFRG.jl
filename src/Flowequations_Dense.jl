@@ -6,7 +6,15 @@ function getDeriv!(Deriv, State, setup, Lam)
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
         @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 
-        @timeit_debug "getXBubble!" getXBubble!(Workspace, Lam, setup.ParallelizationScheme)
+        @timeit_debug "getXBubble!" getXBubble!(
+            X,
+            Workspace.State,
+            Workspace.Deriv,
+            Par,
+            Buffs,
+            Lam,
+            setup.ParallelizationScheme,
+        )
 
         @timeit_debug "symmetrizeBubble!" symmetrizeBubble!(Workspace.X, Par)
 

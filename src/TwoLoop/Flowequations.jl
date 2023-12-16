@@ -4,7 +4,7 @@ function getDerivTwoLoop!(Deriv, State, setup, Lam)
 
     getDFint!(Workspace, Lam)
     get_Self_Energy!(Workspace, Lam)
-    getXBubble!(Workspace, Lam)
+    getXBubble!(X, Workspace.State, Workspace.Deriv, Par, Buffs, Lam)
     symmetrizeBubble!(Workspace.X, Par)
 
     addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.X)

@@ -1,7 +1,7 @@
 using PMFRG
 using SpinFRGLattices.SquareLattice
 using Test
-using JLD2
+using HDF5
 thisdir = dirname(@__FILE__)
 
 include("PMFRG.getXBubble.common.jl")
@@ -12,7 +12,7 @@ function test_getXBubble()
     h5file = h5open(fname, "r")
     try
         @testset verbose = true "Tests for getXBubble!" begin
-            ncases =  read(h5file["Ncases"])
+            ncases = read(h5file["Ncases"])
             @testset for i = 1:ncases
 
                 (; X, State, Deriv, Lam) = h5deserialize(h5file, "arguments", i)

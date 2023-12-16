@@ -31,13 +31,8 @@ end
 
 using SpinFRGLattices.SquareLattice
 function generate_test_params()
-System = getSquareLattice(4, [1.0,0.1])
-Params(
-    System,
-    OneLoop(),
-    T = 0.5,
-    N = 5,
-    accuracy = 1e-3,)
+    System = getSquareLattice(4, [1.0, 0.1])
+    Params(System, OneLoop(), T = 0.5, N = 5, accuracy = 1e-3)
 end
 
 

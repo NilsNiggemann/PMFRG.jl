@@ -8,10 +8,10 @@ include("RegressionTests/PMFRG.getXBubble.jl")
 
 ##
 @testset verbose = true "PMFRG tests" begin
-    test_mpi()
     testOneLoop(Obsacc)
     testTwoLoop(Obsacc)
     testParquet()
     test_IO()
     test_getXBubble()
+    test_mpi()
 end

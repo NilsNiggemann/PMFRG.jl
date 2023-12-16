@@ -2,8 +2,8 @@ using PMFRG, MPI, TimerOutputs
 include("mpi/MPI_Detail.jl")
 import .MPI_Detail
 
-function PMFRG.getXBubble!(Workspace::PMFRG.PMFRGWorkspace, Lam, ::PMFRG.UseMPI)
-    Par = Workspace.Par
+function PMFRG.getXBubble!(Workspace, Lam, ::PMFRG.UseMPI)
+    (; X, Par) = Workspace
     (; N, np_vec) = Par.NumericalParams
 
     if MPI.Initialized()
@@ -24,14 +24,16 @@ function PMFRG.getXBubble!(Workspace::PMFRG.PMFRGWorkspace, Lam, ::PMFRG.UseMPI)
         iurange_full = 1:N
         isrange, itrange, _ = all_ranges[rank+1]
         @timeit_debug "partition" PMFRG.getXBubblePartition!(
-            Workspace,
+            X,
+            Workspace.State,
+            Workspace.Deriv,
+            Par,
+            Workspace.Buffer,
             Lam,
             isrange,
             itrange,
             iurange_full,
         )
-
-        (; X) = Workspace
 
 
         @timeit_debug "communication" for root = 0:(nranks-1)
@@ -65,6 +67,6 @@ function PMFRG.getXBubble!(Workspace::PMFRG.PMFRGWorkspace, Lam, ::PMFRG.UseMPI)
         end
     else
         @warn "MPI package used but not initialized" maxlog = 1
-        PMFRG.getXBubblePartition!(Workspace, Lam, 1:N, 1:N, 1:N)
+        PMFRG.getXBubblePartition!(X, State, Deriv, Par, Buffer, Lam, 1:N, 1:N, 1:N)
     end
 end

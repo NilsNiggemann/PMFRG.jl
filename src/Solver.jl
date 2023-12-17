@@ -30,7 +30,10 @@ function getChannel(Buffs::AbstractVector{<:T}) where {T}
     return BufferChannel
 end
 
-function AllocateSetup(Par::OneLoopParams)
+function AllocateSetup(
+    Par::AbstractOneLoopParams,
+    ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded(),
+)
     (; Npairs, NUnique) = Par.System
     println("One Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:
@@ -44,7 +47,7 @@ function AllocateSetup(Par::OneLoopParams)
     ])
 
     Buffs = BufferType(PropsBuffers, VertexBuffers)
-    return (X, Buffs, Par)
+    return (; X, Buffs, Par, ParallelizationScheme)
 end
 
 """Converts t step used for integrator to Λ. Inverse of Lam_to_t."""
@@ -75,15 +78,23 @@ Allowed keyword arguments (with default values):
                                                     # See the OrdinaryDiffEq documentation for further details.
 
 """
-SolveFRG(Par; kwargs...) =
-    launchPMFRG!(InitializeState(Par), AllocateSetup(Par), getDeriv!; kwargs...)
+SolveFRG(
+    Par,
+    ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded();
+    kwargs...,
+) = launchPMFRG!(
+    InitializeState(Par),
+    AllocateSetup(Par, ParallelizationScheme),
+    getDeriv!;
+    kwargs...,
+)
 
 function launchPMFRG!(
     State,
     setup,
     Deriv!::Function;
     MainFile = nothing,
-    Group = DefaultGroup(setup[end]),
+    Group = DefaultGroup(setup.Par),
     CheckpointDirectory = nothing,
     method = DP5(),
     MaxVal = Inf,
@@ -95,7 +106,8 @@ function launchPMFRG!(
     kwargs...,
 )
 
-    Par = setup[end]
+    Par = setup.Par
+
     typeof(CheckpointDirectory) == String && (
         CheckpointDirectory =
             setupDirectory(CheckpointDirectory, Par, overwrite = overwrite_Checkpoints)
@@ -109,24 +121,28 @@ function launchPMFRG!(
     i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function bareOutput(State, t, integrator)
-        Lam = t_to_Lam(t)
-        i += 1
-        i % CheckPointSteps == 0 && setCheckpoint(
-            CheckpointDirectory,
-            State,
-            saved_values,
-            Lam,
-            Par,
-            VertexCheckpoints,
-        )
+        @timeit_debug "bareOutput" begin
+            Lam = t_to_Lam(t)
+            i += 1
+            i % CheckPointSteps == 0 && setCheckpoint(
+                CheckpointDirectory,
+                State,
+                saved_values,
+                Lam,
+                Par,
+                VertexCheckpoints,
+            )
+        end
     end
 
     function verboseOutput(State, t, integrator)
-        Lam = t_to_Lam(t)
-        println("Time taken for output saving: ")
-        @time bareOutput(State, t, integrator)
-        println("")
-        writeOutput(State, saved_values, Lam, Par)
+        @timeit_debug "verboseOutput" begin
+            Lam = t_to_Lam(t)
+            println("Time taken for output saving: ")
+            bareOutput(State, t, integrator)
+            println("")
+            writeOutput(State, saved_values, Lam, Par)
+        end
     end
 
     function getOutputfunction(MinimalOutput)
@@ -156,7 +172,8 @@ function launchPMFRG!(
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
     problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    @time sol = solve(
+    println("Starting solve")
+    @timeit_debug "total solver" sol = solve(
         problem,
         method,
         reltol = accuracy,
@@ -204,12 +221,14 @@ end
 DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 
 function getObservables(::Type{Observables}, State::ArrayPartition, Lam, Par)
-    f_int, gamma, Va, Vb, Vc = State.x
-    chi = getChi(State, Lam, Par)
-    MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
-    return Observables(chi, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
+    @timeit_debug "get_observables" begin
+        f_int, gamma, Va, Vb, Vc = State.x
+        chi = getChi(State, Lam, Par)
+        MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+        MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+        MaxVc = maximum(abs, Vc, dims = (2, 3, 4, 5))[:, 1, 1, 1]
+        return Observables(chi, copy(gamma), copy(f_int), MaxVa, MaxVb, MaxVc) # make sure to allocate new memory each time this function is called
+    end
 end
 
 writeOutput(State::ArrayPartition, saved_values, Lam, Par) =

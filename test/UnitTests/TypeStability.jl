@@ -23,11 +23,11 @@ function test_OneLoopAllocations(Par = Params(getPolymer(2)))
     put!(WS.Buffer.Vertex, VBuff)
 end
 function test_OneLoopAllocations(Par, WS, SProps, VBuff)
-    PMFRG.addX!(WS, 1, 1, 2, 2, SProps, VBuff) # compile functions
-    PMFRG.addXTilde!(WS, 1, 1, 2, 2, SProps) # compile functions
+    PMFRG.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff) # compile functions
+    PMFRG.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps) # compile functions
 
-    aX = @allocated PMFRG.addX!(WS, 1, 1, 2, 2, SProps, VBuff)
-    aXT = @allocated PMFRG.addXTilde!(WS, 1, 1, 2, 2, SProps)
+    aX = @allocated PMFRG.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff)
+    aXT = @allocated PMFRG.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps)
     test_TypeStability(Par, WS, aX, aXT)
 end
 

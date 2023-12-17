@@ -7,7 +7,8 @@ using SpinFRGLattices,
     LoopVectorization,
     StructArrays,
     HDF5,
-    H5Zblosc
+    H5Zblosc,
+    TimerOutputs
 
 using SpinFRGLattices.StaticArrays
 
@@ -50,6 +51,8 @@ using FixedPoint
 
 include("MultiLoop/MultiLoopPMFRG.jl")
 export MultiLoop, Parquet, SolveParquet
+
+export UseMPI
 
 # export UnitTests
 

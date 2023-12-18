@@ -22,7 +22,7 @@ Note, that is advised to create a reproducible environment for each project, see
 If you do not want to use the private registry, you can also install the dependencies manually.
 
 ```
-(@v1.8) pkg> activate TestProject
+(@v1.9) pkg> activate TestProject
 Activating new project at `~/TestProject`
 
 (TestProject) pkg> add https://github.com/NilsNiggemann/SpinFRGLattices.jl.git

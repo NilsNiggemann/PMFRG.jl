@@ -1,20 +1,20 @@
 # Usage:
 #
 # mpiexecjl -prepend-rank
-#           --project=./Playground
+#           --project=./PMFRGEnvironment
 #           -n 2
-#           julia ./PMFRG.jl/performance-engineering/generate_data_example_mpi.jl
+#           julia <this file>
 #
-# where Playground is a project/environment where PMFRG is added as a dev dependency.
-# and it is assumed that mpiexecjl is in PATH (otherwise usually ~/.julia/bin)
+# where PMFRGEnvironment is a project/environment
+# where PMFRG is added as a dev dependency.
+# It is assumed that mpiexecjl is in PATH (otherwise usually ~/.julia/bin)
 using SpinFRGLattices, PMFRG
 using SpinFRGLattices.SquareLattice
 
 using MPI
 
 MPI.Init()
-comm = MPI.COMM_WORLD
-rank = MPI.Comm_rank(comm)
+rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 # Number of nearest neighbor bonds
 # up to which correlations are treated in the lattice.

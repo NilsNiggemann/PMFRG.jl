@@ -43,13 +43,16 @@ Par = Params(
     accuracy = 1e-3, # absolute and relative tolerance of the ODE solver.
 )
 
-tempdir = "temp_rank$rank"
-println("Removing data from previous runs ($tempdir)")
-rm(tempdir, recursive = true, force = true)
-# specify a file name for main Output
-mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile")
-# specify path for vertex checkpoints
-flowpath = "$tempdir/flows/"
+if rank == 0
+    # specify a file name for main Output
+    mainFile = PMFRG.generateFileName(Par, "_testFile")
+    # specify path for vertex checkpoints
+    flowpath = "flows/"
+else
+    # disable file output for other ranks
+    mainFile = nothing
+    flowpath = nothing
+end
 
 Solution, saved_values = SolveFRG(
     Par,

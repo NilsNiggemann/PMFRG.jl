@@ -177,13 +177,15 @@ Some notes:
   please pass a `UseMPI()` singleton argument to the `SolveFRG` function
   (see example below).
 - Any MPI launcher used will launch the same Julia script on different processes.
-  For this reason, it is important to make sure the the output of the processes 
+  For this reason, it is important to make sure 
+  that either the output of the processes 
   (in MPI terminology, *ranks*)
-  is written on different files. 
-  In the following code snippet, a rank-specific path for `MainFile` 
-  and for `CheckPointDirectory` is created, in order to avoid writing conflicts
-  between ranks:
-
+  is written on different files (which should be identical),
+  or only one MPI process writes the outputs to file.
+  In the following code snippet,
+  only the master rank will write the output to disk:
+  
+  
 ``` julia
 using MPI
 
@@ -192,9 +194,17 @@ rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 [...]
 
-tempdir = "temp_rank$rank"
-mainFile = "$tempdir/" * PMFRG.generateFileName(Par, "_testFile")
-flowpath = "$tempdir/flows/"
+if rank == 0
+    # specify a file name for main Output
+    mainFile = PMFRG.generateFileName(Par, "_testFile")
+    # specify path for vertex checkpoints
+    flowpath = "flows/"
+else
+    # disable file output for other ranks
+    mainFile = nothing
+    flowpath = nothing
+end
+
 
 Solution, saved_values = SolveFRG(
     Par,

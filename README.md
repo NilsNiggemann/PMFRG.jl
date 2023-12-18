@@ -6,8 +6,21 @@
 H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ```
 ## Installation
-It is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ .
-`PMFRG.jl` is not in the official registry (yet?) and thus best installed via
+`PMFRG.jl` is not in the official registry (yet?) and thus best installed via installing the private registry "JuliaPMFRG":
+```
+(@v1.8) pkg> registry add https://github.com/NilsNiggemann/JuliaPMFRGRegistry.git
+```
+This only needs to be done once on every machine. Then, `PMFRG.jl`, its dependencies and other helper packages for evaluation can be installed conveniently via
+```
+(v1.9) pkg> add PMFRG
+```
+Note, that is advised to create a reproducible environment for each project, see also https://pkgdocs.julialang.org/v1/environments/ .
+
+<details>
+  <summary>Installation without local registry</summary>
+  
+If you do not want to use the private registry, you can also install the dependencies manually.
+
 ```
 (@v1.8) pkg> activate TestProject
 Activating new project at `~/TestProject`
@@ -15,7 +28,10 @@ Activating new project at `~/TestProject`
 (TestProject) pkg> add https://github.com/NilsNiggemann/SpinFRGLattices.jl.git
 (TestProject) pkg> add https://github.com/NilsNiggemann/PMFRG.jl.git
 ```
-Note that the dependency `SpinFRGLattices` needs to be added first for the package manager to resolve the correct version. 
+Note that in this case the dependency `SpinFRGLattices` needs to be added first for the package manager to resolve the correct version. 
+
+</details>
+
 ## Usage
 After the package is installed to a local environment it can be loaded in a Julia session with  `using PMFRG`. The following contains a minimal working example:
 ```

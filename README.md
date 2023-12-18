@@ -137,8 +137,8 @@ Lattice = LatticeInfo(System,SquareLattice)
 chi_ΛR = h5read(mainFile,"0.5/Chi")
 chi_R = chi_ΛR[:,end]
 
-chi = getFourier(chi_R,Lattice)
-
+chi = getNaiveLatticeFT(chi_R,Lattice)
+# or: chi = getLatticeFFT(chi_R, Lattice) to use FFT instead
 k = LinRange(-2pi,2pi,100)
 
 chik = [chi(x,y) for x in k, y in k]
@@ -146,6 +146,14 @@ chik = [chi(x,y) for x in k, y in k]
 heatmap(k,k,chik)
 
 ```
+
+### Notes
+- The object `chi = getNaiveLatticeFT(...)` corresponds to the average over all sublattices $\chi(\vec{k}) = \frac{1}{N_\textrm{Cell}} \sum_{a,b} \chi_{ab}(\vec{k})$. 
+- For lattices with more than one site per unit cell, one can also evaluate the correlations between sublattice 1 and 2 as `chi[1,2](kx,ky,kz)`. It is also possible to add two susceptibilities (before evaluating them at some momentum) such as `chi_new = chi[1,2] + chi[2,1]`.
+
+- If you are going to evaluate the Fourier transform in the whole Brillouin zone, it might be more efficient to use the Fast Fourier Transform (FFT) instead. This can be done by using `chi = getLatticeFFT(chi_R, Lattice)` instead. Note that continuous frequencies are here obtained by zero-padding the data which is less accurate than the naive method. The padding default can be changed for example to include at least $128$ sites in each direction as `chi = getLatticeFFT(chi_R, Lattice, 128)`.
+
+
 ## More Examples
 A more thorough set of examples is found in the `Examples` folder of this repository. For code reuse, the dependencies of [`PMFRGEvaluation`](`https://github.com/NilsNiggemann/PMFRGEvaluation.jl`) are split into several subdependencies. To try out the examples, activate the project environment with `]activate Example` and download all dependencies with `]instantiate`.
 

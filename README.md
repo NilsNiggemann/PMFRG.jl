@@ -8,7 +8,7 @@ H = \sum_{ij} J_{ij} \vec{S}_i \cdot \vec{S}_j
 ## Installation
 `PMFRG.jl` is not in the official registry (yet?) and thus best installed via installing the private registry "JuliaPMFRG":
 ```
-(@v1.8) pkg> registry add https://github.com/NilsNiggemann/JuliaPMFRGRegistry.git
+(@v1.9) pkg> registry add https://github.com/NilsNiggemann/JuliaPMFRGRegistry.git
 ```
 This only needs to be done once on every machine. Then, `PMFRG.jl`, its dependencies and other helper packages for evaluation can be installed conveniently via
 ```

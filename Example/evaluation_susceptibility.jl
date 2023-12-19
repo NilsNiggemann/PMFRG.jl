@@ -9,7 +9,8 @@ let
     chi_ΛR = h5read(mainFile, "0.5/Chi")
     chi_R = chi_ΛR[:, end]
 
-    chi = getFourier(chi_R, Lattice)
+    chi = getNaiveLatticeFT(chi_R, Lattice)
+    # or: chi = getLatticeFFT(chi_R, Lattice)
 
     k = LinRange(-2pi, 2pi, 300)
 

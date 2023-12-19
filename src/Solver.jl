@@ -35,7 +35,7 @@ function AllocateSetup(
     ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded(),
 )
     (; Npairs, NUnique) = Par.System
-    println("One Loop: T= ", Par.NumericalParams.T)
+    Par.Options.MinimalOutput || println("One Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
     floattype = _getFloatType(Par) #get type of float, i.e. Float64
@@ -172,7 +172,7 @@ function launchPMFRG!(
     Deriv_subst! = generateSubstituteDeriv(Deriv!)
     problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
-    println("Starting solve")
+    Par.Options.MinimalOutput || println("Starting solve")
     @timeit_debug "total solver" sol = solve(
         problem,
         method,

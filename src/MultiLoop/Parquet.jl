@@ -84,7 +84,7 @@ function iterateSolution!(Workspace::ParquetWorkspace, Lam::Real, Obs, getObsFun
         end
         isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
     end
-    println("""
+    Par.Options.MinimalOutput || println("""
     \t\tBSE done after  $(iter) / $BSE_iters iterations (tol = $(Tol_Vertex))""")
 
     return Workspace, Obs

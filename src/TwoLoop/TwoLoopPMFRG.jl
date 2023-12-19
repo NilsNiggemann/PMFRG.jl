@@ -10,7 +10,7 @@ function AllocateSetup(
 )
 
     (; NUnique, Npairs) = Par.System
-    println("Two Loop: T= ", Par.NumericalParams.T)
+    Par.Options.MinimalOutput || println("Two Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
     Y = BubbleType(Par)

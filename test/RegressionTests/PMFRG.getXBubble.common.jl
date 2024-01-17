@@ -9,6 +9,8 @@ function compare_arguments_post(Xexp, X)
             abs_diff = abs.(val .- expval)
             total_diff = sum(abs_diff)
             if total_diff > 1e-14
+                different_val_places = val .!= expval
+
                 print("Test failed: $field differs significantly: ")
                 print("Absolute Difference: ", total_diff, ", ")
                 print("Maximum Difference: ", maximum(abs_diff), ", ")

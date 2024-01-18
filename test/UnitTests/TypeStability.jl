@@ -18,7 +18,11 @@ function test_OneLoopAllocations(Par = Params(getPolymer(2)))
     SBuff = take!(WS.Buffer.Props)
     VBuff = take!(WS.Buffer.Vertex)
     SBuff1 = convertToSMatrix(SBuff)
+
+    SBuffMatrix = Matrix(SBuff1)
     test_OneLoopAllocations(Par, WS, SBuff1, VBuff)
+    test_OneLoopAllocations(Par, WS, SBuffMatrix, VBuff)
+
     put!(WS.Buffer.Props, SBuff)
     put!(WS.Buffer.Vertex, VBuff)
 end

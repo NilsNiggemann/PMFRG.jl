@@ -4,7 +4,7 @@ adds to ResultBubble given the vertex as well as a bubble inserted on the left. 
 """
 
 function addBL!(
-    B::BubbleType,
+    B::BubbleType{T},
     XL::BubbleType,
     XR::BubbleType,
     Γ::VertexType,
@@ -18,7 +18,7 @@ function addBL!(
     XBuffer::BubbleBufferType,
     BufferFiller!::Func1 = fillBufferL!,
     SiteIndex::Func2 = identity,
-) where {Func1<:Function,Func2<:Function}
+) where {T,Func1<:Function,Func2<:Function}
 
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
@@ -35,9 +35,9 @@ function addBL!(
 
     @inbounds for Rij = 1:Npairs
         #loop over all left hand side inequivalent pairs Rij
-        Ba_sum = 0.0 #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
-        Bb_sum = 0.0
-        Bc_sum = 0.0
+        Ba_sum = zero(T) #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
+        Bb_sum = zero(T)
+        Bc_sum = zero(T)
         Site = SiteIndex(Rij)
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
             #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
@@ -138,7 +138,7 @@ function addBLTilde!(
 end
 
 function addBL!(
-    B::BubbleType,
+    B::BubbleType{T},
     XL::BubbleType,
     XR::BubbleType,
     Γ::VertexType,
@@ -152,7 +152,7 @@ function addBL!(
     XBuffer::BubbleBufferType,
     BufferFiller!::Func1 = fillBufferL!,
     SiteIndex::Func2 = identity,
-) where {Func1<:Function,Func2<:Function}
+) where {T,Func1<:Function,Func2<:Function}
 
     (; Npairs, Nsum, siteSum) = Par.System
 
@@ -168,22 +168,22 @@ function addBL!(
 
     @inbounds for Rij = 1:Npairs
         #loop over all left hand side inequivalent pairs Rij
-        Ba_sum = 0.0 #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
-        Bb_sum = 0.0
-        Bc_sum = 0.0
+        Ba_sum = zero(T) #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
+        Bb_sum = zero(T)
+        Bc_sum = zero(T)
         Site = SiteIndex(Rij)
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
             #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
             ki, kj, m = S_ki[k_spl, Site], S_kj[k_spl, Site], S_m[k_spl, Site]
 
-
-            Ba_sum += (Va34[kj] * XTa21[ki] + 2 * Vb34[kj] * XTc21[ki]) * m
+            mConv = convert(T, m)
+            Ba_sum += (Va34[kj] * XTa21[ki] + 2 * Vb34[kj] * XTc21[ki]) * mConv
 
             Bb_sum +=
-                (Vb34[kj] * XTa21[ki] + Va34[kj] * XTc21[ki] + Vb34[kj] * XTc21[ki]) * m
+                (Vb34[kj] * XTa21[ki] + Va34[kj] * XTc21[ki] + Vb34[kj] * XTc21[ki]) * mConv
 
 
-            Bc_sum += (-Vc43[kj] * XTb21[ki] + Vc34[kj] * XTd21[ki]) * m
+            Bc_sum += (-Vc43[kj] * XTb21[ki] + Vc34[kj] * XTd21[ki]) * mConv
         end
         B.a[Rij, is, it, iu] += Ba_sum * Prop
         B.b[Rij, is, it, iu] += Bb_sum * Prop
@@ -326,7 +326,7 @@ end
 ##
 
 function addBL!(
-    B::BubbleType,
+    B::BubbleType{T},
     Γ0::BareVertexType,
     Γ::VertexType,
     is::Integer,
@@ -336,7 +336,7 @@ function addBL!(
     Par::PMFRGParams,
     Props,
     Buffer::VertexBufferType,
-)
+) where {T}
     (; Npairs, Nsum, siteSum) = Par.System
 
     fillBufferL!(Buffer, Γ0, Γ, is, it, iu, nwpr, Par)
@@ -348,7 +348,7 @@ function addBL!(
     S_m = siteSum.m
 
     @inbounds for Rij = 1:Npairs
-        Bc_sum = 0.0
+        Bc_sum = zero(T)
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
             #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
             ki, kj, m, xk =

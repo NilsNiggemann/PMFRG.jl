@@ -400,7 +400,7 @@ end
 
 """Use multiple dispatch to treat the common special case in which the propagator does not depend on site indices to increase performance"""
 @inline function addX!(
-    X::BubbleType,
+    X::BubbleType{T},
     State::StateType,
     Par,
     is::Integer,
@@ -409,7 +409,7 @@ end
     nwpr::Integer,
     Props::SingleElementMatrix,
     Buffer,
-)
+) where {T}
     (; Va12, Vb12, Vc12, Va34, Vb34, Vc34, Vc21, Vc43) = Buffer
     (; N, np_vec) = Par.NumericalParams
     (; Npairs, Nsum, siteSum, invpairs) = Par.System
@@ -437,18 +437,20 @@ end
     # Prop = Props
     for Rij = 1:Npairs
         #loop over all left hand side inequivalent pairs Rij
-        Xa_sum = 0.0 #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
-        Xb_sum = 0.0
-        Xc_sum = 0.0
+        Xa_sum = zero(T) #Perform summation on this temp variable before writing to State array as Base.setindex! proved to be a bottleneck!
+        Xb_sum = zero(T)
+        Xc_sum = zero(T)
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
             #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
             ki, kj, m = S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij]
 
-            Xa_sum += (+Va12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj] * 2) * m
+            mConv = convert(T, m)
+            Xa_sum += (+Va12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj] * 2) * mConv
 
-            Xb_sum += (+Va12[ki] * Vb34[kj] + Vb12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj]) * m
+            Xb_sum +=
+                (+Va12[ki] * Vb34[kj] + Vb12[ki] * Va34[kj] + Vb12[ki] * Vb34[kj]) * mConv
 
-            Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * m
+            Xc_sum += (+Vc12[ki] * Vc34[kj] + Vc21[ki] * Vc43[kj]) * mConv
         end
         X.a[Rij, is, it, iu] += Xa_sum * Prop
         X.b[Rij, is, it, iu] += Xb_sum * Prop

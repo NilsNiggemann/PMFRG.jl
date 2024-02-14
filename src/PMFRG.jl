@@ -18,6 +18,8 @@ version() = v"2.2.1"
 include("Types.jl")
 include("OneLoopTypes.jl")
 include("VertexUtils.jl")
+include("StateLib.jl")
+using .StateLib
 
 include("VertexFunctions_Dense.jl")
 include("Propagators.jl")

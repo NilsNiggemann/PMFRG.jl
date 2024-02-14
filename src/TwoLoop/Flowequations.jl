@@ -14,6 +14,7 @@ function getDerivTwoLoop!(Deriv, State, setup, Lam)
     addToVertexFromBubble!(Workspace.Deriv.Γ, Workspace.Y)
 
     symmetrizeVertex!(Workspace.Deriv.Γ, Par)
+    repack!(Deriv,Workspace.Deriv,Par)
     return
 end
 

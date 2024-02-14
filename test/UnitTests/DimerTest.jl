@@ -14,10 +14,11 @@ function test_runFRG(Par::PMFRG.PMFRGParams; kwargs...)
 
     println("cleaning up... deleting ", mainFile, " and ", CheckPoints)
     rm(tempFolder, recursive = true)
-    γ = SolP.u[end].x[2]
-    Γa = SolP.u[end].x[3]
-    Γb = SolP.u[end].x[4]
-    Γc = SolP.u[end].x[5]
+    args = get_array_geometry(Par)
+    γ =  get_gamma(SolP.u[end],args)
+    Γa = get_Va(SolP.u[end],args)
+    Γb = get_Vb(SolP.u[end],args)
+    Γc = get_Vc(SolP.u[end],args)
     return γ, Γa, Γb, Γc, ObsPt.saveval[end], ObsPt.t, Par
 end
 

@@ -29,11 +29,13 @@ struct TwoLoopWorkspace{F,Buff,ParType} <: PMFRGWorkspace
     Par::ParType # Params
 end
 
-function TwoLoopWorkspace(Deriv::ArrayPartition, State::ArrayPartition, X, Y, Buffer, Par)
+function TwoLoopWorkspace(Deriv::AbstractVector, State::AbstractVector, X, Y, Buffer, Par)
     setZero!(Deriv)
     setZero!(X)
     setZero!(Y)
-    return TwoLoopWorkspace(StateType(State.x...), StateType(Deriv.x...), X, Y, Buffer, Par)
+    return TwoLoopWorkspace(StateType(unpack_state_vector(State,Par)...),
+                            StateType(unpack_state_vector(Deriv,Par)...),
+                            X, Y, Buffer, Par)
 end
 
 struct BubbleBufferType{T}

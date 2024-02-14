@@ -154,5 +154,3 @@ function test_best_partition_triangle()
     end
 
 end
-
-test_best_partition_triangle() # DEBUG

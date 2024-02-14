@@ -1,5 +1,7 @@
 using PMFRG, SpinFRGLattices, Test
 
+include("StateLib.jl")
+
 BenchmarkingParams(Method, System = getPolymer(2)) = Params(
     System,
     Method,
@@ -29,6 +31,7 @@ BenchmarkingParams(Method::Parquet, System = getPolymer(2)) = Params(
     lenIntw = 60,
     lenIntw_acc = 60,
 )
+
 
 include("ExampleObservables.jl")
 include("DimerTest.jl")

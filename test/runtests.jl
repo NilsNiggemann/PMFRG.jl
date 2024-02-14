@@ -6,12 +6,12 @@ using MPI
 include("../ext/PMFRGMPIExt/test/MPITest/mpi-tests.jl")
 include("RegressionTests/PMFRG.getXBubble.jl")
 
-##
 @testset verbose = true "PMFRG tests" begin
-    test_mpi()
-    test_getXBubble()
+    test_state_unpacking()
     testOneLoop(Obsacc)
     testTwoLoop(Obsacc)
     testParquet()
     test_IO()
+    test_mpi()
+    test_getXBubble()
 end

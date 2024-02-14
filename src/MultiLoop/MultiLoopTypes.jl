@@ -97,7 +97,7 @@ struct MultiLoopWorkSpace{T,Buff,P<:PMFRGParams}
     Par::P
 end
 
-function MultLoopWorkspace(Deriv::ArrayPartition, State::ArrayPartition, X, Y, Buffer, Par)
+function MultLoopWorkspace(Deriv::AbstractVector, State::AbstractVector, X, Y, Buffer, Par)
     error("Todo")
 end
 

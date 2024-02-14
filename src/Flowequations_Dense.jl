@@ -17,7 +17,7 @@ function getDeriv!(Deriv, State, setup, Lam)
         @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
         flush(stdout)
 
-        @timeit_debug "repack" repack!(Deriv,Workspace.Deriv,Par)
+        @timeit_debug "repack" repack!(Deriv,Workspace.Deriv)
     end
 
     return

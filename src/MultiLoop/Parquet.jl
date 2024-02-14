@@ -90,12 +90,6 @@ function iterateSolution!(Workspace::ParquetWorkspace, Lam::Real, Obs, getObsFun
     return Workspace, Obs
 end
 
-function dampen!(State, OldState, epsilon)
-    StateArr = ArrayPartition(State)
-    OldStateArr = ArrayPartition(OldState)
-    dampen!(StateArr, OldStateArr, epsilon)
-end
-
 function dampen!(StateArr::AbstractArray, OldStateArr::AbstractArray, epsilon::Real)
     @. StateArr = (1 - epsilon) * OldStateArr + epsilon * StateArr
 end
@@ -187,10 +181,10 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
     (; accuracy) = Par.NumericalParams
 
     ObsType = eltype(Obs)
-    OldStateArr, StateArr = ArrayPartition.((OldState, State))
+    OldStateArr, StateArr = repack.((OldState, State))
 
     function FixedPointFunction!(State_Arr, OldState_Arr)
-        anyisnan(OldState_Arr) && return State_Arr
+        any(isnan,OldState_Arr) && return State_Arr
         State = StateType(State_Arr.x...)
         BSE_iteration!(State, Workspace, Lam)
         iterateSDE_FP!(State.γ, State.Γ, B0, Γ0, Lam, Par, Buffer)
@@ -217,7 +211,7 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
     StateArr .= s.x
     println("""
     \t\tBSE done after  $(length(Obs)) / $BSE_iters iterations (tol = $(s.error))""")
-    if anyisnan(StateArr)
+    if any(isnan,StateArr)
         @warn "NaN detected... Aborted"
     elseif s.error > accuracy
         @warn "Tolerance goal ($accuracy) not reached"
@@ -225,7 +219,6 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
     return Workspace, Obs
 end
 
-anyisnan(A::ArrayPartition) = any((any(isnan, i) for i in A.x))
 
 
 function iterateSDE_FP!(γ, Γ, B0, Γ0, Lam, Par, Buffer)

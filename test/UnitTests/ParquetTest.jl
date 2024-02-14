@@ -110,7 +110,7 @@ function test_iterate_FP!(Workspace::PMFRG.ParquetWorkspace, Lam::Real)
 
     maxIterBSE = Par.Options.maxIterBSE
 
-    OldStateArr, StateArr = PMFRG.ArrayPartition.((OldState, State))
+    OldStateArr, StateArr = repack.((OldState, State))
 
     function FixedPointFunction!(State_Arr, OldState_Arr)
         anyisnan(OldState_Arr) && return State_Arr

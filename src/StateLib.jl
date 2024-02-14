@@ -1,7 +1,7 @@
 module StateLib
 import PMFRG: getVDims, PMFRGParams, StateType
 
-export get_f_int, get_gamma, get_Va, get_Vb, get_Vc, CreateState, unpack_state_vector, get_array_geometry, repack!
+export get_f_int, get_gamma, get_Va, get_Vb, get_Vc, CreateState, unpack_state_vector, get_array_geometry, repack!, repack
 
 
 function CreateState(array_geometry::NamedTuple;floattype)
@@ -51,13 +51,19 @@ function get_array_geometry(Par::PMFRGParams)
      VDims = getVDims(Par))
 end
 
+function get_array_geometry(State::StateType)
+    (NUnique = size(State.f_int)[1],
+     Ngamma = size(State.γ)[2],
+     VDims = size(State.Γ.a))
+end
+
 function unpack_state_vector(state::AbstractVector,Par::PMFRGParams)
     unpack_state_vector(state,get_array_geometry(Par))
 
 end
 
-function repack!(Unrolled::AbstractVector{T},Deriv::StateType{T},Par::PMFRGParams) where T
-    array_geometry = get_array_geometry(Par)
+function repack!(Unrolled::AbstractVector{T},Deriv::StateType{T}) where T
+    array_geometry = get_array_geometry(Deriv)
     get_f_int(Unrolled,array_geometry) .= Deriv.f_int
     get_gamma(Unrolled,array_geometry) .= Deriv.γ
     get_Va(Unrolled,array_geometry) .= Deriv.Γ.a
@@ -65,6 +71,11 @@ function repack!(Unrolled::AbstractVector{T},Deriv::StateType{T},Par::PMFRGParam
     get_Vc(Unrolled,array_geometry) .= Deriv.Γ.c
 end
 
+function repack(Deriv::StateType{T}) where T
+    array_geometry = get_array_geometry(Deriv)
+    packed = CreateState(array_geometry; floattype = T)
+    repack!(packed,Deriv)
+end
 
 
 _get_f_int_range(array_geometry::NamedTuple) =  1:array_geometry.NUnique

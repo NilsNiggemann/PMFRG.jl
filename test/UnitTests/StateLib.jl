@@ -134,4 +134,19 @@ function test_state_unpacking()
         end
 
     end
+
+    @testset "get array geometry from state" begin
+        NUnique =3
+        Ngamma = 4
+        VDims = (5,7,6,8)
+
+        S = PMFRG.StateType(NUnique,Ngamma,VDims)
+
+        array_geometry = get_array_geometry(S)
+
+        @test array_geometry.Ngamma == Ngamma
+        @test array_geometry.NUnique == NUnique
+        @test array_geometry.VDims == VDims
+
+    end
 end

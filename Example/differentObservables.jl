@@ -12,8 +12,9 @@ struct NewObs{T}
 end
 
 """dispatch on NewObs"""
-function PMFRG.getObservables(::Type{NewObs}, State::PMFRG.ArrayPartition, T, Par)
-    f_int, gamma, Va, Vb, Vc = State.x
+function PMFRG.getObservables(::Type{NewObs}, State::AbstractVector, T, Par)
+    f_int, gamma, Va, Vb, Vc = unpack_state_vector(State,Par)
+
     chinu = PMFRG.getChi(State, T, Par, Par.NumericalParams.N)
     MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
     MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]

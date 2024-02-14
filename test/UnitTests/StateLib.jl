@@ -5,7 +5,7 @@ using Test
 include("../../src/StateLib.jl")
 using .StateLib
 
-function test_state_unpacking()
+function testStateUnpacking()
     @testset "state creation and unpacking" verbose = true begin
         @testset verbose = true for array_geometry in [
             (Ngamma=3, NUnique=7, VDims=(7, 11, 11, 11)),
@@ -22,7 +22,7 @@ function test_state_unpacking()
                 )
 
 
-                @test size(CreateState(array_geometry;
+                @test size(createStateVector(array_geometry;
                     floattype=Float64)) == (expected_size,)
             end
 
@@ -30,23 +30,23 @@ function test_state_unpacking()
             @testset "State can be initialized correctly" begin
                 begin
                     couplings = rand(array_geometry.NUnique)
-                    ss = CreateState(array_geometry;
+                    ss = createStateVector(array_geometry;
                         floattype=Float64)
 
-                    PMFRG.setToBareVertex!(get_Vc(ss, array_geometry), couplings)
+                    PMFRG.setToBareVertex!(getVc(ss, array_geometry), couplings)
 
-                    @test all(-x in [0.0, couplings...] for x in get_Vc(ss, array_geometry))
-                    @test any(-x in couplings for x in get_Vc(ss, array_geometry))
+                    @test all(-x in [0.0, couplings...] for x in getVc(ss, array_geometry))
+                    @test any(-x in couplings for x in getVc(ss, array_geometry))
 
                 end
             end
             @testset "no overlap between ranges" begin
                 functions = [
-                    StateLib._get_f_int_range,
-                    StateLib._get_gamma_range,
-                    StateLib._get_Va_range,
-                    StateLib._get_Vb_range,
-                    StateLib._get_Vc_range,
+                    StateLib._getF_intRange,
+                    StateLib._getGammaRange,
+                    StateLib._getVaRange,
+                    StateLib._getVbRange,
+                    StateLib._getVcRange,
                 ]
                 @testset for f1 in functions
                     @testset for f2 in functions
@@ -59,66 +59,81 @@ function test_state_unpacking()
                 end
             end
 
-            @testset "get_f_int" begin
-                state = CreateState(array_geometry; floattype=Float64)
+            @testset "getF_int" begin
+                state = createStateVector(array_geometry; floattype=Float64)
 
-                f_int = get_f_int(state, array_geometry)
-                randn!(state)
-                @test all(f_int .== state[StateLib._get_f_int_range(array_geometry)])
+                f_int = getF_int(state, array_geometry)
+                for i in eachindex(state)
+                    state[i] = i
+                end
+                @test all(f_int .== state[StateLib._getF_intRange(array_geometry)])
             end
 
-            @testset "get_gamma" begin
-                state = CreateState(array_geometry; floattype=Float64)
+            @testset "getGamma" begin
+                state = createStateVector(array_geometry; floattype=Float64)
 
 
-                gamma = get_gamma(state, array_geometry)
-                randn!(state)
-
+                gamma = getGamma(state, array_geometry)
+                for i in eachindex(state)
+                    state[i] = i
+                end
                 @test size(gamma) == (array_geometry.NUnique, array_geometry.Ngamma)
-                @test all(gamma .== reshape(state[StateLib._get_gamma_range(array_geometry)],
+                @test all(gamma .== reshape(state[StateLib._getGammaRange(array_geometry)],
                     (array_geometry.NUnique, array_geometry.Ngamma)))
 
             end
 
-            @testset "get_Va" begin
-                state = CreateState(array_geometry; floattype=Float64)
-                Va = get_Va(state, array_geometry)
-                randn!(state)
-
+            @testset "getVa" begin
+                state = createStateVector(array_geometry; floattype=Float64)
+                Va = getVa(state, array_geometry)
+                for i in eachindex(state)
+                    state[i] = i
+                end
                 @test size(Va) == array_geometry.VDims
-                @test all(Va .== reshape(state[StateLib._get_Va_range(array_geometry)], array_geometry.VDims))
+                @test all(Va .== reshape(state[StateLib._getVaRange(array_geometry)], array_geometry.VDims))
             end
 
 
 
-            @testset "get_Vb" begin
-                state = CreateState(array_geometry; floattype=Float64)
-                Vb = get_Vb(state, array_geometry)
-                randn!(state)
+            @testset "getVb" begin
+                state = createStateVector(array_geometry; floattype=Float64)
+                Vb = getVb(state, array_geometry)
+                for i in eachindex(state)
+                    state[i] = i
+                end
 
                 @test size(Vb) == array_geometry.VDims
-                @test all(Vb .== reshape(state[StateLib._get_Vb_range(array_geometry)], array_geometry.VDims))
+                @test all(Vb .== reshape(state[StateLib._getVbRange(array_geometry)], array_geometry.VDims))
             end
 
-            @testset "get_Vc" begin
+            @testset "getVc" begin
                 couplings = rand(array_geometry.NUnique)
-                state = CreateState(array_geometry; floattype=Float64)
+                state = createStateVector(array_geometry; floattype=Float64)
 
-                Vc = get_Vc(state, array_geometry)
-                randn!(state)
-
+                Vc = getVc(state, array_geometry)
+                for i in eachindex(state)
+                    state[i] = i
+                end
                 @test size(Vc) == array_geometry.VDims
-                @test all(Vc .== reshape(state[StateLib._get_Vc_range(array_geometry)], array_geometry.VDims))
+                @test all(Vc .== reshape(state[StateLib._getVcRange(array_geometry)], array_geometry.VDims))
             end
 
 
-            @testset "get_all" verbose = true begin
+        end
+
+        @testset "packing-unpacking" verbose = true begin
+
+            array_geometry = (NUnique = 3,
+                              Ngamma = 4,
+                              VDims = (5, 7, 6, 8))
+
+            @testset "unpackStateVector" verbose = true begin
                 couplings = rand(array_geometry.NUnique)
-                state = CreateState(array_geometry; floattype=Float64)
+                state = createStateVector(array_geometry; floattype=Float64)
 
-                all_parts = unpack_state_vector(state, array_geometry)
+                all_parts = unpackStateVector(state, array_geometry)
 
-                fs = [get_f_int, get_gamma, get_Va, get_Vb, get_Vc]
+                fs = [getF_int, getGamma, getVa, getVb, getVc]
                 @testset "equivalence to single functions" for (f, part) in zip(fs, all_parts)
                     @test all(part .== f(state, array_geometry))
                 end
@@ -128,25 +143,58 @@ function test_state_unpacking()
 
                     @test all_parts[1][1] == state[1]
                 end
+            end
+
+            @testset "repackStateVector" verbose = true begin
+                S = PMFRG.StateType(array_geometry.NUnique,
+                                    array_geometry.Ngamma,
+                                    array_geometry.VDims)
+
+                v = 0.0
+                for i in eachindex(S.f_int)
+                    S.f_int[i] = v
+                    v+=1
+                end
+                for i in eachindex(S.γ)
+                    S.γ[i] = v
+                    v+=1
+                end
+                for i in eachindex(S.Γ.a)
+                    S.Γ.a[i] = v
+                    v+=1
+                end
+                for i in eachindex(S.Γ.b)
+                    S.Γ.b[i] = v
+                    v+=1
+                end
+                for i in eachindex(S.Γ.c)
+                    S.Γ.c[i] = v
+                    v+=1
+                end
+                packed = repackStateVector(S)
+
+                all_parts = unpackStateVector(packed, array_geometry)
+
+                fs = [getF_int, getGamma, getVa, getVb, getVc]
+                @testset "equivalence to single functions" for (f, part) in zip(fs, all_parts)
+                    @test all(part .== f(packed, array_geometry))
+                end
 
 
             end
+
+            @testset "get array geometry from state" begin
+                S = PMFRG.StateType(array_geometry.NUnique,
+                                    array_geometry.Ngamma,
+                                    array_geometry.VDims)
+
+                ag = getArrayGeometry(S)
+
+                @test ag.Ngamma == array_geometry.Ngamma
+                @test ag.NUnique == array_geometry.NUnique
+                @test ag.VDims == array_geometry.VDims
+
+            end
         end
-
-    end
-
-    @testset "get array geometry from state" begin
-        NUnique =3
-        Ngamma = 4
-        VDims = (5,7,6,8)
-
-        S = PMFRG.StateType(NUnique,Ngamma,VDims)
-
-        array_geometry = get_array_geometry(S)
-
-        @test array_geometry.Ngamma == Ngamma
-        @test array_geometry.NUnique == NUnique
-        @test array_geometry.VDims == VDims
-
-    end
-end
+    end # @testset "state creation and unpacking" verbose = true begin
+end # function testStateUnpacking()

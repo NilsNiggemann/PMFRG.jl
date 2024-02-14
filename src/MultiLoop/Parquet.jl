@@ -181,11 +181,12 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
     (; accuracy) = Par.NumericalParams
 
     ObsType = eltype(Obs)
-    OldStateArr, StateArr = repack.((OldState, State))
+    OldStateArr, StateArr = repackStateVector.((OldState, State))
 
     function FixedPointFunction!(State_Arr, OldState_Arr)
         any(isnan,OldState_Arr) && return State_Arr
-        State = StateType(State_Arr.x...)
+        array_geometry = getArrayGeometry(Par)
+        State = StateType(unpackStateVector(State_Arr,array_geometry)...)
         BSE_iteration!(State, Workspace, Lam)
         iterateSDE_FP!(State.γ, State.Γ, B0, Γ0, Lam, Par, Buffer)
 
@@ -246,7 +247,6 @@ function iterateSDE_FP!(γ, Γ, B0, Γ0, Lam, Par, Buffer)
     γ .= s.x
     # FixedPointFunction!(State.γ,OldState.γ)
     # println(maximum(γ))
-    # println(maximum(ArrayPartition(Γ.a,Γ.b,Γ.c)))
     if !Par.Options.MinimalOutput
         println("""
         \t\tSDE step done after  $(s.iters) / $SDE_iters iterations (tol = $(s.error))""")

@@ -8,7 +8,7 @@ joinGroup(args...) = join(args, "/")
 function saveState(Filename::String, State::AbstractVector, Lam,
                    Par::PMFRGParams,
                    mode = "cw")
-    Vertices = unpack_state_vector(State,Par)
+    Vertices = unpackStateVector(State,Par)
     Names = "fint", "gamma", "Va", "Vb", "Vc"
     # Filename = string(DirName,"/$(string(round(Lam,digits =3))).h5")
     try
@@ -26,8 +26,11 @@ end
 """Reads Vertices from file"""
 function readState(Filename::String)
     Names = "fint", "gamma", "Va", "Vb", "Vc"
-    State = ArrayPartition((h5read(Filename, "$N") for N in Names)...)
-    return State
+
+    f_int, γ,Γa,Γb,Γc = [ h5read(Filename,"$N") for N in Names ]
+    State = StateType(f_int,γ,VertexType(Γa,Γb,Γc))
+    StateArray = repackStateVector(State)
+    return StateArray
 end
 
 function readLam(Filename::String)

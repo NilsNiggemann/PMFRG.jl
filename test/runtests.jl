@@ -7,7 +7,7 @@ include("../ext/PMFRGMPIExt/test/MPITest/mpi-tests.jl")
 include("RegressionTests/PMFRG.getXBubble.jl")
 
 @testset verbose = true "PMFRG tests" begin
-    test_state_unpacking()
+    testStateUnpacking()
     testOneLoop(Obsacc)
     testTwoLoop(Obsacc)
     testParquet()

@@ -63,8 +63,8 @@ end
 function OneLoopWorkspace(Deriv::AbstractVector, State::AbstractVector, X, Buffer, Par)
     setZero!(Deriv)
     setZero!(X)
-    return OneLoopWorkspace(StateType(unpack_state_vector(State,Par)...),
-                            StateType(unpack_state_vector(Deriv,Par)...),
+    return OneLoopWorkspace(StateType(unpackStateVector(State,Par)...),
+                            StateType(unpackStateVector(Deriv,Par)...),
                             X,
                             Buffer,
                             Par)

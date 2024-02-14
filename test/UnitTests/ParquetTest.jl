@@ -101,7 +101,7 @@ function test_iterate!(Workspace::PMFRG.ParquetWorkspace, Lam::Real; SDECheatfac
     Tol_Vertex = reldist(OldState.Γ, State.Γ)
 
     isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
-    println(maximum.((PMFRG.ArrayPartition(OldState), PMFRG.ArrayPartition(State))))
+    println(maximum.((PMFRG.repackStateVector(OldState), PMFRG.repackStateVector(State))))
     return Workspace
 end
 
@@ -110,14 +110,15 @@ function test_iterate_FP!(Workspace::PMFRG.ParquetWorkspace, Lam::Real)
 
     maxIterBSE = Par.Options.maxIterBSE
 
-    OldStateArr, StateArr = repack.((OldState, State))
+    OldStateArr, StateArr = repackStateVector.((OldState, State))
 
     function FixedPointFunction!(State_Arr, OldState_Arr)
         anyisnan(OldState_Arr) && return State_Arr
-        gamma = OldState_Arr.x[2]
 
-        State = StateType(State_Arr.x...)
-        OldState = StateType(OldState_Arr.x...)
+        gamma = getGamma(OldState_Arr,getArrayGeometry(Par))
+
+        State = StateType(unpackStateVector(State_Arr,Par)...)
+        OldState = StateType(unpackStateVector(OldState_Arr,Par)...)
         getProp! = constructPropagatorFunction(gamma, Lam, Par)
 
         PMFRG.computeLeft2PartBubble!(B0, Γ0, Γ0, OldState.Γ, getProp!, Par, Buffer)
@@ -128,7 +129,7 @@ function test_iterate_FP!(Workspace::PMFRG.ParquetWorkspace, Lam::Real)
         PMFRG.symmetrizeVertex!(State.Γ, Par)
 
 
-        WS_State = PMFRG.ArrayPartition(Workspace.State)
+        WS_State = PMFRG.repackStateVector(Workspace.State)
         WS_State .= State_Arr
         # PMFRG.iterateSDE_FP!(Workspace,Lam)
         PMFRG.iterateSDE_FP!(State.γ, State.Γ, Γ0, Lam, Par)

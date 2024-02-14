@@ -17,7 +17,7 @@ function getDeriv!(Deriv, State, setup, Lam)
         @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
         flush(stdout)
 
-        @timeit_debug "repack" repack!(Deriv,Workspace.Deriv)
+        @timeit_debug "repackStateVector" repackStateVector!(Deriv,Workspace.Deriv)
     end
 
     return
@@ -515,12 +515,12 @@ end
 
 ##
 getChi(State::AbstractVector, Lam::Real, Par::PMFRGParams, Numax) =
-    getChi(get_gamma(State,get_array_geometry(Par)),
-           get_Vc(State,get_array_geometry(Par)),
+    getChi(getGamma(State,getArrayGeometry(Par)),
+           getVc(State,getArrayGeometry(Par)),
            Lam, Par, Numax)
 getChi(State::AbstractVector, Lam::Real, Par::PMFRGParams) =
-    getChi(get_gamma(State,get_array_geometry(Par)),
-           get_Vc(State,get_array_geometry(Par)),
+    getChi(getGamma(State,getArrayGeometry(Par)),
+           getVc(State,getArrayGeometry(Par)),
            Lam,
            Par)
 

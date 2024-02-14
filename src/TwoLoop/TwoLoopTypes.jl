@@ -33,8 +33,8 @@ function TwoLoopWorkspace(Deriv::AbstractVector, State::AbstractVector, X, Y, Bu
     setZero!(Deriv)
     setZero!(X)
     setZero!(Y)
-    return TwoLoopWorkspace(StateType(unpack_state_vector(State,Par)...),
-                            StateType(unpack_state_vector(Deriv,Par)...),
+    return TwoLoopWorkspace(StateType(unpackStateVector(State,Par)...),
+                            StateType(unpackStateVector(Deriv,Par)...),
                             X, Y, Buffer, Par)
 end
 

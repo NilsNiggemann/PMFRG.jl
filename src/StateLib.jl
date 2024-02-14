@@ -1,10 +1,19 @@
 module StateLib
 import PMFRG: getVDims, PMFRGParams, StateType
 
-export get_f_int, get_gamma, get_Va, get_Vb, get_Vc, CreateState, unpack_state_vector, get_array_geometry, repack!, repack
+export getF_int,
+    getGamma,
+    getVa,
+    getVb,
+    getVc,
+    createStateVector,
+    unpackStateVector,
+    getArrayGeometry,
+    repackStateVector,
+    repackStateVector!
 
 
-function CreateState(array_geometry::NamedTuple;floattype)
+function createStateVector(array_geometry::NamedTuple;floattype)
     zeros(floattype,
         array_geometry.NUnique  + # f_int
         array_geometry.NUnique * array_geometry.Ngamma + # gamma
@@ -12,95 +21,96 @@ function CreateState(array_geometry::NamedTuple;floattype)
 )
 end
 
-function get_f_int(state::AbstractVector,array_geometry::NamedTuple)
-    @view state[_get_f_int_range(array_geometry)]
+function getF_int(state::AbstractVector,array_geometry::NamedTuple)
+    @view state[_getF_intRange(array_geometry)]
 end
 
-function get_gamma(state::AbstractVector,array_geometry::NamedTuple)
-    v = view(state,_get_gamma_range(array_geometry))
+function getGamma(state::AbstractVector,array_geometry::NamedTuple)
+    v = view(state,_getGammaRange(array_geometry))
     reshape(v,(array_geometry.NUnique,array_geometry.Ngamma))
 end
 
-function get_Va(state::AbstractVector,array_geometry::NamedTuple)
-    v = view(state,_get_Va_range(array_geometry))
+function getVa(state::AbstractVector,array_geometry::NamedTuple)
+    v = view(state,_getVaRange(array_geometry))
     reshape(v,array_geometry.VDims)
 end
 
-function get_Vb(state::AbstractVector,array_geometry::NamedTuple)
-    v = view(state,_get_Vb_range(array_geometry))
+function getVb(state::AbstractVector,array_geometry::NamedTuple)
+    v = view(state,_getVbRange(array_geometry))
     reshape(v,array_geometry.VDims)
 end
 
-function get_Vc(state::AbstractVector,array_geometry::NamedTuple)
-    v = view(state,_get_Vc_range(array_geometry))
+function getVc(state::AbstractVector,array_geometry::NamedTuple)
+    v = view(state,_getVcRange(array_geometry))
     reshape(v,array_geometry.VDims)
 end
 
 
-function unpack_state_vector(state::AbstractVector,array_geometry::NamedTuple)
-    [f(state,array_geometry) for f in [get_f_int,
-                                    get_gamma,
-                                    get_Va,
-                                    get_Vb,
-                                    get_Vc]]
+function unpackStateVector(state::AbstractVector,array_geometry::NamedTuple)
+    [f(state,array_geometry) for f in [getF_int,
+                                    getGamma,
+                                    getVa,
+                                    getVb,
+                                    getVc]]
 end
 
-function get_array_geometry(Par::PMFRGParams)
+function getArrayGeometry(Par::PMFRGParams)
     (Ngamma = Par.NumericalParams.Ngamma,
      NUnique = Par.System.NUnique,
      VDims = getVDims(Par))
 end
 
-function get_array_geometry(State::StateType)
+function getArrayGeometry(State::StateType)
     (NUnique = size(State.f_int)[1],
      Ngamma = size(State.γ)[2],
      VDims = size(State.Γ.a))
 end
 
-function unpack_state_vector(state::AbstractVector,Par::PMFRGParams)
-    unpack_state_vector(state,get_array_geometry(Par))
-
+function unpackStateVector(state::AbstractVector,Par::PMFRGParams)
+    unpackStateVector(state,getArrayGeometry(Par))
 end
 
-function repack!(Unrolled::AbstractVector{T},Deriv::StateType{T}) where T
-    array_geometry = get_array_geometry(Deriv)
-    get_f_int(Unrolled,array_geometry) .= Deriv.f_int
-    get_gamma(Unrolled,array_geometry) .= Deriv.γ
-    get_Va(Unrolled,array_geometry) .= Deriv.Γ.a
-    get_Vb(Unrolled,array_geometry) .= Deriv.Γ.b
-    get_Vc(Unrolled,array_geometry) .= Deriv.Γ.c
+function repackStateVector!(Unrolled::AbstractVector{T},State::StateType{T}) where T
+    array_geometry = getArrayGeometry(State)
+    getF_int(Unrolled,array_geometry) .= State.f_int
+    getGamma(Unrolled,array_geometry) .= State.γ
+    getVa(Unrolled,array_geometry) .= State.Γ.a
+    getVb(Unrolled,array_geometry) .= State.Γ.b
+    getVc(Unrolled,array_geometry) .= State.Γ.c
+    nothing
 end
 
-function repack(Deriv::StateType{T}) where T
-    array_geometry = get_array_geometry(Deriv)
-    packed = CreateState(array_geometry; floattype = T)
-    repack!(packed,Deriv)
+function repackStateVector(State::StateType{T}) where T
+    array_geometry = getArrayGeometry(State)
+    packed = createStateVector(array_geometry; floattype = T)
+    repackStateVector!(packed,State)
+    packed
 end
 
 
-_get_f_int_range(array_geometry::NamedTuple) =  1:array_geometry.NUnique
+_getF_intRange(array_geometry::NamedTuple) =  1:array_geometry.NUnique
 
-function _get_gamma_range(array_geometry::NamedTuple)
-    start = _get_f_int_range(array_geometry).stop + 1
+function _getGammaRange(array_geometry::NamedTuple)
+    start = _getF_intRange(array_geometry).stop + 1
     stop = start + array_geometry.NUnique * array_geometry.Ngamma - 1
     start:stop
 end
 
-function _get_Va_range(array_geometry::NamedTuple)
-    start = _get_gamma_range(array_geometry).stop + 1
+function _getVaRange(array_geometry::NamedTuple)
+    start = _getGammaRange(array_geometry).stop + 1
     stop = start + prod(array_geometry.VDims) - 1
     start:stop
 end
 
-function _get_Vb_range(array_geometry::NamedTuple)
-    start =  _get_Va_range(array_geometry).stop + 1
+function _getVbRange(array_geometry::NamedTuple)
+    start =  _getVaRange(array_geometry).stop + 1
     stop = start + prod(array_geometry.VDims) -1
     start:stop
 end
 
 
-function _get_Vc_range(array_geometry::NamedTuple)
-    start = _get_Vb_range(array_geometry).stop + 1
+function _getVcRange(array_geometry::NamedTuple)
+    start = _getVbRange(array_geometry).stop + 1
     stop = start + prod(array_geometry.VDims) - 1
     start:stop
 end

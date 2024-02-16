@@ -1,13 +1,13 @@
 function getDeriv!(Deriv, State, setup, Lam)
     @timeit_debug "getDeriv!" begin
         @timeit_debug "setup" (; X, Buffs, Par, StateBuff, DerivBuff) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-        @timeit_debug "workspace" Workspace = OneLoopWorkspace(DerivBuff, StateBuff, X, Buffs, Par)
 
-        @timeit_debug "unpackStateVector!" begin
-            unpackStateVector!(DerivBuff,Deriv)
-            unpackStateVector!(StateBuff,State)
-        end
+        setZero!(DerivBuff)
+        setZero!(X)
 
+        @timeit_debug "workspace" Workspace = OneLoopWorkspace(StateBuff, DerivBuff, X, Buffs, Par)
+
+        @timeit_debug "unpackStateVector!" unpackStateVector!(StateBuff,State)
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
         @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 

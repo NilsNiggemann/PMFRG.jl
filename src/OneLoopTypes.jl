@@ -60,12 +60,3 @@ struct OneLoopWorkspace{F,PropsBuff,VertexBuff,ParType<:AbstractOneLoopParams} <
 
 end
 
-function OneLoopWorkspace(Deriv::StateType, State::StateType, X, Buffer, Par)
-    setZero!(Deriv)
-    setZero!(X)
-    return OneLoopWorkspace(State,
-                            Deriv,
-                            X,
-                            Buffer,
-                            Par)
-end

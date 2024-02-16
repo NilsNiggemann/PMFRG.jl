@@ -8,6 +8,7 @@ export getF_int,
     getVc,
     createStateVector,
     unpackStateVector,
+    unpackStateVector!,
     getArrayGeometry,
     repackStateVector,
     repackStateVector!
@@ -53,6 +54,18 @@ function unpackStateVector(state::AbstractVector,array_geometry::NamedTuple)
                                     getVb,
                                     getVc]]
 end
+
+function unpackStateVector!(State::StateType,state::AbstractVector)
+    array_geometry = getArrayGeometry(State)
+    State.f_int .= getF_int(state,array_geometry)
+    State.γ .= getGamma(state,array_geometry)
+    State.Γ.a .= getVa(state,array_geometry)
+    State.Γ.b .= getVb(state,array_geometry)
+    State.Γ.c .= getVc(state,array_geometry)
+    nothing
+end
+
+
 
 function getArrayGeometry(Par::PMFRGParams)
     (Ngamma = Par.NumericalParams.Ngamma,

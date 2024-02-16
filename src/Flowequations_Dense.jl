@@ -1,7 +1,12 @@
 function getDeriv!(Deriv, State, setup, Lam)
     @timeit_debug "getDeriv!" begin
-        @timeit_debug "setup" (; X, Buffs, Par) = setup #use pre-allocated X and XTilde to reduce garbage collector time
-        @timeit_debug "workspace" Workspace = OneLoopWorkspace(Deriv, State, X, Buffs, Par)
+        @timeit_debug "setup" (; X, Buffs, Par, StateBuff, DerivBuff) = setup #use pre-allocated X and XTilde to reduce garbage collector time
+        @timeit_debug "workspace" Workspace = OneLoopWorkspace(DerivBuff, StateBuff, X, Buffs, Par)
+
+        @timeit_debug "unpackStateVector!" begin
+            unpackStateVector!(DerivBuff,Deriv)
+            unpackStateVector!(StateBuff,State)
+        end
 
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
         @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
@@ -17,7 +22,7 @@ function getDeriv!(Deriv, State, setup, Lam)
         @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
         flush(stdout)
 
-        @timeit_debug "repackStateVector" repackStateVector!(Deriv,Workspace.Deriv)
+        @timeit_debug "repackStateVector!" repackStateVector!(Deriv,Workspace.Deriv)
     end
 
     return

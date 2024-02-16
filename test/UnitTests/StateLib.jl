@@ -121,7 +121,7 @@ function testStateUnpacking()
 
         end
 
-        @testset "packing-unpacking" verbose = true begin
+        @testset "packing-unpacking between State vector and StateType" verbose = true begin
 
             array_geometry = (NUnique = 3,
                               Ngamma = 4,
@@ -142,6 +142,22 @@ function testStateUnpacking()
                     state[1] += 354.8
 
                     @test all_parts[1][1] == state[1]
+                end
+
+                @testset "unpack into StateType" begin
+                    S = PMFRG.StateType(array_geometry.NUnique,
+                                        array_geometry.Ngamma,
+                                        array_geometry.VDims)
+                    for i in eachindex(state)
+                        state[i]= i
+                    end
+                    unpackStateVector!(S,state)
+
+                    @test all(S.f_int .== getF_int(state,array_geometry))
+                    @test all(S.γ .== getGamma(state,array_geometry))
+                    @test all(S.Γ.a .== getVa(state,array_geometry))
+                    @test all(S.Γ.b .== getVb(state,array_geometry))
+                    @test all(S.Γ.c .== getVc(state,array_geometry))
                 end
             end
 

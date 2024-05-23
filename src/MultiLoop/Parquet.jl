@@ -185,8 +185,7 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
 
     function FixedPointFunction!(State_Arr, OldState_Arr)
         any(isnan,OldState_Arr) && return State_Arr
-        array_geometry = getArrayGeometry(Par)
-        State = StateType(unpackStateVector(State_Arr,array_geometry)...)
+        unpackStateVector!(State,State_Arr)
         BSE_iteration!(State, Workspace, Lam)
         iterateSDE_FP!(State.γ, State.Γ, B0, Γ0, Lam, Par, Buffer)
 
@@ -198,6 +197,7 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
             writeOutput(State, CurrentObs, Lam, Par)
         end
         # OldState_Arr .= State_Arr
+        repackStateVector!(State_Arr,State)
         return State_Arr
     end
 

@@ -59,4 +59,3 @@ struct OneLoopWorkspace{F,PropsBuff,VertexBuff,ParType<:AbstractOneLoopParams} <
     Par::ParType # Params
 
 end
-

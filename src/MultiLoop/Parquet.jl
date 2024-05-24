@@ -184,8 +184,8 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
     OldStateArr, StateArr = repackStateVector.((OldState, State))
 
     function FixedPointFunction!(State_Arr, OldState_Arr)
-        any(isnan,OldState_Arr) && return State_Arr
-        unpackStateVector!(State,State_Arr)
+        any(isnan, OldState_Arr) && return State_Arr
+        unpackStateVector!(State, State_Arr)
         BSE_iteration!(State, Workspace, Lam)
         iterateSDE_FP!(State.γ, State.Γ, B0, Γ0, Lam, Par, Buffer)
 
@@ -197,7 +197,7 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
             writeOutput(State, CurrentObs, Lam, Par)
         end
         # OldState_Arr .= State_Arr
-        repackStateVector!(State_Arr,State)
+        repackStateVector!(State_Arr, State)
         return State_Arr
     end
 
@@ -212,7 +212,7 @@ function iterateSolution_FP!(Workspace::ParquetWorkspace, Lam::Real, Obs)
     StateArr .= s.x
     println("""
     \t\tBSE done after  $(length(Obs)) / $BSE_iters iterations (tol = $(s.error))""")
-    if any(isnan,StateArr)
+    if any(isnan, StateArr)
         @warn "NaN detected... Aborted"
     elseif s.error > accuracy
         @warn "Tolerance goal ($accuracy) not reached"

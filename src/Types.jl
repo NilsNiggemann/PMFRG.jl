@@ -109,10 +109,11 @@ getVDims(Par::PMFRGParams) =
     (Par.System.Npairs, Par.NumericalParams.N, Par.NumericalParams.N, Par.NumericalParams.N)
 VertexType(Par::PMFRGParams) = VertexType(getVDims(Par), _getFloatType(Par))
 
-VertexType(_a::AbstractArray{T,4},
-           _b::AbstractArray{T,4},
-           _c::AbstractArray{T,4}) where T =
-               VertexType{T}(copy(_a),copy(_b),copy(_c))
+VertexType(
+    _a::AbstractArray{T,4},
+    _b::AbstractArray{T,4},
+    _c::AbstractArray{T,4},
+) where {T} = VertexType{T}(copy(_a), copy(_b), copy(_c))
 
 function setToBareVertex!(Γc::AbstractArray{T,4}, couplings::AbstractVector) where {T}
     for Rj in eachindex(couplings, axes(Γc, 1))
@@ -164,10 +165,8 @@ StateType(Par::PMFRGParams) = StateType(
 )
 
 
-StateType(_f_int::AbstractArray{T,1},
-          _γ::AbstractArray{T,2},
-          _Γ::VertexType{T}) where T =
-              StateType(copy(_f_int),copy(_γ),_Γ)
+StateType(_f_int::AbstractArray{T,1}, _γ::AbstractArray{T,2}, _Γ::VertexType{T}) where {T} =
+    StateType(copy(_f_int), copy(_γ), _Γ)
 
 StateType(f_int, γ, Γa, Γb, Γc) = StateType(f_int, γ, VertexType(Γa, Γb, Γc))
 

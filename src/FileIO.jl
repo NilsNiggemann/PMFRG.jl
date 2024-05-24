@@ -5,10 +5,14 @@ Stored data can be used to re-launch an incomplete FRG calculation.
 joinGroup(args...) = join(args, "/")
 
 """Saves Vertices to a compressed HDF5 file in a Group "Lam"."""
-function saveState(Filename::String, State::AbstractVector, Lam,
-                   Par::PMFRGParams,
-                   mode = "cw")
-    Vertices = unpackStateVector(State,Par)
+function saveState(
+    Filename::String,
+    State::AbstractVector,
+    Lam,
+    Par::PMFRGParams,
+    mode = "cw",
+)
+    Vertices = unpackStateVector(State, Par)
     Names = "fint", "gamma", "Va", "Vb", "Vc"
     # Filename = string(DirName,"/$(string(round(Lam,digits =3))).h5")
     try
@@ -27,8 +31,8 @@ end
 function readState(Filename::String)
     Names = "fint", "gamma", "Va", "Vb", "Vc"
 
-    f_int, γ,Γa,Γb,Γc = [ h5read(Filename,"$N") for N in Names ]
-    State = StateType(f_int,γ,VertexType(Γa,Γb,Γc))
+    f_int, γ, Γa, Γb, Γc = [h5read(Filename, "$N") for N in Names]
+    State = StateType(f_int, γ, VertexType(Γa, Γb, Γc))
     StateArray = repackStateVector(State)
     return StateArray
 end
@@ -135,7 +139,7 @@ function saveCurrentState(
     Par::PMFRGParams,
 )
     Filename = joinpath(DirPath, "CurrentState.h5")
-    saveState(Filename, State, Lam, Par,"w")
+    saveState(Filename, State, Lam, Par, "w")
     saveParams(Filename, Par)
     saveObs(Filename, saved_Values, "Observables")
     Filename

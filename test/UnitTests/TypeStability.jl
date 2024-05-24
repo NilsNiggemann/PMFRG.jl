@@ -3,8 +3,8 @@
 function getEmptyWorkspace(Par::PMFRG.OneLoopParams)
     (; NUnique) = Par.System
     (; Ngamma) = Par.NumericalParams
-    State = PMFRG.StateType(NUnique,Ngamma,PMFRG.getVDims(Par),PMFRG._getFloatType(Par))
-    Deriv = PMFRG.StateType(NUnique,Ngamma,PMFRG.getVDims(Par),PMFRG._getFloatType(Par))
+    State = PMFRG.StateType(NUnique, Ngamma, PMFRG.getVDims(Par), PMFRG._getFloatType(Par))
+    Deriv = PMFRG.StateType(NUnique, Ngamma, PMFRG.getVDims(Par), PMFRG._getFloatType(Par))
     setup = PMFRG.AllocateSetup(Par)
     (X, Buffs, Par) = setup
     PMFRG.OneLoopWorkspace(Deriv, State, X, Buffs, Par)

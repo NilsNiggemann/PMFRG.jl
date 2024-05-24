@@ -20,7 +20,7 @@ h5file = h5open(fname, "r")
 
 MPI.Init()
 
-tests_ok=true
+tests_ok = true
 try
     @testset verbose = true "Tests for getXBubble!" begin
         ncases = read(h5file["Ncases"])

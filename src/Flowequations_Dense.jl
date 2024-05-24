@@ -5,9 +5,10 @@ function getDeriv!(Deriv, State, setup, Lam)
         setZero!(DerivBuff)
         setZero!(X)
 
-        @timeit_debug "workspace" Workspace = OneLoopWorkspace(StateBuff, DerivBuff, X, Buffs, Par)
+        @timeit_debug "workspace" Workspace =
+            OneLoopWorkspace(StateBuff, DerivBuff, X, Buffs, Par)
 
-        @timeit_debug "unpackStateVector!" unpackStateVector!(StateBuff,State)
+        @timeit_debug "unpackStateVector!" unpackStateVector!(StateBuff, State)
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
         @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 
@@ -22,7 +23,7 @@ function getDeriv!(Deriv, State, setup, Lam)
         @timeit_debug "symmetrizeVertex!" symmetrizeVertex!(Workspace.Deriv.Γ, Par)
         flush(stdout)
 
-        @timeit_debug "repackStateVector!" repackStateVector!(Deriv,Workspace.Deriv)
+        @timeit_debug "repackStateVector!" repackStateVector!(Deriv, Workspace.Deriv)
     end
 
     return
@@ -519,15 +520,19 @@ function symmetrizeVertex!(Γ::VertexType, Par)
 end
 
 ##
-getChi(State::AbstractVector, Lam::Real, Par::PMFRGParams, Numax) =
-    getChi(getGamma(State,getArrayGeometry(Par)),
-           getVc(State,getArrayGeometry(Par)),
-           Lam, Par, Numax)
-getChi(State::AbstractVector, Lam::Real, Par::PMFRGParams) =
-    getChi(getGamma(State,getArrayGeometry(Par)),
-           getVc(State,getArrayGeometry(Par)),
-           Lam,
-           Par)
+getChi(State::AbstractVector, Lam::Real, Par::PMFRGParams, Numax) = getChi(
+    getGamma(State, getArrayGeometry(Par)),
+    getVc(State, getArrayGeometry(Par)),
+    Lam,
+    Par,
+    Numax,
+)
+getChi(State::AbstractVector, Lam::Real, Par::PMFRGParams) = getChi(
+    getGamma(State, getArrayGeometry(Par)),
+    getVc(State, getArrayGeometry(Par)),
+    Lam,
+    Par,
+)
 
 function getChi(gamma::AbstractArray, Γc::AbstractArray, Lam::Real, Par::PMFRGParams, Numax)
     (; T, N, lenIntw_acc, np_vec) = Par.NumericalParams

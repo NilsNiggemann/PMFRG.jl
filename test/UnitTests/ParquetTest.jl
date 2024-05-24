@@ -115,10 +115,10 @@ function test_iterate_FP!(Workspace::PMFRG.ParquetWorkspace, Lam::Real)
     function FixedPointFunction!(State_Arr, OldState_Arr)
         anyisnan(OldState_Arr) && return State_Arr
 
-        gamma = getGamma(OldState_Arr,getArrayGeometry(Par))
+        gamma = getGamma(OldState_Arr, getArrayGeometry(Par))
 
-        State = StateType(unpackStateVector(State_Arr,Par)...)
-        OldState = StateType(unpackStateVector(OldState_Arr,Par)...)
+        State = StateType(unpackStateVector(State_Arr, Par)...)
+        OldState = StateType(unpackStateVector(OldState_Arr, Par)...)
         getProp! = constructPropagatorFunction(gamma, Lam, Par)
 
         PMFRG.computeLeft2PartBubble!(B0, Γ0, Γ0, OldState.Γ, getProp!, Par, Buffer)

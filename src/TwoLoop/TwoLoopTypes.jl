@@ -33,9 +33,14 @@ function TwoLoopWorkspace(Deriv::AbstractVector, State::AbstractVector, X, Y, Bu
     setZero!(Deriv)
     setZero!(X)
     setZero!(Y)
-    return TwoLoopWorkspace(StateType(unpackStateVector(State,Par)...),
-                            StateType(unpackStateVector(Deriv,Par)...),
-                            X, Y, Buffer, Par)
+    return TwoLoopWorkspace(
+        StateType(unpackStateVector(State, Par)...),
+        StateType(unpackStateVector(Deriv, Par)...),
+        X,
+        Y,
+        Buffer,
+        Par,
+    )
 end
 
 struct BubbleBufferType{T}

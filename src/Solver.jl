@@ -9,8 +9,8 @@ function InitializeState(Par::PMFRGParams)
 
     args = getArrayGeometry(Par)
 
-    State = createStateVector(args; floattype=floattype)
-    Γc = getVc(State,args)
+    State = createStateVector(args; floattype = floattype)
+    Γc = getVc(State, args)
     setToBareVertex!(Γc, couplings)
     return State
 end
@@ -40,8 +40,8 @@ function AllocateSetup(
         _ = 1:Threads.nthreads()
     ])
 
-    StateBuff = StateType(NUnique,Ngamma,getVDims(Par),floattype)
-    DerivBuff = StateType(NUnique,Ngamma,getVDims(Par),floattype)
+    StateBuff = StateType(NUnique, Ngamma, getVDims(Par), floattype)
+    DerivBuff = StateType(NUnique, Ngamma, getVDims(Par), floattype)
 
 
     Buffs = BufferType(PropsBuffers, VertexBuffers)
@@ -220,7 +220,7 @@ DefaultGroup(Par::PMFRGParams) = strd(Par.NumericalParams.T)
 
 function getObservables(::Type{Observables}, State::AbstractVector, Lam, Par)
     @timeit_debug "get_observables" begin
-        f_int, gamma, Va, Vb, Vc = unpackStateVector(State,Par)
+        f_int, gamma, Va, Vb, Vc = unpackStateVector(State, Par)
         chi = getChi(State, Lam, Par)
         MaxVa = maximum(abs, Va, dims = (2, 3, 4, 5))[:, 1, 1, 1]
         MaxVb = maximum(abs, Vb, dims = (2, 3, 4, 5))[:, 1, 1, 1]
@@ -229,8 +229,12 @@ function getObservables(::Type{Observables}, State::AbstractVector, Lam, Par)
     end
 end
 
-writeOutput(State::AbstractVector, saved_values, Lam, Par) =
-    writeOutput(unpackStateVector(State,getArrayGeometry(Par))..., saved_values.saveval[end], Lam, Par)
+writeOutput(State::AbstractVector, saved_values, Lam, Par) = writeOutput(
+    unpackStateVector(State, getArrayGeometry(Par))...,
+    saved_values.saveval[end],
+    Lam,
+    Par,
+)
 
 function writeOutput(f_int, gamma, Va, Vb, Vc, obs, Lam, Par)
     (; usesymmetry) = Par.Options

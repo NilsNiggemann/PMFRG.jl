@@ -9,6 +9,13 @@ function PMFRG.getXBubble!(Workspace, Lam, ::PMFRG.UseMPI)
     if MPI.Initialized()
         nranks = MPI.Comm_size(MPI.COMM_WORLD)
         rank = MPI.Comm_rank(MPI.COMM_WORLD)
+        Lam_root = MPI.bcast(Lam,0,MPI.COMM_WORLD)
+        @assert (Lam_root == Lam ) begin
+             "Lambda differs between MPI ranks! " *
+             "on rank 0: $Lam_root," *
+             "on rank $rank: $Lam"
+        end
+
 
         # if (ns+nt+nu)%2 == 0	# skip unphysical bosonic frequency combinations
         #

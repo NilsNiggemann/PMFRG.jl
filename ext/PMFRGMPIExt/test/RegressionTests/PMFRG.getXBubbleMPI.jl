@@ -38,8 +38,9 @@ try
             @test compare_arguments_post(X, X0)
         end
     end
-catch
+catch e
     global tests_ok = false
+    showerror(stdout,e)
 end
 
 MPI.Finalize()

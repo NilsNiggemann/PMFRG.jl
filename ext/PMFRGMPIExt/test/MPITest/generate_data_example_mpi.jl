@@ -67,8 +67,9 @@ Solution, saved_values = SolveFRG(
     CheckPointSteps = 3,
 )
 
-catch
+catch e
     global tests_ok = false
+    showerror(stdout,e)
 end
 
 MPI.Finalize()

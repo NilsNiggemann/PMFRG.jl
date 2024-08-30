@@ -14,6 +14,9 @@ using SpinFRGLattices.SquareLattice
 using MPI
 
 MPI.Init()
+
+tests_ok = true
+try
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 
 # Number of nearest neighbor bonds
@@ -64,4 +67,10 @@ Solution, saved_values = SolveFRG(
     CheckPointSteps = 3,
 )
 
+catch
+    global tests_ok = false
+end
+
 MPI.Finalize()
+
+exit((tests_ok ? 0 : 1))

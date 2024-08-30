@@ -40,7 +40,7 @@ try
     end
 catch e
     global tests_ok = false
-    showerror(stdout,e)
+    showerror(stdout, e)
 end
 
 MPI.Finalize()

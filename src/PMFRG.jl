@@ -1,6 +1,6 @@
 module PMFRG
 using SpinFRGLattices,
-    OrdinaryDiffEq,
+    OrdinaryDiffEqLowOrderRK,
     DiffEqCallbacks,
     Printf,
     RecursiveArrayTools,

@@ -1,6 +1,6 @@
-name = "PMFRG"
-uuid = "37d616f8-0bcb-4e18-9a76-f5d18f52650d"
+name = "PMFRGCore"
 authors = ["Nils Niggemann <nils.niggemann@fu-berlin.de>"]
+uuid = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
 version = "2.2.1"
 
 [deps]

@@ -1,0 +1,8 @@
+name = "PMFRG"
+uuid = "307b9980-580b-4ffb-acf7-52430be9d54f"
+authors = ["Michele Mesiti <michele.mesiti@kit.edu>"]
+version = "0.1.0"
+
+[deps]
+PMFRGCore = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
+PMFRGSolve = "8afc4f61-39e9-4661-bf82-e6695b8d2018"

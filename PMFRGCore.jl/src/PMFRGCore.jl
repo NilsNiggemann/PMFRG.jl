@@ -1,4 +1,4 @@
-module PMFRG
+module PMFRGCore
 using SpinFRGLattices,
     Printf,
     RecursiveArrayTools,

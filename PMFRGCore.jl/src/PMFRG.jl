@@ -1,7 +1,5 @@
 module PMFRG
 using SpinFRGLattices,
-    OrdinaryDiffEqLowOrderRK,
-    DiffEqCallbacks,
     Printf,
     RecursiveArrayTools,
     LoopVectorization,

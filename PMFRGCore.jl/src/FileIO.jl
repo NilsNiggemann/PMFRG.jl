@@ -328,17 +328,6 @@ SolveFRG_Checkpoint(
     kwargs...,
 ) = SolveFRG_Checkpoint(Filename, readGeometry(Filename, GeometryGenerator), Par; kwargs...)
 
-"""Saves Observables"""
-function saveObs(
-    Filename::String,
-    saved_values::DiffEqCallbacks.SavedValues,
-    Group::String = "",
-)
-    ObsArr = StructArray(saved_values.saveval)
-    saveObs(Filename, ObsArr, Group)
-    h5write(Filename, joinGroup(Group, "Lambda"), saved_values.t)
-end
-
 function saveObs(Filename::String, Obs::StructArray{ObsType}, Group::String) where {ObsType}
     Fields = fieldnames(ObsType)
     for F in Fields
@@ -399,14 +388,6 @@ function saveExtraFields(
     h5write(Filename, "$Group/Chi_nu", Chi_nu)
 end
 
-saveMainOutput(
-    Filename::String,
-    Solution::ODESolution,
-    saved_values::DiffEqCallbacks.SavedValues,
-    Par::PMFRGParams,
-    Group::String,
-) = saveMainOutput(Filename, Solution.u[end], saved_values, saved_values.t[end], Par, Group)
-
 function saveMainOutput(
     Filename::String,
     State,
@@ -428,14 +409,6 @@ function saveMainOutput(
     end
     # saveParams(Filename,Par,Group)
 end
-
-saveMainOutput(
-    Filename::String,
-    Solution::ODESolution,
-    saved_values::DiffEqCallbacks.SavedValues,
-    Par::PMFRGParams,
-    Group::Nothing,
-) = saveMainOutput(Filename, Solution, saved_values, Par, string(Par.NumericalParams.T))
 
 function getFilesFromSubDirs(Folder::String)
     allpaths = collect(walkdir(Folder))

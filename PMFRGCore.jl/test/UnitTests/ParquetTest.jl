@@ -1,5 +1,5 @@
 function test_SDE(
-    Par::PMFRG.ParquetParams = Params(
+    Par::PMFRGCore.ParquetParams = Params(
         getPolymer(2),
         Parquet(),
         T = 1.0,
@@ -17,19 +17,19 @@ function test_SDE(
     );
     tol = 1e-5,
 )
-    Workspace = PMFRG.SetupParquet(Par)
+    Workspace = PMFRGCore.SetupParquet(Par)
     Lam = 0.0
 
     (; State, Γ0, X, B0, BX, Par, Buffer) = Workspace
-    @inline Prop(x, nw) = 1 / 6 * PMFRG.iG_(State.γ, x, Lam, nw, Par.NumericalParams.T)
+    @inline Prop(x, nw) = 1 / 6 * PMFRGCore.iG_(State.γ, x, Lam, nw, Par.NumericalParams.T)
 
     test_FirstBSEIteration!(Workspace, Lam)
     gamma1 = copy(State.γ)
     gamma2 = copy(State.γ)
 
 
-    PMFRG.compute1PartBubble!(gamma1, B0, Prop, Par)
-    PMFRG.compute1PartBubble_BS!(gamma2, State.Γ, Γ0, Prop, Par)
+    PMFRGCore.compute1PartBubble!(gamma1, B0, Prop, Par)
+    PMFRGCore.compute1PartBubble_BS!(gamma2, State.Γ, Γ0, Prop, Par)
     @testset "SDE gamma" begin
         for i in eachindex(gamma1, gamma2)
             @test gamma1[i] ≈ gamma2[i] atol = tol
@@ -40,20 +40,20 @@ end
 function test_FirstBSEIteration!(Workspace, Lam)
     (; OldState, State, Γ0, X, B0, BX, Par, Buffer) = Workspace
 
-    getProp! = PMFRG.constructPropagatorFunction(Workspace, Lam)
+    getProp! = PMFRGCore.constructPropagatorFunction(Workspace, Lam)
 
-    PMFRG.PMFRG.computeLeft2PartBubble!(B0, Γ0, Γ0, State.Γ, getProp!, Par, Buffer)
+    PMFRGCore.PMFRGCore.computeLeft2PartBubble!(B0, Γ0, Γ0, State.Γ, getProp!, Par, Buffer)
 end
 
-function test_SDE_FP(Par::PMFRG.ParquetParams)
-    Workspace1 = PMFRG.SetupParquet(Par)
-    Workspace2 = PMFRG.SetupParquet(Par)
+function test_SDE_FP(Par::PMFRGCore.ParquetParams)
+    Workspace1 = PMFRGCore.SetupParquet(Par)
+    Workspace2 = PMFRGCore.SetupParquet(Par)
     Lam = 0.0
     test_FirstBSEIteration!(Workspace1, Lam)
     test_FirstBSEIteration!(Workspace2, Lam)
 
-    PMFRG.iterateSDE!(Workspace1, Lam)
-    # PMFRG.iterateSDE_FP!(Workspace2,Lam)
+    PMFRGCore.iterateSDE!(Workspace1, Lam)
+    # PMFRGCore.iterateSDE_FP!(Workspace2,Lam)
     @testset "SDE FixedPoint" begin
         State1 = Workspace1.State
         State2 = Workspace2.State
@@ -72,7 +72,7 @@ function test_SDE_FP(Par::PMFRG.ParquetParams)
 end
 
 
-function test_iterate!(Workspace::PMFRG.ParquetWorkspace, Lam::Real; SDECheatfactor = 1)
+function test_iterate!(Workspace::PMFRGCore.ParquetWorkspace, Lam::Real; SDECheatfactor = 1)
     (; OldState, State, I, Γ0, X, B0, BX, Par, Buffer) = Workspace
 
     maxIterBSE = Par.Options.maxIterBSE
@@ -84,33 +84,33 @@ function test_iterate!(Workspace::PMFRG.ParquetWorkspace, Lam::Real; SDECheatfac
     iter = 0
 
 
-    PMFRG.writeTo!(OldState.Γ, State.Γ)
+    PMFRGCore.writeTo!(OldState.Γ, State.Γ)
 
-    # PMFRG.iterateSDE!(Workspace,Lam)
+    # PMFRGCore.iterateSDE!(Workspace,Lam)
 
-    PMFRG.computeLeft2PartBubble!(B0, Γ0, Γ0, State.Γ, getProp!, Par, Buffer)
-    PMFRG.computeLeft2PartBubble!(BX, X, X, State.Γ, getProp!, Par, Buffer)
+    PMFRGCore.computeLeft2PartBubble!(B0, Γ0, Γ0, State.Γ, getProp!, Par, Buffer)
+    PMFRGCore.computeLeft2PartBubble!(BX, X, X, State.Γ, getProp!, Par, Buffer)
 
-    PMFRG.getXFromBubbles!(X, B0, BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
-    PMFRG.getVertexFromChannels!(State.Γ, I, X)
-    PMFRG.symmetrizeVertex!(State.Γ, Par)
+    PMFRGCore.getXFromBubbles!(X, B0, BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations
+    PMFRGCore.getVertexFromChannels!(State.Γ, I, X)
+    PMFRGCore.symmetrizeVertex!(State.Γ, Par)
 
-    # PMFRG.iterateSDE!(Workspace,Lam,SDECheatfactor = SDECheatfactor)
-    # PMFRG.iterateSDE_FP!(Workspace,Lam)
-    PMFRG.iterateSDE_FP!(State.γ, State.Γ, Γ0, Lam, Par)
+    # PMFRGCore.iterateSDE!(Workspace,Lam,SDECheatfactor = SDECheatfactor)
+    # PMFRGCore.iterateSDE_FP!(Workspace,Lam)
+    PMFRGCore.iterateSDE_FP!(State.γ, State.Γ, Γ0, Lam, Par)
     Tol_Vertex = reldist(OldState.Γ, State.Γ)
 
     isnan(Tol_Vertex) && @warn ": BSE: Solution diverged after $iter iterations\n"
-    println(maximum.((PMFRG.ArrayPartition(OldState), PMFRG.ArrayPartition(State))))
+    println(maximum.((PMFRGCore.ArrayPartition(OldState), PMFRGCore.ArrayPartition(State))))
     return Workspace
 end
 
-function test_iterate_FP!(Workspace::PMFRG.ParquetWorkspace, Lam::Real)
+function test_iterate_FP!(Workspace::PMFRGCore.ParquetWorkspace, Lam::Real)
     (; OldState, State, I, Γ0, X, B0, BX, Par, Buffer) = Workspace
 
     maxIterBSE = Par.Options.maxIterBSE
 
-    OldStateArr, StateArr = PMFRG.ArrayPartition.((OldState, State))
+    OldStateArr, StateArr = PMFRGCore.ArrayPartition.((OldState, State))
 
     function FixedPointFunction!(State_Arr, OldState_Arr)
         anyisnan(OldState_Arr) && return State_Arr
@@ -120,18 +120,18 @@ function test_iterate_FP!(Workspace::PMFRG.ParquetWorkspace, Lam::Real)
         OldState = StateType(OldState_Arr.x...)
         getProp! = constructPropagatorFunction(gamma, Lam, Par)
 
-        PMFRG.computeLeft2PartBubble!(B0, Γ0, Γ0, OldState.Γ, getProp!, Par, Buffer)
-        PMFRG.computeLeft2PartBubble!(BX, X, X, OldState.Γ, getProp!, Par, Buffer)
+        PMFRGCore.computeLeft2PartBubble!(B0, Γ0, Γ0, OldState.Γ, getProp!, Par, Buffer)
+        PMFRGCore.computeLeft2PartBubble!(BX, X, X, OldState.Γ, getProp!, Par, Buffer)
 
-        PMFRG.getXFromBubbles!(X, B0, BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations 
-        PMFRG.getVertexFromChannels!(State.Γ, I, X)
-        PMFRG.symmetrizeVertex!(State.Γ, Par)
+        PMFRGCore.getXFromBubbles!(X, B0, BX) #TODO when applicable, this needs to be generalized for beyond-Parquet approximations
+        PMFRGCore.getVertexFromChannels!(State.Γ, I, X)
+        PMFRGCore.symmetrizeVertex!(State.Γ, Par)
 
 
-        WS_State = PMFRG.ArrayPartition(Workspace.State)
+        WS_State = PMFRGCore.ArrayPartition(Workspace.State)
         WS_State .= State_Arr
-        # PMFRG.iterateSDE_FP!(Workspace,Lam)
-        PMFRG.iterateSDE_FP!(State.γ, State.Γ, Γ0, Lam, Par)
+        # PMFRGCore.iterateSDE_FP!(Workspace,Lam)
+        PMFRGCore.iterateSDE_FP!(State.γ, State.Γ, Γ0, Lam, Par)
 
         println(maximum.((OldState_Arr, State_Arr)))
         return State_Arr
@@ -145,9 +145,9 @@ function test_iterate_FP!(Workspace::PMFRG.ParquetWorkspace, Lam::Real)
     return Workspace
 end
 
-function test_BSE(Par::PMFRG.ParquetParams)
-    Workspace1 = PMFRG.SetupParquet(Par)
-    Workspace2 = PMFRG.SetupParquet(Par)
+function test_BSE(Par::PMFRGCore.ParquetParams)
+    Workspace1 = PMFRGCore.SetupParquet(Par)
+    Workspace2 = PMFRGCore.SetupParquet(Par)
     Lam = 0.0
 
     for _ = 1:4

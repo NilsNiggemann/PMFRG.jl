@@ -1,20 +1,20 @@
 
 """gets empty Workspace."""
-function getEmptyWorkspace(Par::PMFRG.OneLoopParams)
-    State = PMFRG.InitializeState(Par)
+function getEmptyWorkspace(Par::PMFRGCore.OneLoopParams)
+    State = PMFRGCore.InitializeState(Par)
     Deriv = similar(State)
-    setup = PMFRG.AllocateSetup(Par)
+    setup = PMFRGCore.AllocateSetup(Par)
     (X, Buffs, Par) = setup
-    PMFRG.OneLoopWorkspace(Deriv, State, X, Buffs, Par)
+    PMFRGCore.OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 end
 
-convertToSMatrix(M::PMFRG.MMatrix{N,N,T,NN}) where {N,T,NN} = PMFRG.SMatrix{N,N,T,NN}(M)
+convertToSMatrix(M::PMFRGCore.MMatrix{N,N,T,NN}) where {N,T,NN} = PMFRGCore.SMatrix{N,N,T,NN}(M)
 
 """Checks whether vertex derivative has type instabilities"""
 function test_OneLoopAllocations(Par = Params(getPolymer(2)))
     WS = getEmptyWorkspace(Par)
-    # eval("@code_warntype PMFRG.getXBubble!(WS,0.)")
-    # @code_warntype PMFRG.getXBubble!(WS,0.)
+    # eval("@code_warntype PMFRGCore.getXBubble!(WS,0.)")
+    # @code_warntype PMFRGCore.getXBubble!(WS,0.)
     SBuff = take!(WS.Buffer.Props)
     VBuff = take!(WS.Buffer.Vertex)
     SBuff1 = convertToSMatrix(SBuff)
@@ -27,11 +27,11 @@ function test_OneLoopAllocations(Par = Params(getPolymer(2)))
     put!(WS.Buffer.Vertex, VBuff)
 end
 function test_OneLoopAllocations(Par, WS, SProps, VBuff)
-    PMFRG.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff) # compile functions
-    PMFRG.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps) # compile functions
+    PMFRGCore.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff) # compile functions
+    PMFRGCore.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps) # compile functions
 
-    aX = @allocated PMFRG.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff)
-    aXT = @allocated PMFRG.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps)
+    aX = @allocated PMFRGCore.addX!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps, VBuff)
+    aXT = @allocated PMFRGCore.addXTilde!(WS.X, WS.State, WS.Par, 1, 1, 2, 2, SProps)
     test_TypeStability(Par, WS, aX, aXT)
 end
 
@@ -52,12 +52,12 @@ function test_TypeStability(Par, WS, aX, aXT)
     end
 end
 
-function getEmptyWorkspace(Par::PMFRG.TwoLoopParams)
-    State = PMFRG.InitializeState(Par)
+function getEmptyWorkspace(Par::PMFRGCore.TwoLoopParams)
+    State = PMFRGCore.InitializeState(Par)
     Deriv = similar(State)
-    setup = PMFRG.AllocateSetup(Par)
+    setup = PMFRGCore.AllocateSetup(Par)
     (X, Y, Buffs, Par) = setup
-    PMFRG.TwoLoopWorkspace(Deriv, State, X, Y, Buffs, Par)
+    PMFRGCore.TwoLoopWorkspace(Deriv, State, X, Y, Buffs, Par)
 end
 function test_TwoLoopAllocations(Par = Params(getPolymer(2), TwoLoop()))
     WS = getEmptyWorkspace(Par)
@@ -77,12 +77,12 @@ function test_TwoLoopAllocations(Par = Params(getPolymer(2), TwoLoop()))
     put!(WS.Buffer.Props, PropB_0)
 end
 function test_TwoLoopAllocations(Par, WS, PropB, VB, XB)
-    PMFRG.addBL!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB, VB, XB) #compile functions
-    PMFRG.addBR!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB, VB, XB) #compile functions
-    PMFRG.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB) #compile functions
-    PMFRG.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB) #compile functions
+    PMFRGCore.addBL!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB, VB, XB) #compile functions
+    PMFRGCore.addBR!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB, VB, XB) #compile functions
+    PMFRGCore.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB) #compile functions
+    PMFRGCore.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB) #compile functions
 
-    aX = @allocated PMFRG.addBL!(
+    aX = @allocated PMFRGCore.addBL!(
         WS.Y,
         WS.X,
         WS.X,
@@ -96,7 +96,7 @@ function test_TwoLoopAllocations(Par, WS, PropB, VB, XB)
         VB,
         XB,
     )
-    aX += @allocated PMFRG.addBR!(
+    aX += @allocated PMFRGCore.addBR!(
         WS.Y,
         WS.X,
         WS.X,
@@ -110,9 +110,9 @@ function test_TwoLoopAllocations(Par, WS, PropB, VB, XB)
         VB,
         XB,
     )
-    aXT = @allocated PMFRG.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB)
+    aXT = @allocated PMFRGCore.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB)
     aXT +=
-        @allocated PMFRG.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB)
+        @allocated PMFRGCore.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB)
 
     test_TypeStability(Par, WS, aX, aXT)
 

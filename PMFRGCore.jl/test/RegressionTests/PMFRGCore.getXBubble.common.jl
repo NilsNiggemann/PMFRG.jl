@@ -44,7 +44,7 @@ using HDF5
 using H5Zblosc
 function h5deserialize(f::HDF5.File, root::String, id::Int)
     (
-        X = PMFRG.BubbleType(
+        X = PMFRGCore.BubbleType(
             read(f["$root/$id/X/a"]),
             read(f["$root/$id/X/b"]),
             read(f["$root/$id/X/c"]),
@@ -53,19 +53,19 @@ function h5deserialize(f::HDF5.File, root::String, id::Int)
             read(f["$root/$id/X/Tc"]),
             read(f["$root/$id/X/Td"]),
         ),
-        State = PMFRG.StateType(
+        State = PMFRGCore.StateType(
             read(f["$root/$id/State/f_int"]),
             read(f["$root/$id/State/γ"]),
-            PMFRG.VertexType(
+            PMFRGCore.VertexType(
                 read(f["$root/$id/State/Γ/a"]),
                 read(f["$root/$id/State/Γ/b"]),
                 read(f["$root/$id/State/Γ/c"]),
             ),
         ),
-        Deriv = PMFRG.StateType(
+        Deriv = PMFRGCore.StateType(
             read(f["$root/$id/Deriv/f_int"]),
             read(f["$root/$id/Deriv/γ"]),
-            PMFRG.VertexType(
+            PMFRGCore.VertexType(
                 read(f["$root/$id/Deriv/Γ/a"]),
                 read(f["$root/$id/Deriv/Γ/b"]),
                 read(f["$root/$id/Deriv/Γ/c"]),
@@ -81,9 +81,9 @@ in a HDF5 file, so that h5deserialize can read them properly"""
 function h5serialize!(
     f::HDF5.File,
     root::String,
-    X::PMFRG.BubbleType,
-    S::PMFRG.StateType,
-    D::PMFRG.StateType,
+    X::PMFRGCore.BubbleType,
+    S::PMFRGCore.StateType,
+    D::PMFRGCore.StateType,
     Lam::Float64,
     id::Int,
 )

@@ -1,4 +1,4 @@
-using PMFRG, SpinFRGLattices, Test
+using PMFRGCore, SpinFRGLattices, Test
 
 BenchmarkingParams(Method, System = getPolymer(2)) = Params(
     System,

@@ -4,7 +4,7 @@ function test_runFRG(Method = OneLoop(), System = getPolymer(2))
     test_runFRG(Par)
 end
 
-function test_runFRG(Par::PMFRG.PMFRGParams; kwargs...)
+function test_runFRG(Par::PMFRGCore.PMFRGParams; kwargs...)
     tempFolder = "temp_PMFRG_test"
     mainFile = joinpath(tempFolder, "temp_main.h5")
     CheckPoints = joinpath(tempFolder, "Checkpoints.h5")
@@ -57,7 +57,7 @@ function test_FRGResults(
     Obs,
     t,
     Par,
-    Method = PMFRG.getPMFRGMethod(Par);
+    Method = PMFRGCore.getPMFRGMethod(Par);
     Obsacc = 1e-14,
     kwargs...,
 )

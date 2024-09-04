@@ -172,7 +172,7 @@ In order to activate the extension the following conditions are necessary:
 - the MPI package needs to be added to the active environment 
 Then, the Julia script can be launched using [`mpiexecjl`](https://juliaparallel.org/MPI.jl/stable/usage/#Julia-wrapper-for-mpiexec).
 
-An example of usage is in `ext/PMFRGMPIExt/test/MPITest/generate_data_example.mpi.jl`
+An example of usage is in `ext/PMFRGCoreMPIExt/test/MPITest/generate_data_example.mpi.jl`
 (only the Julia code is present:
 ideas for a wrapping slurm/shell script 
 can be taken from `Example/Slurm_example.jl`).

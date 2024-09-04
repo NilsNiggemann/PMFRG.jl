@@ -7,15 +7,15 @@
 using Test
 using HDF5
 using MPI
-using PMFRG
+using PMFRGCore
 using SpinFRGLattices.SquareLattice
 
 thisdir = dirname(@__FILE__)
 non_mpi_regrtest_location = "../../../../test/RegressionTests"
-include("../../../../test/RegressionTests/PMFRG.getXBubble.common.jl")
+include("../../../../test/RegressionTests/PMFRGCore.getXBubble.common.jl")
 
 
-fname = joinpath(thisdir, non_mpi_regrtest_location, "PMFRG.getXBubble.data.h5")
+fname = joinpath(thisdir, non_mpi_regrtest_location, "PMFRGCore.getXBubble.data.h5")
 h5file = h5open(fname, "r")
 
 MPI.Init()
@@ -29,10 +29,10 @@ try
             X0 = X
 
             Par = generate_test_params()
-            (; Buffs) = PMFRG.AllocateSetup(Par)
-            Workspace = PMFRG.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
+            (; Buffs) = PMFRGCore.AllocateSetup(Par)
+            Workspace = PMFRGCore.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
 
-            PMFRG.getXBubble!(Workspace, Lam, UseMPI())
+            PMFRGCore.getXBubble!(Workspace, Lam, UseMPI())
 
             (; X) = h5deserialize(h5file, "arguments_post", i)
             @test compare_arguments_post(X, X0)

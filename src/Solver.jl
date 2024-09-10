@@ -106,7 +106,9 @@ function launchPMFRG!(
     kwargs...,
 )
 
+    sort!(VertexCheckpoints)
     Par = setup.Par
+
 
     typeof(CheckpointDirectory) == String && (
         CheckpointDirectory =
@@ -114,48 +116,53 @@ function launchPMFRG!(
     )
 
     (; Lam_max, Lam_min, accuracy) = Par.NumericalParams
-    save_func(State, t, integrator) =
-        getObservables(ObservableType, State, t_to_Lam(t), Par)
-
-    saved_values = SavedValues(eltype(State), ObservableType)
+        saved_values = SavedValues(eltype(State), ObservableType)
     i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
-    function bareOutput(State, t, integrator)
-        @timeit_debug "bareOutput" begin
-            Lam = t_to_Lam(t)
-            i += 1
-            i % CheckPointSteps == 0 && setCheckpoint(
-                CheckpointDirectory,
-                State,
-                saved_values,
-                Lam,
-                Par,
-                VertexCheckpoints,
-            )
+    function get_output_callback()
+        function bareOutput(State, t, integrator)
+            @timeit_debug "bareOutput" begin
+                Lam = t_to_Lam(t)
+                i += 1
+                i % CheckPointSteps == 0 && setCheckpoint(
+                    CheckpointDirectory,
+                    State,
+                    saved_values,
+                    Lam,
+                    Par,
+                    VertexCheckpoints,
+                )
+            end
         end
+
+        function verboseOutput(State, t, integrator)
+            @timeit_debug "verboseOutput" begin
+                Lam = t_to_Lam(t)
+                println("Time taken for output saving: ")
+                bareOutput(State, t, integrator)
+                println("")
+                writeOutput(State, saved_values, Lam, Par)
+            end
+        end
+
+        function getOutputfunction(MinimalOutput)
+            if MinimalOutput
+                return bareOutput
+            else
+                return verboseOutput
+            end
+        end
+        output_func = getOutputfunction(Par.Options.MinimalOutput)
+        outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
+        return outputCB
     end
 
-    function verboseOutput(State, t, integrator)
-        @timeit_debug "verboseOutput" begin
-            Lam = t_to_Lam(t)
-            println("Time taken for output saving: ")
-            bareOutput(State, t, integrator)
-            println("")
-            writeOutput(State, saved_values, Lam, Par)
-        end
-    end
 
-    function getOutputfunction(MinimalOutput)
-        if MinimalOutput
-            return bareOutput
-        else
-            return verboseOutput
-        end
-    end
-    output_func = getOutputfunction(Par.Options.MinimalOutput)
-    sort!(VertexCheckpoints)
+    function get_saving_callback()
     #get Default for lambda range for observables
     # ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
+    save_func(State, t, integrator) =
+        getObservables(ObservableType, State, t_to_Lam(t), Par)
     ObsSaveat = gettMesh(ObsSaveat, Lam_min, Lam_max)
     saveCB = SavingCallback(
         save_func,
@@ -164,24 +171,27 @@ function launchPMFRG!(
         saveat = ObsSaveat,
         tdir = -1,
     )
-    outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
-    unstable_check(dt, u, p, t) = maximum(abs, u) > MaxVal # returns true -> Interrupts ODE integration if vertex gets too big
+    return saveCB
+    end
 
-    t0 = Lam_to_t(Lam_max)
-    tend = get_t_min(Lam_min)
-    Deriv_subst! = generateSubstituteDeriv(Deriv!)
-    problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
+    function get_problem()
+        t0 = Lam_to_t(Lam_max)
+        tend = get_t_min(Lam_min)
+        Deriv_subst! = generateSubstituteDeriv(Deriv!)
+        problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
+    end
+
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     Par.Options.MinimalOutput || println("Starting solve")
     @timeit_debug "total solver" sol = solve(
-        problem,
+        get_problem(),
         method,
         reltol = accuracy,
         abstol = accuracy,
         save_everystep = false,
-        callback = CallbackSet(saveCB, outputCB),
+        callback = CallbackSet(get_saving_callback(), get_output_callback()),
         dt = Lam_to_t(0.2 * Lam_max),
-        unstable_check = unstable_check;
+        unstable_check = (dt, u, p, t) -> maximum(abs, u) > MaxVal, # returns true -> Interrupts ODE integration if vertex gets too big
         kwargs...,
     )
     if !Par.Options.MinimalOutput

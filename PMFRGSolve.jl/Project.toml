@@ -7,3 +7,18 @@ version = "0.1.0"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 OrdinaryDiffEqLowOrderRK = "1344f307-1e59-4825-a18e-ace9aa3fa4c6"
 PMFRGCore = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
+SpinFRGLattices = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
+
+
+[weakdeps]
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+
+[extensions]
+PMFRGSolveMPIExt = ["MPI"]
+
+[extras]
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test", "MPI"]

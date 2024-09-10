@@ -8,7 +8,7 @@ function test_saving(
     Par = BenchmarkingParams(Method, GeometryGenerator(4))
     State = PMFRG.InitializeState(Par)
     Lam = Par.NumericalParams.Lam_min + 0.01
-    saved_values = PMFRG.SavedValues(Float64, PMFRG.Observables)
+    saved_values = DiffEqCallBacks.SavedValues(Float64, PMFRG.Observables)
 
     obs1 = PMFRG.getObservables(PMFRG.Observables, State, Par.NumericalParams.Lam_max, Par)
     obs2 = PMFRG.getObservables(PMFRG.Observables, State, Lam, Par)

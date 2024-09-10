@@ -1,4 +1,4 @@
-import PMFRG: PMFRGParams
+import PMFRGCore: PMFRGParams
 
 saveMainOutput(
     Filename::String,

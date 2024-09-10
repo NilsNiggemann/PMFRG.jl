@@ -38,7 +38,7 @@ function readObservables(Filename::String, ObsType = Observables)
     Fields = fieldnames(ObsType)
     obsTuple = Tuple(h5read(Filename, "Observables/$f") for f in Fields)
     saveval = ObsType[]
-    saved_values = SavedValues(eltype(t), ObsType)
+    saved_values = DiffEqCallBacks.SavedValues(eltype(t), ObsType)
     # return obsTuple
     for i in eachindex(t)
         Currentval(x) = selectdim(x, length(size(x)), i) |> Array

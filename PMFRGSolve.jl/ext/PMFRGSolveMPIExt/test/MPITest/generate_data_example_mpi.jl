@@ -8,7 +8,7 @@
 # where PMFRGEnvironment is a project/environment
 # where PMFRG is added as a dev dependency.
 # It is assumed that mpiexecjl is in PATH (otherwise usually ~/.julia/bin)
-using SpinFRGLattices, PMFRG
+using SpinFRGLattices, PMFRGSolve, PMFRGCore
 using SpinFRGLattices.SquareLattice
 
 using MPI
@@ -48,7 +48,7 @@ try
 
     if rank == 0
         # specify a file name for main Output
-        mainFile = PMFRG.generateFileName(Par, "_testFile")
+        mainFile = PMFRGCore.generateFileName(Par, "_testFile")
         # specify path for vertex checkpoints
         flowpath = "flows/"
     else

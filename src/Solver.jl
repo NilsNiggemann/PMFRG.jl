@@ -116,7 +116,7 @@ function launchPMFRG!(
     )
 
     (; Lam_max, Lam_min, accuracy) = Par.NumericalParams
-        saved_values = SavedValues(eltype(State), ObservableType)
+    saved_values = SavedValues(eltype(State), ObservableType)
     i = 0 # count number of outputs = number of steps. CheckPointSteps gives the intervals in which checkpoints should be saved.
 
     function get_output_callback()
@@ -159,19 +159,19 @@ function launchPMFRG!(
 
 
     function get_saving_callback()
-    #get Default for lambda range for observables
-    # ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
-    save_func(State, t, integrator) =
-        getObservables(ObservableType, State, t_to_Lam(t), Par)
-    ObsSaveat = gettMesh(ObsSaveat, Lam_min, Lam_max)
-    saveCB = SavingCallback(
-        save_func,
-        saved_values,
-        save_everystep = false,
-        saveat = ObsSaveat,
-        tdir = -1,
-    )
-    return saveCB
+        #get Default for lambda range for observables
+        # ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
+        save_func(State, t, integrator) =
+            getObservables(ObservableType, State, t_to_Lam(t), Par)
+        ObsSaveat = gettMesh(ObsSaveat, Lam_min, Lam_max)
+        saveCB = SavingCallback(
+            save_func,
+            saved_values,
+            save_everystep = false,
+            saveat = ObsSaveat,
+            tdir = -1,
+        )
+        return saveCB
     end
 
     function get_problem()

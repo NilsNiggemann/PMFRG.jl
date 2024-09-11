@@ -113,13 +113,17 @@ function modifyParams(Par; modifyParams...)
     Par = Params(Par.System, getPMFRGMethod(Par); NumParKwargs..., modifyParams...)
 end
 
-function setupDirectory(DirPath, Par; overwrite = false)
+function setupDirectory(DirPath::String, Par; overwrite = false)
     DirPath = generateName_verbose(DirPath, Par)
     overwrite || (DirPath = UniqueDirName(DirPath))
     println("Checkpoints saved at $(abspath(DirPath))")
     # CheckPath = joinpath(DirPath,"Checkpoints")
     mkpath(DirPath)
     return DirPath
+end
+
+function setupDirectory(::Nothing, args...; kwargs...)
+    return nothing
 end
 
 function saveCurrentState(
@@ -135,13 +139,7 @@ function saveCurrentState(
     saveObs(Filename, saved_Values, "Observables")
     Filename
 end
-saveCurrentState(
-    DirPath::Nothing,
-    State::AbstractArray,
-    saved_Values::DiffEqCallbacks.SavedValues,
-    Lam::Real,
-    Par::PMFRGParams,
-) = nothing
+saveCurrentState(::Nothing, args...) = nothing
 
 """Rename CurrentState to FinalState as indicator that Job is finished"""
 function SetCompletionCheckmark(DirPath::String)
@@ -151,7 +149,8 @@ function SetCompletionCheckmark(DirPath::String)
         mv(CurrState, FinState)
     end
 end
-SetCompletionCheckmark(DirPath::Nothing) = nothing
+
+SetCompletionCheckmark(::Nothing) = nothing
 
 file_extension_pos(file::String) = findlast('.', file)
 function file_extension(file::String)

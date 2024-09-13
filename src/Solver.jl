@@ -95,7 +95,7 @@ function _get_output_callback(
     saved_values,
     Par,
     VertexCheckpoints,
-)
+)::SciMLBase.DiscreteCallback
     # count number of outputs = number of steps.
     # CheckPointSteps gives the intervals in which checkpoints should be saved.
     i = 0
@@ -144,7 +144,7 @@ function _get_saving_callback(
     Lam_min,
     Lam_max,
     saved_values,
-)
+)::SciMLBase.DiscreteCallback
     #get Default for lambda range for observables
     # ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
     save_func(State, t, integrator) =
@@ -160,7 +160,7 @@ function _get_saving_callback(
     return saveCB
 end
 
-function _get_problem(Lam_max, Lam_min, State, setup, Deriv!)
+function _get_problem(Lam_max, Lam_min, State, setup, Deriv!)::ODEProblem
     t0 = Lam_to_t(Lam_max)
     tend = get_t_min(Lam_min)
     Deriv_subst! = generateSubstituteDeriv(Deriv!)

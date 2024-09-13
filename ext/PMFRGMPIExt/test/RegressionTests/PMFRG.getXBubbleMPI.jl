@@ -20,21 +20,29 @@ h5file = h5open(fname, "r")
 
 MPI.Init()
 
-@testset verbose = true "Tests for getXBubble!" begin
-    ncases = read(h5file["Ncases"])
-    @testset for i = 1:ncases
-        (; X, State, Deriv, Lam) = h5deserialize(h5file, "arguments", i)
-        X0 = X
+tests_ok = true
+try
+    @testset verbose = true "Tests for getXBubble!" begin
+        ncases = read(h5file["Ncases"])
+        @testset for i = 1:ncases
+            (; X, State, Deriv, Lam) = h5deserialize(h5file, "arguments", i)
+            X0 = X
 
-        Par = generate_test_params()
-        (; Buffs) = PMFRG.AllocateSetup(Par)
-        Workspace = PMFRG.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
+            Par = generate_test_params()
+            (; Buffs) = PMFRG.AllocateSetup(Par)
+            Workspace = PMFRG.OneLoopWorkspace(State, Deriv, X0, Buffs, Par)
 
-        PMFRG.getXBubble!(Workspace, Lam, UseMPI())
+            PMFRG.getXBubble!(Workspace, Lam, UseMPI())
 
-        (; X) = h5deserialize(h5file, "arguments_post", i)
-        @test compare_arguments_post(X, X0)
+            (; X) = h5deserialize(h5file, "arguments_post", i)
+            @test compare_arguments_post(X, X0)
+        end
     end
+catch e
+    global tests_ok = false
+    showerror(stdout, e)
 end
 
 MPI.Finalize()
+
+exit((tests_ok ? 0 : 1))

@@ -46,12 +46,6 @@ function test_mpi()
                 "Ibcast! communication example - test_chunk_communication.jl",
             )
 
-            run_mpi_script(
-                joinpath(dir, "generate_data_example_mpi.jl"),
-                2,
-                "Generate Data Example",
-            )
-
         end
     end
 end

@@ -1,10 +1,14 @@
 module PMFRGSolve
-using DiffEqCallbacks
-using OrdinaryDiffEqLowOrderRK
-using PMFRGCore
+using OrdinaryDiffEqLowOrderRK, DiffEqCallbacks
+using PMFRGCore,
+      SpinFRGLattices,
+      TimerOutputs
 
-export DP5
+export BS3, Vern7, DP5
 
 include("FileIO.jl")
+include("Solver.jl")
+
+export SolveFRG, SolveFRG_Checkpoint
 
 end # module PMFRGSolve

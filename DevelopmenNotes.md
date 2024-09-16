@@ -53,7 +53,16 @@ they need to belong to the same git repository.
 
 For convenience, we have all 3 in the same repo.
 
-**Point for discussion**: can't we just have PMFRGSolve.jl == PMFRG.jl?
+**Points for discussion**:
+1. can't we just have PMFRGSolve.jl == PMFRG.jl?  
+   - Pro: it would be simpler: is there anything in PMFRG.jl i
+     that is not in PMFRGSolve.jl?
+   - Con: if at some point we want to add something 
+     to PMfRG.jl
+     that is not in PMFRGSolve.jl 
+     then we would break such equality.
+     
+ 2. To be continued
 
 
 ## Dependencies

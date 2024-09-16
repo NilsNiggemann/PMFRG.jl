@@ -1,50 +1,56 @@
 import PMFRGCore: PMFRGParams
 
-saveMainOutput(
+# Todo: provide SpinFRGLattices.getGeometryGenerator that takes Name string and returns correct method
+SolveFRG_Checkpoint(
     Filename::String,
-    Solution::ODESolution,
-    saved_values::DiffEqCallbacks.SavedValues,
-    Par::PMFRGParams,
-    Group::String,
-) = saveMainOutput(Filename, Solution.u[end], saved_values, saved_values.t[end], Par, Group)
+    Geometry::SpinFRGLattices.Geometry,
+    Par = nothing;
+    kwargs...,
+) = launchPMFRG_Checkpoint(Filename, Geometry, AllocateSetup, getDeriv!, Par; kwargs...)
 
-saveMainOutput(
+
+function launchPMFRG_Checkpoint(
     Filename::String,
-    Solution::ODESolution,
-    saved_values::DiffEqCallbacks.SavedValues,
-    Par::PMFRGParams,
-    Group::Nothing,
-) = saveMainOutput(Filename, Solution, saved_values, Par, string(Par.NumericalParams.T))
-
-function saveCurrentState(
-    DirPath::String,
-    State::AbstractArray,
-    saved_Values::DiffEqCallbacks.SavedValues,
-    Lam::Real,
-    Par::PMFRGParams,
+    Geometry::SpinFRGLattices.Geometry,
+    AllocatorFunction::Function,
+    Derivative::Function,
+    Par = nothing;
+    MainFile = nothing,
+    Group = nothing,
+    Params = (),
+    ObservableType = Observables,
+    kwargs...,
 )
-    Filename = joinpath(DirPath, "CurrentState.h5")
-    saveState(Filename, State, Lam, "w")
-    saveParams(Filename, Par)
-    saveObs(Filename, saved_Values, "Observables")
-    Filename
+    State = readState(Filename)
+    Old_Lam_max = h5read(Filename, "Params/Lam_max")
+    Par = getFileParams(Filename, Geometry, Par; Params...)
+    saved_values_full = readObservables(Filename, ObservableType)
+    setup = AllocatorFunction(Par)
+    CheckPointfolder = dirname(Filename)
+    FilePath = dirname(CheckPointfolder)
+    ObsSaveat = getLambdaMesh(nothing, Par.NumericalParams.Lam_min, Old_Lam_max)
+    filter!(x -> x < Par.NumericalParams.Lam_max, ObsSaveat)
+    sol, saved_values = launchPMFRG!(
+        State,
+        setup,
+        Derivative;
+        CheckpointDirectory = FilePath,
+        ObsSaveat = ObsSaveat,
+        kwargs...,
+        MainFile = nothing,
+    ) #launch PMFRG but do not save output yet
+    append!(saved_values_full.t, saved_values.t)
+    append!(saved_values_full.saveval, saved_values.saveval)
+    if MainFile !== nothing
+        PMFRGCore.saveMainOutput(MainFile, sol, saved_values_full, Par, Group)
+    end
+    return sol, saved_values_full
 end
 
-saveCurrentState(
-    DirPath::Nothing,
-    State::AbstractArray,
-    saved_Values::DiffEqCallbacks.SavedValues,
-    Lam::Real,
-    Par::PMFRGParams,
-) = nothing
-
-"""Saves Observables"""
-function saveObs(
+SolveFRG_Checkpoint(
     Filename::String,
-    saved_values::DiffEqCallbacks.SavedValues,
-    Group::String = "",
-)
-    ObsArr = StructArray(saved_values.saveval)
-    saveObs(Filename, ObsArr, Group)
-    h5write(Filename, joinGroup(Group, "Lambda"), saved_values.t)
-end
+    GeometryGenerator::Function,
+    Par = nothing;
+    kwargs...,
+) = SolveFRG_Checkpoint(Filename, readGeometry(Filename, GeometryGenerator), Par; kwargs...)
+

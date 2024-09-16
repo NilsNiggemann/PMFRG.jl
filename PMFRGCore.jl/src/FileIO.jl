@@ -38,7 +38,7 @@ function readObservables(Filename::String, ObsType = Observables)
     Fields = fieldnames(ObsType)
     obsTuple = Tuple(h5read(Filename, "Observables/$f") for f in Fields)
     saveval = ObsType[]
-    saved_values = DiffEqCallBacks.SavedValues(eltype(t), ObsType)
+    saved_values = SavedValues(eltype(t), ObsType)
     # return obsTuple
     for i in eachindex(t)
         Currentval(x) = selectdim(x, length(size(x)), i) |> Array
@@ -274,59 +274,17 @@ function getFileParams(Filename, Geometry, Par::Nothing; kwargs...)
     Lam = readLam(Filename)
     return readParams(Filename, Geometry; Lam_max = Lam, kwargs...)
 end
-# Todo: provide SpinFRGLattices.getGeometryGenerator that takes Name string and returns correct method
-SolveFRG_Checkpoint(
-    Filename::String,
-    Geometry::SpinFRGLattices.Geometry,
-    Par = nothing;
-    kwargs...,
-) = launchPMFRG_Checkpoint(Filename, Geometry, AllocateSetup, getDeriv!, Par; kwargs...)
 
-
-function launchPMFRG_Checkpoint(
+"""Saves Observables"""
+function saveObs(
     Filename::String,
-    Geometry::SpinFRGLattices.Geometry,
-    AllocatorFunction::Function,
-    Derivative::Function,
-    Par = nothing;
-    MainFile = nothing,
-    Group = nothing,
-    Params = (),
-    ObservableType = Observables,
-    kwargs...,
+    saved_values::DiffEqCallbacks.SavedValues,
+    Group::String = "",
 )
-    State = readState(Filename)
-    Old_Lam_max = h5read(Filename, "Params/Lam_max")
-    Par = getFileParams(Filename, Geometry, Par; Params...)
-    saved_values_full = readObservables(Filename, ObservableType)
-    setup = AllocatorFunction(Par)
-    CheckPointfolder = dirname(Filename)
-    FilePath = dirname(CheckPointfolder)
-    ObsSaveat = getLambdaMesh(nothing, Par.NumericalParams.Lam_min, Old_Lam_max)
-    filter!(x -> x < Par.NumericalParams.Lam_max, ObsSaveat)
-    sol, saved_values = launchPMFRG!(
-        State,
-        setup,
-        Derivative;
-        CheckpointDirectory = FilePath,
-        ObsSaveat = ObsSaveat,
-        kwargs...,
-        MainFile = nothing,
-    ) #launch PMFRG but do not save output yet
-    append!(saved_values_full.t, saved_values.t)
-    append!(saved_values_full.saveval, saved_values.saveval)
-    if MainFile !== nothing
-        saveMainOutput(MainFile, sol, saved_values_full, Par, Group)
-    end
-    return sol, saved_values_full
+    ObsArr = StructArray(saved_values.saveval)
+    saveObs(Filename, ObsArr, Group)
+    h5write(Filename, joinGroup(Group, "Lambda"), saved_values.t)
 end
-
-SolveFRG_Checkpoint(
-    Filename::String,
-    GeometryGenerator::Function,
-    Par = nothing;
-    kwargs...,
-) = SolveFRG_Checkpoint(Filename, readGeometry(Filename, GeometryGenerator), Par; kwargs...)
 
 function saveObs(Filename::String, Obs::StructArray{ObsType}, Group::String) where {ObsType}
     Fields = fieldnames(ObsType)
@@ -388,6 +346,14 @@ function saveExtraFields(
     h5write(Filename, "$Group/Chi_nu", Chi_nu)
 end
 
+saveMainOutput(
+    Filename::String,
+    Solution::ODESolution,
+    saved_values::DiffEqCallbacks.SavedValues,
+    Par::PMFRGParams,
+    Group::String,
+) = saveMainOutput(Filename, Solution.u[end], saved_values, saved_values.t[end], Par, Group)
+
 function saveMainOutput(
     Filename::String,
     State,
@@ -409,6 +375,14 @@ function saveMainOutput(
     end
     # saveParams(Filename,Par,Group)
 end
+
+saveMainOutput(
+    Filename::String,
+    Solution::ODESolution,
+    saved_values::DiffEqCallbacks.SavedValues,
+    Par::PMFRGParams,
+    Group::Nothing,
+) = saveMainOutput(Filename, Solution, saved_values, Par, string(Par.NumericalParams.T))
 
 function getFilesFromSubDirs(Folder::String)
     allpaths = collect(walkdir(Folder))

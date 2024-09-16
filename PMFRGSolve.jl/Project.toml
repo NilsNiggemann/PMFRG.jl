@@ -8,7 +8,7 @@ DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 OrdinaryDiffEqLowOrderRK = "1344f307-1e59-4825-a18e-ace9aa3fa4c6"
 PMFRGCore = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
 SpinFRGLattices = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
-
+TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [weakdeps]
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"

@@ -62,7 +62,11 @@ For convenience, we have all 3 in the same repo.
      that is not in PMFRGSolve.jl 
      then we would break such equality.
      
- 2. To be continued
+ 2. If the goal is just to avoid having to compile ODE solver algorithms,
+    one can just add DiffEqCallbacks and SciMLBase to the dependencies
+    (leaving out OrdinaryDiffEq.*- kind of dependencies),
+    
+    
 
 
 ## Dependencies
@@ -90,3 +94,16 @@ This is likely related to the fact that PMFRGSolve.jl
 itself depends already on PMFRGCore.jl. 
 Maybe this is related to this **Point for discussion**: 
 can't we just have PMFRGSolve.jl == PMFRG.jl?
+
+## State of things
+Moving the tests step by step 
+1. Moved the OrdinaryDiffEq dependency 
+   from PMFRGCore
+   to PMFRGSolve
+2. Moving all the tests in PMFRGCore 
+   that now fail because of the missing dependency
+   to PMFRGSolve.
+   The tests do need also some logic to be moved
+   and necessary things to be imported
+   (Still doing this)
+   

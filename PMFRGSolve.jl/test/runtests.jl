@@ -8,9 +8,9 @@ include("../ext/PMFRGSolveMPIExt/test/MPITest/mpi-tests.jl")
 
 ##
 @testset verbose = true "PMFRGSolve tests" begin
-    test_mpi()
-    #testOneLoop(Obsacc)
-    #testTwoLoop(Obsacc)
+    testOneLoop(Obsacc)
+    testTwoLoop(Obsacc)
     #testParquet()
     #test_IO()
+    # test_mpi() # Passing so far
 end

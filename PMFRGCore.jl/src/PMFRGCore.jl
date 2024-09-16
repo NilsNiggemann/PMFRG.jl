@@ -40,7 +40,8 @@ export saveState,
     getUnfinishedJobs,
     generateFileName,
     generateMainFile,
-    AbstractParallelizationScheme
+    AbstractParallelizationScheme,
+    MultiThreaded
 
 include("TwoLoop/TwoLoopPMFRG.jl")
 # using .TwoLoopPMFRG

@@ -34,6 +34,7 @@ BenchmarkingParams(Method::Parquet, System = getPolymer(2)) = Params(
 
 include("ExampleObservables.jl")
 include("DimerTest.jl")
+include("IOTests.jl")
 
 
 function testOneLoop(Obsacc = 1e-14)
@@ -55,5 +56,11 @@ function testTwoLoop(Obsacc = 1e-14)
         @testset "Squagome" verbose = true begin
             test_SquagomeFRG(TwoLoop(), Obsacc = Obsacc, tol = 1e-8)
         end
+    end
+end
+
+function testParquet()
+    @testset "Parquet" verbose = true begin
+        test_DimerParquet(tol = 1e-6)
     end
 end

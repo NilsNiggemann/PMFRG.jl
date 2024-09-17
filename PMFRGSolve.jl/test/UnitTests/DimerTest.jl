@@ -1,3 +1,5 @@
+include("BubbleTest.jl")
+
 """Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
 function test_runFRG(Method = OneLoop(), System = getPolymer(2))
     Par = BenchmarkingParams(Method, System)

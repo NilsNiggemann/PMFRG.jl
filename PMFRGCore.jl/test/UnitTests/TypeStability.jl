@@ -8,7 +8,8 @@ function getEmptyWorkspace(Par::PMFRGCore.OneLoopParams)
     PMFRGCore.OneLoopWorkspace(Deriv, State, X, Buffs, Par)
 end
 
-convertToSMatrix(M::PMFRGCore.MMatrix{N,N,T,NN}) where {N,T,NN} = PMFRGCore.SMatrix{N,N,T,NN}(M)
+convertToSMatrix(M::PMFRGCore.MMatrix{N,N,T,NN}) where {N,T,NN} =
+    PMFRGCore.SMatrix{N,N,T,NN}(M)
 
 """Checks whether vertex derivative has type instabilities"""
 function test_OneLoopAllocations(Par = Params(getPolymer(2)))
@@ -110,9 +111,30 @@ function test_TwoLoopAllocations(Par, WS, PropB, VB, XB)
         VB,
         XB,
     )
-    aXT = @allocated PMFRGCore.addBLTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB)
-    aXT +=
-        @allocated PMFRGCore.addBRTilde!(WS.Y, WS.X, WS.X, WS.State.Γ, 1, 1, 2, 2, Par, PropB)
+    aXT = @allocated PMFRGCore.addBLTilde!(
+        WS.Y,
+        WS.X,
+        WS.X,
+        WS.State.Γ,
+        1,
+        1,
+        2,
+        2,
+        Par,
+        PropB,
+    )
+    aXT += @allocated PMFRGCore.addBRTilde!(
+        WS.Y,
+        WS.X,
+        WS.X,
+        WS.State.Γ,
+        1,
+        1,
+        2,
+        2,
+        Par,
+        PropB,
+    )
 
     test_TypeStability(Par, WS, aX, aXT)
 

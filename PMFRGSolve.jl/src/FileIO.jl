@@ -1,4 +1,4 @@
-import PMFRGCore: PMFRGParams
+using PMFRGCore, SpinFRGLattices, HDF5
 
 # Todo: provide SpinFRGLattices.getGeometryGenerator that takes Name string and returns correct method
 SolveFRG_Checkpoint(
@@ -6,7 +6,14 @@ SolveFRG_Checkpoint(
     Geometry::SpinFRGLattices.Geometry,
     Par = nothing;
     kwargs...,
-) = launchPMFRG_Checkpoint(Filename, Geometry, AllocateSetup, getDeriv!, Par; kwargs...)
+) = launchPMFRG_Checkpoint(
+    Filename,
+    Geometry,
+    PMFRGCore.AllocateSetup,
+    PMFRGCore.getDeriv!,
+    Par;
+    kwargs...,
+)
 
 
 function launchPMFRG_Checkpoint(
@@ -18,17 +25,17 @@ function launchPMFRG_Checkpoint(
     MainFile = nothing,
     Group = nothing,
     Params = (),
-    ObservableType = Observables,
+    ObservableType = PMFRGCore.Observables,
     kwargs...,
 )
     State = readState(Filename)
     Old_Lam_max = h5read(Filename, "Params/Lam_max")
-    Par = getFileParams(Filename, Geometry, Par; Params...)
+    Par = PMFRGCore.getFileParams(Filename, Geometry, Par; Params...)
     saved_values_full = readObservables(Filename, ObservableType)
     setup = AllocatorFunction(Par)
     CheckPointfolder = dirname(Filename)
     FilePath = dirname(CheckPointfolder)
-    ObsSaveat = getLambdaMesh(nothing, Par.NumericalParams.Lam_min, Old_Lam_max)
+    ObsSaveat = PMFRGCore.getLambdaMesh(nothing, Par.NumericalParams.Lam_min, Old_Lam_max)
     filter!(x -> x < Par.NumericalParams.Lam_max, ObsSaveat)
     sol, saved_values = launchPMFRG!(
         State,
@@ -53,4 +60,3 @@ SolveFRG_Checkpoint(
     Par = nothing;
     kwargs...,
 ) = SolveFRG_Checkpoint(Filename, readGeometry(Filename, GeometryGenerator), Par; kwargs...)
-

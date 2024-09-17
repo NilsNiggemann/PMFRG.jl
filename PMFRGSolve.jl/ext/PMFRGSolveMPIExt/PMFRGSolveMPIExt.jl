@@ -1,2 +1,1 @@
-module PMFRGSolveMPIExt
-end
+module PMFRGSolveMPIExt end

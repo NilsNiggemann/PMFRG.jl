@@ -30,6 +30,23 @@ function test_saving(
     return Filename
 end
 
+function test_loading(
+    Filename::String,
+    GeometryGenerator::Function = SquareKagome.getSquareKagome;
+    kwargs...,
+)
+    Obs = PMFRGCore.readObservables(Filename)
+    Sol, saved_values = SolveFRG_Checkpoint(
+        Filename,
+        readGeometry(Filename, GeometryGenerator);
+        Params = (MinimalOutput = true,),
+        kwargs...,
+    )
+    @testset "Observables extended" begin
+        @test issubset(Obs.t, saved_values.t)
+    end
+end
+
 function test_IO(Method = OneLoop(), GeometryGenerator = SquareKagome.getSquareKagome)
     @testset "FileIO" begin
         tempFolder = joinpath("temp_PMFRG_test")
@@ -40,6 +57,7 @@ function test_IO(Method = OneLoop(), GeometryGenerator = SquareKagome.getSquareK
         @testset "Testing loopOrder from Params" begin
             @test PMFRGCore.getPMFRGMethod(Par) == Method
         end
+        test_loading(Filename, GeometryGenerator)
         rm(tempFolder, recursive = true)
         println("cleaned up... deleted ", tempFolder)
     end

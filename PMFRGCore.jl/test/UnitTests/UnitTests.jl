@@ -33,7 +33,6 @@ BenchmarkingParams(Method::Parquet, System = getPolymer(2)) = Params(
 include("ExampleObservables.jl")
 include("DimerTest.jl")
 
-include("BubbleTest.jl")
 
 include("TypeStability.jl")
 
@@ -46,12 +45,6 @@ function testOneLoop(Obsacc = 1e-14)
             test_OneLoopAllocations(Params(getPolymer(2)))
             test_OneLoopAllocations(Params(SquareKagome.getSquareKagome(4)))
         end
-        @testset "Dimer" verbose = true begin
-            test_DimerFRG(Obsacc = Obsacc)
-        end
-        @testset "Squagome" verbose = true begin
-            test_SquagomeFRG(OneLoop(), Obsacc = Obsacc, tol = 1e-8)
-        end
     end
 end
 
@@ -61,18 +54,11 @@ function testTwoLoop(Obsacc = 1e-14)
             test_TwoLoopAllocations(Params(getPolymer(2), TwoLoop()))
             test_TwoLoopAllocations(Params(SquareKagome.getSquareKagome(4), TwoLoop()))
         end
-        @testset "Dimer" verbose = true begin
-            test_DimerFRG(TwoLoop(), Obsacc = Obsacc, tol = 1e-8) # accuracy of symmetries is finite, given by length of Matsubara sum
-        end
-        @testset "Squagome" verbose = true begin
-            test_SquagomeFRG(TwoLoop(), Obsacc = Obsacc, tol = 1e-8)
-        end
     end
 end
 
 function testParquet()
     @testset "Parquet" verbose = true begin
-        test_DimerParquet(tol = 1e-6)
         test_SDE()
     end
 end

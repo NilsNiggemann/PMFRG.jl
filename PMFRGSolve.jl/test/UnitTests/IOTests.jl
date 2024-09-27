@@ -26,7 +26,7 @@ function test_saving(
     push!(saved_values.t, Lam)
     push!(saved_values.saveval, obs2)
 
-    Filename = PMFRGCore.saveCurrentState(FileDirectory, State, saved_values, Lam, Par)
+    Filename = saveCurrentState(FileDirectory, State, saved_values, Lam, Par)
     return Filename
 end
 
@@ -35,7 +35,7 @@ function test_loading(
     GeometryGenerator::Function = SquareKagome.getSquareKagome;
     kwargs...,
 )
-    Obs = PMFRGCore.readObservables(Filename)
+    Obs = readObservables(Filename)
     Sol, saved_values = SolveFRG_Checkpoint(
         Filename,
         readGeometry(Filename, GeometryGenerator);

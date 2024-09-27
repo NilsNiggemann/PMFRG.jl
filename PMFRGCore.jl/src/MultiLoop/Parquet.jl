@@ -1,33 +1,4 @@
 
-"""Given set of parameters solve the self-consistent Parquet approximation iteratively. 
-TODO: Save output to file"""
-function SolveParquet(Par::ParquetParams, Lam::Real; kwargs...)
-    Workspace = SetupParquet(Par)
-    SolveParquet(Workspace, Lam; kwargs...)
-end
-function SolveParquet(State::StateType, Par::ParquetParams, Lam::Real; kwargs...)
-    Workspace = SetupParquet(Par)
-    writeTo!(Workspace.OldState, State)
-    SolveParquet(Workspace, Lam; kwargs...)
-end
-
-function SolveParquet(
-    Workspace::ParquetWorkspace,
-    Lam::Real;
-    iterator = iterateSolution_FP!,
-    MainFile = nothing,
-    Group = DefaultGroup(Workspace.Par),
-    CheckpointDirectory = nothing,
-    ObsType = Observables,
-    kwargs...,
-)
-    Obs = StructArray(ObsType[])
-    @time Workspace, Obs = iterator(Workspace, Lam, Obs)
-    saveMainOutput(MainFile, Workspace.State, Obs, Lam, Workspace.Par, Group)
-    return Workspace, Obs
-end
-
-
 """Performs single BSE iteration. Specify State explicitly to make fixed point libraries compatible (even though it may point to the same memory location as Workspace.State) """
 function BSE_iteration!(State::StateType, Workspace::ParquetWorkspace, Lam::Real)
     (; OldState, I, Γ0, X, B0, BX, Par, Buffer) = Workspace

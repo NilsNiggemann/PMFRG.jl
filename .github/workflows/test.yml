@@ -44,8 +44,8 @@ jobs:
                     end
                     @pex using Pkg
                     @pex Pkg.activate("./PMFRGSolve.jl")
-                    @pex Pkg.develop([PackageSpec(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl"),
-                                      PackageSpec(path="./PMFRGCore.jl")])
+                    @pex Pkg.develop([(;url="https://github.com/NilsNiggemann/SpinFRGLattices.jl"),
+                                      (;path="./PMFRGCore.jl")])
                     @pex ENV["JULIA_PKG_PRECOMPILE_AUTO"]=1
                     @pex Pkg.test()'
       - name: Install dependencies and Test - PMFRG.jl
@@ -60,9 +60,9 @@ jobs:
                     end
                     @pex using Pkg
                     @pex Pkg.activate(".")
-                    @pex Pkg.develop([PackageSpec(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl"),
-                                      PackageSpec(path="./PMFRGSolve.jl"),
-                                      PackageSpec(path="./PMFRGCore.jl")])
+                    @pex Pkg.develop([(;url="https://github.com/NilsNiggemann/SpinFRGLattices.jl"),
+                                      (;path="./PMFRGSolve.jl"),
+                                      (;path="./PMFRGCore.jl")])
                     @pex ENV["JULIA_PKG_PRECOMPILE_AUTO"]=1
                     @pex Pkg.test()'
       - name: Formatting Check

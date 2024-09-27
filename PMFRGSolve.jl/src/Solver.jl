@@ -33,6 +33,86 @@ SolveFRG(
     kwargs...,
 )
 
+function get_output_callback(
+    CheckPointSteps,
+    CheckpointDirectory,
+    saved_values,
+    Par,
+    VertexCheckpoints,
+)::SciMLBase.DiscreteCallback
+    # count number of outputs = number of steps.
+    # CheckPointSteps gives the intervals in which checkpoints should be saved.
+    i = 0
+    function bareOutput(State, t, integrator)
+        @timeit_debug "bareOutput" begin
+            Lam = PMFRGCore.t_to_Lam(t)
+            i += 1
+            i % CheckPointSteps == 0 && setCheckpoint(
+                CheckpointDirectory,
+                State,
+                saved_values,
+                Lam,
+                Par,
+                VertexCheckpoints,
+            )
+        end
+    end
+
+    function verboseOutput(State, t, integrator)
+        @timeit_debug "verboseOutput" begin
+            Lam = PMFRGCore.t_to_Lam(t)
+            println("Time taken for output saving: ")
+            bareOutput(State, t, integrator)
+            println("")
+            PMFRGCore.writeOutput(State, saved_values, Lam, Par)
+        end
+    end
+
+    function getOutputfunction(MinimalOutput)
+        if MinimalOutput
+            return bareOutput
+        else
+            return verboseOutput
+        end
+    end
+    output_func = getOutputfunction(Par.Options.MinimalOutput)
+    outputCB = FunctionCallingCallback(output_func, tdir = -1, func_start = false)
+    return outputCB
+end
+
+
+function get_saving_callback(
+    ObservableType,
+    Par,
+    ObsSaveat,
+    Lam_min,
+    Lam_max,
+    saved_values,
+)::SciMLBase.DiscreteCallback
+    #get Default for lambda range for observables
+    # ObsSaveat = getLambdaMesh(ObsSaveat,Lam_min,Lam_max)
+    save_func(State, t, integrator) =
+        PMFRGCore.getObservables(ObservableType, State, PMFRGCore.t_to_Lam(t), Par)
+    ObsSaveat = PMFRGCore.gettMesh(ObsSaveat, Lam_min, Lam_max)
+    saveCB = SavingCallback(
+        save_func,
+        saved_values,
+        save_everystep = false,
+        saveat = ObsSaveat,
+        tdir = -1,
+    )
+    return saveCB
+end
+
+function get_problem(Lam_max, Lam_min, State, setup, Deriv!)::ODEProblem
+    t0 = PMFRGCore.Lam_to_t(Lam_max)
+    tend = PMFRGCore.get_t_min(Lam_min)
+    Deriv_subst! = PMFRGCore.generateSubstituteDeriv(Deriv!)
+    problem = ODEProblem(Deriv_subst!, State, (t0, tend), setup)
+    return problem
+end
+
+
 function launchPMFRG!(
     State,
     setup,
@@ -61,13 +141,13 @@ function launchPMFRG!(
     #Solve ODE. default arguments may be added to, or overwritten by specifying kwargs
     setup.Par.Options.MinimalOutput || println("Starting solve")
     @timeit_debug "total solver" sol = solve(
-        PMFRGCore.get_problem(Lam_max, Lam_min, State, setup, Deriv!),
+        get_problem(Lam_max, Lam_min, State, setup, Deriv!),
         method,
         reltol = accuracy,
         abstol = accuracy,
         save_everystep = false,
         callback = CallbackSet(
-            PMFRGCore.get_saving_callback(
+            get_saving_callback(
                 ObservableType,
                 setup.Par,
                 ObsSaveat,
@@ -75,7 +155,7 @@ function launchPMFRG!(
                 Lam_max,
                 saved_values,
             ),
-            PMFRGCore.get_output_callback(
+            get_output_callback(
                 CheckPointSteps,
                 CheckpointDirectory,
                 saved_values,
@@ -98,7 +178,7 @@ function launchPMFRG!(
         PMFRGCore.t_to_Lam(sol.t[end]),
         setup.Par,
     )
-    PMFRGCore.saveMainOutput(MainFile, sol, saved_values, setup.Par, Group)
+    saveMainOutput(MainFile, sol, saved_values, setup.Par, Group)
 
     PMFRGCore.SetCompletionCheckmark(CheckpointDirectory)
     return sol, saved_values

@@ -6,8 +6,6 @@ using SpinFRGLattices,
     StructArrays,
     HDF5,
     H5Zblosc,
-    SciMLBase,
-    DiffEqCallbacks,
     TimerOutputs
 
 using SpinFRGLattices.StaticArrays
@@ -30,7 +28,6 @@ export saveState,
     saveParams,
     readParams,
     setupDirectory,
-    saveCurrentState,
     UniqueDirName,
     UniqueFileName,
     generateName,
@@ -40,7 +37,8 @@ export saveState,
     generateFileName,
     generateMainFile,
     AbstractParallelizationScheme,
-    MultiThreaded
+    MultiThreaded,
+    PMFRGParams
 
 include("TwoLoop/TwoLoopPMFRG.jl")
 # using .TwoLoopPMFRG
@@ -49,7 +47,7 @@ export TwoLoop
 using FixedPoint
 
 include("MultiLoop/MultiLoopPMFRG.jl")
-export MultiLoop, Parquet, SolveParquet
+export MultiLoop, Parquet
 
 export UseMPI
 

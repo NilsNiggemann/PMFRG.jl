@@ -106,4 +106,12 @@ Moving the tests step by step
    The tests do need also some logic to be moved
    and necessary things to be imported
    (Still doing this)
+3. Moving the import of SciMLBase and DiffEqCallbacks 
+   to the PMFRGSolve,
+   this creates a situation where some
+   (but not all) 
+   function in FileIO needs to be moved 
+   but it might not strictly necessary.
+   What is the cleanest way to do this?
+   
    

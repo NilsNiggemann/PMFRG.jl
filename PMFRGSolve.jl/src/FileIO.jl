@@ -89,7 +89,7 @@ saveMainOutput(
 function saveMainOutput(
     Filename::String,
     State,
-    saved_values::DiffEqCallbacks.SavedValues,
+    saved_values,
     Lambda::Real,
     Par::PMFRGParams,
     Group::String,
@@ -111,13 +111,13 @@ end
 saveMainOutput(
     Filename::String,
     Solution::ODESolution,
-    saved_values::DiffEqCallbacks.SavedValues,
+    saved_values,
     Par::PMFRGParams,
     Group::Nothing,
 ) = saveMainOutput(Filename, Solution, saved_values, Par, string(Par.NumericalParams.T))
 
 function saveMainOutput(Filename::String,
-                        saved_values::DiffEqCallbacks.SavedValues,
+                        saved_values,
                         Group::String)
     mkpath(dirname(Filename))
     println("Saving Main output to ", abspath(Filename))

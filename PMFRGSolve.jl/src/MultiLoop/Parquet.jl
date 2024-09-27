@@ -23,7 +23,6 @@ function SolveParquet(
 )
     Obs = StructArray(ObsType[])
     @time Workspace, Obs = iterator(Workspace, Lam, Obs)
-    println(methods(saveMainOutput))
     saveMainOutput(MainFile, Workspace.State, Obs, Lam, Workspace.Par, Group)
     return Workspace, Obs
 end

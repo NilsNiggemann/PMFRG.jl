@@ -116,9 +116,7 @@ saveMainOutput(
     Group::Nothing,
 ) = saveMainOutput(Filename, Solution, saved_values, Par, string(Par.NumericalParams.T))
 
-function saveMainOutput(Filename::String,
-                        saved_values,
-                        Group::String)
+function saveMainOutput(Filename::String, saved_values, Group::String)
     mkpath(dirname(Filename))
     println("Saving Main output to ", abspath(Filename))
     saveObs(Filename, saved_values, Group)
@@ -126,7 +124,14 @@ end
 saveMainOutput(::Nothing, args...) = nothing
 
 
-function setCheckpoint(Directory::String, State, saved_values::DiffEqCallbacks.SavedValues, Lam, Par, checkPointList)
+function setCheckpoint(
+    Directory::String,
+    State,
+    saved_values::DiffEqCallbacks.SavedValues,
+    Lam,
+    Par,
+    checkPointList,
+)
     saveCurrentState(Directory, State, saved_values, Lam, Par)
     if !isempty(checkPointList)
         if Lam < last(checkPointList)

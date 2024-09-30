@@ -5,7 +5,12 @@ function SolveParquet(Par::PMFRGCore.ParquetParams, Lam::Real; kwargs...)
     Workspace = PMFRGCore.SetupParquet(Par)
     SolveParquet(Workspace, Lam; kwargs...)
 end
-function SolveParquet(State::PMFRGCore.StateType, Par::PMFRGCore.ParquetParams, Lam::Real; kwargs...)
+function SolveParquet(
+    State::PMFRGCore.StateType,
+    Par::PMFRGCore.ParquetParams,
+    Lam::Real;
+    kwargs...,
+)
     Workspace = PMFRGCore.SetupParquet(Par)
     writeTo!(Workspace.OldState, State)
     SolveParquet(Workspace, Lam; kwargs...)
@@ -26,4 +31,3 @@ function SolveParquet(
     saveMainOutput(MainFile, Workspace.State, Obs, Lam, Workspace.Par, Group)
     return Workspace, Obs
 end
-

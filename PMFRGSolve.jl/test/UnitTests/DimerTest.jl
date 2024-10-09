@@ -115,7 +115,12 @@ function test_DimerParquet(; kwargs...)
     )
 end
 
+include("ExampleObservablesUpdate.jl")
+
 function test_Observables(Method, Obs; Obsacc = 1e-14)
+    if haskey(ENV, "PMFRG_REGEN_EXPECTED_RESULTS")
+        save_observables(Method, Obs)
+    end
     obs_ex = example_Obs(Method)
     function test(ObsName)
         O1 = getproperty(Obs, ObsName)
@@ -124,6 +129,8 @@ function test_Observables(Method, Obs; Obsacc = 1e-14)
             @test O1[i] ≈ O2[i] atol = Obsacc
         end
     end
+
+
 
     println("Observables: ", Obs)
     @testset "Testing Susceptibility" begin
@@ -146,6 +153,9 @@ function test_Observables(Method, Obs; Obsacc = 1e-14)
         end
     end
 end
+
+
+
 
 test_Observables(Method::Parquet, Obs; Obsacc = 1e-14) =
     println("Observables check not implemented for parquet")

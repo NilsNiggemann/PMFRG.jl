@@ -4,7 +4,9 @@ authors = ["Nils Niggemann <nils.niggemann@fu-berlin.de>"]
 version = "2.2.1"
 
 [deps]
+DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
+EnzymeCore = "f151be2c-9106-41f4-ab19-57ee4f262869"
 FixedPoint = "3325f569-5a18-4e7d-8356-246b69339eea"
 H5Zblosc = "c8ec2601-a99c-407f-b158-e79c03c2f5f7"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
@@ -12,6 +14,7 @@ LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
+SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 SpinFRGLattices = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
 StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
@@ -23,8 +26,16 @@ MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 PMFRGMPIExt = ["MPI"]
 
 [extras]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "MPI"]
+test = ["Test", "MPI", "Pkg", "Dates"]
+
+[compat]
+DiffEqBase = "=6.155.4"
+DiffEqCallbacks = "=3.9.1"
+SciMLBase = "=2.54.0"
+EnzymeCore = "=0.8.3"

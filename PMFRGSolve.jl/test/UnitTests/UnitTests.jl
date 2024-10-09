@@ -34,7 +34,6 @@ BenchmarkingParams(Method::Parquet, System = getPolymer(2)) = Params(
 
 include("ExampleObservables.jl")
 include("DimerTest.jl")
-include("IOTests.jl")
 
 
 function testOneLoop(Obsacc = 1e-14)

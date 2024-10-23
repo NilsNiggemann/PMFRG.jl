@@ -232,6 +232,35 @@ MPI.Finalize()
 
 ## Implementing your own lattices
 Of course you will eventually have to implement lattices which are not included already, change the couplings, or even remove symmetries. As long as you feed a valid geometry struct from [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl) to the FRG code (which is quite minimalistic), it should not be necessary to make direct changes to the library. [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl)) contains mostly helper functions to make your life easier. Documentation of how to use it to implement new lattices is found soon in the repository.
+
+## Development notes
+### Testing and reference values
+This code has a suite of automated tests,
+mostly end-to-end.
+
+The end-to-end tests compare 
+values calculated by the current version of the code
+with reference values 
+(computed by a previous version of the code,
+and saved in plain text in the file [ExampleObservables.jl](./test/UnitTests/ExampleObservables.jl).
+
+It has happened (so far, only once) 
+that updating the dependencies of this package
+caused the results of the computations to change slightly 
+(always less than a part over $10^6$, and typically much lower than that),
+making these tests fail.
+
+Once it has been determined that a change in the results
+is not due to a bug or a change in the code of this package, 
+but only to a change in the upstream packages 
+(which are hopefully dependable),
+it is possible to regenerate the reference values
+by running the test suite again setting the `PMFRG_REGEN_EXPECTED_RESULTS`
+
+
+
+
+
 ## See also
 
 - Lattice implementations: [`SpinFRGLattices.jl`](https://github.com/NilsNiggemann/SpinFRGLattices.jl)

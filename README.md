@@ -255,10 +255,7 @@ is not due to a bug or a change in the code of this package,
 but only to a change in the upstream packages 
 (which are hopefully dependable),
 it is possible to regenerate the reference values
-by running the test suite again setting the `PMFRG_REGEN_EXPECTED_RESULTS`
-
-
-
+by running the test suite again setting the `PMFRG_REGEN_EXPECTED_RESULTS`.
 
 
 ## See also

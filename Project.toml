@@ -25,12 +25,6 @@ MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 [extensions]
 PMFRGMPIExt = ["MPI"]
 
-[compat]
-DiffEqBase = "=6.155.4"
-DiffEqCallbacks = "=3.9.1"
-EnzymeCore = "=0.8.3"
-SciMLBase = "=2.54.0"
-
 [extras]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"

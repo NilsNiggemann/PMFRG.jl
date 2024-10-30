@@ -32,7 +32,7 @@ project = Pkg.API.ProjectInfo(
         "Markdown" => Base.UUID("d6f4376e-aef5-505a-96c1-9c027394607a"),
         "FixedPoint" => Base.UUID("3325f569-5a18-4e7d-8356-246b69339eea"),
     ),
-    Dict{String,Dict{String,String}}(),
+    # Dict{String,Dict{String,String}}(), # Not valid on julia 1.10
     "/tmp/jl_w17ng5/Project.toml",
 )
 dependencies = Dict{Base.UUID,Pkg.API.PackageInfo}(
@@ -5063,7 +5063,7 @@ dependencies = Dict{Base.UUID,Pkg.API.PackageInfo}(
 # if this file exists.
 
 function example_Obs(::OneLoop)
-    PMFRG.Observables{Float64}(
+    PMFRGCore.Observables{Float64}(
         [0.413551099137772, -0.207938126095492],
         [0.338213494932770 0.138350580687905 0.077745281990596 0.057513026730102 0.045945787989173 0.036602304091048 0.028564671822712 0.021841538034273 0.016304645893023 0.002274396285676],
         [-0.091670307319047],
@@ -5075,7 +5075,7 @@ end
 function example_Obs(
     ::Tuple{OneLoop,typeof(SpinFRGLattices.SquareKagome.getMirrorSquareKagome)},
 )
-    PMFRG.Observables{Float64}(
+    PMFRGCore.Observables{Float64}(
         [
             0.488191230167893,
             -0.023181520951720,
@@ -5196,7 +5196,7 @@ function example_Obs(
     )
 end
 function example_Obs(::TwoLoop)
-    PMFRG.Observables{Float64}(
+    PMFRGCore.Observables{Float64}(
         [0.404005886329474, -0.192667768875082],
         [0.402395429167686 0.196473826485015 0.120283290432473 0.088300767758542 0.070219448204381 0.056799814436571 0.045939582724531 0.037186330393315 0.030231769674547 -0.008598573837076],
         [-0.099059792245071],
@@ -5208,7 +5208,7 @@ end
 function example_Obs(
     ::Tuple{TwoLoop,typeof(SpinFRGLattices.SquareKagome.getMirrorSquareKagome)},
 )
-    PMFRG.Observables{Float64}(
+    PMFRGCore.Observables{Float64}(
         [
             0.489688408396031,
             -0.021815013395545,

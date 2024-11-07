@@ -28,7 +28,7 @@ function create_file_with_preamble(filename)
 # with code version: $commit_hash
 """,
         )
-        print_dependencies(io)
+        link_and_copy_manifest(io)
         println(
             io,
             """
@@ -40,12 +40,25 @@ function create_file_with_preamble(filename)
     end
 end
 
+"""Print the git SHA-1 of the Manifest file in the path, and copies it in the test directory"""
+function link_and_copy_manifest(io)
 
-"""Save a complete dump of all packages and their versions in a stream."""
-function print_dependencies(io)
-    println(io, "using Pkg")
-    println(io, "if (VERSION == v\"$(VERSION)\")")
-    println(io, "project = $(Pkg.project())")
-    println(io, "dependencies = $(Pkg.dependencies())")
-    println(io, "end")
+    real_manifest_path = let PMFRG_package_path = pathof(PMFRG) |> dirname |> dirname
+        joinpath(PMFRG_package_path, "Manifest.toml")
+    end
+
+    manifest_copy_path =
+        let manifest_copy_dir = @__DIR__,
+            manifest_copy_name = "Manifest_example_observables_test_results-$(today()).toml"
+
+            joinpath(manifest_copy_dir, manifest_copy_name)
+        end
+
+    println("Copying the Manifest file $real_manifest_path to $manifest_copy_path")
+    run(`cp $real_manifest_path $manifest_copy_path`)
+    println("Adding it to the repository...")
+    run(`git add $manifest_copy_path`)
+    manifest_git_sha1 = read(`git hash-object $manifest_copy_path`, String)
+    println(io, "# Manifest git SHA-1: $manifest_git_sha1")
+    println(io, "# (compare with `git hash-file`)")
 end

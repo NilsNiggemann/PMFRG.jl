@@ -5,9 +5,11 @@ using MPI
 @assert !isnothing(Base.get_extension(PMFRG, :PMFRGMPIExt)) "Perhaps you need `using MPI`?"
 include("../ext/PMFRGMPIExt/test/MPITest/mpi-tests.jl")
 include("RegressionTests/PMFRG.getXBubble.jl")
+include("Doctests/doctests.jl")
 
 ##
 @testset verbose = true "PMFRG tests" begin
+    test_documentation()
     test_mpi()
     test_getXBubble()
     testOneLoop(Obsacc)

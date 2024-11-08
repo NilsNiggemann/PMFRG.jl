@@ -255,7 +255,15 @@ is not due to a bug or a change in the code of this package,
 but only to a change in the upstream packages 
 (which are hopefully dependable),
 it is possible to regenerate the reference values
-by running the test suite again setting the `PMFRG_REGEN_EXPECTED_RESULTS`.
+by running the test suite again setting 
+the `PMFRG_REGEN_EXPECTED_RESULTS` environment variables 
+to any value (1, for example).
+
+When the expected values are regenerated,
+a copy of Manifest.toml is created in the `test/UnitTests` directory for reference,
+and also automatically added to the git repository
+(without committing yet).
+You might have to rename appropriately this copy of Manifest.toml.
 
 
 ## See also

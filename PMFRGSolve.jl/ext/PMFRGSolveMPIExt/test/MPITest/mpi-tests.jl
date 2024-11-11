@@ -1,7 +1,7 @@
 using MPI
 using Test
 
-function test_mpi()
+function test_mpi_solve()
     @testset verbose = true "MPI tests" begin
         function run_mpi_script(script, n, testname)
             function print_header()

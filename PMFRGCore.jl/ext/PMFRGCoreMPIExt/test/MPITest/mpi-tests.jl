@@ -3,7 +3,7 @@ using Test
 
 include("./test_partition.jl")
 include("./test_best_partition_triangle.jl")
-function test_mpi()
+function test_mpi_core()
     @testset verbose = true "MPI tests" begin
         @testset verbose = true "Unit tests for MPI functionality" begin
             test_1D_partition()

@@ -17,6 +17,13 @@ function test_documentation()
             @test contains(section_text, "PMFRG_REGEN_EXPECTED_RESULTS")
 
         end
+        @testset "Readme mentions that Manifest copying and committing" begin
+            section_text = extract_section(readme, "Testing and reference values")
+            @test contains(section_text, "copy of Manifest.toml")
+            @test contains(section_text, "automatically added to the git repository")
+            @test contains(section_text, "rename appropriately this copy of Manifest.toml")
+        end
+
 
         @testset "Readme mentions MPI parallelization" begin
             section_text = extract_section(readme, "MPI parallelization")

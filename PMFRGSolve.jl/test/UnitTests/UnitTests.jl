@@ -1,6 +1,5 @@
 using PMFRGCore, SpinFRGLattices, Test
 
-# Copied from PMFRGCore.jl/test/UnitTest.jl
 BenchmarkingParams(Method, System = getPolymer(2)) = Params(
     System,
     Method,
@@ -16,7 +15,6 @@ BenchmarkingParams(Method, System = getPolymer(2)) = Params(
     lenIntw_acc = 60,
 )
 
-# Copied from PMFRGCore.jl/test/UnitTest.jl
 BenchmarkingParams(Method::Parquet, System = getPolymer(2)) = Params(
     System,
     Method,
@@ -37,7 +35,7 @@ include("DimerTest.jl")
 include("IOTests.jl")
 
 
-function testOneLoop(Obsacc = 1e-14)
+function testOneLoopSolve(Obsacc = 1e-14)
     @testset "OneLoop" verbose = true begin
         @testset "Dimer" verbose = true begin
             test_DimerFRG(Obsacc = Obsacc)
@@ -48,7 +46,7 @@ function testOneLoop(Obsacc = 1e-14)
     end
 end
 
-function testTwoLoop(Obsacc = 1e-14)
+function testTwoLoopSolve(Obsacc = 1e-14)
     @testset "TwoLoop" verbose = true begin
         @testset "Dimer" verbose = true begin
             test_DimerFRG(TwoLoop(), Obsacc = Obsacc, tol = 1e-8) # accuracy of symmetries is finite, given by length of Matsubara sum
@@ -59,7 +57,7 @@ function testTwoLoop(Obsacc = 1e-14)
     end
 end
 
-function testParquet()
+function testParquetSolve()
     @testset "Parquet" verbose = true begin
         test_DimerParquet(tol = 1e-6)
     end

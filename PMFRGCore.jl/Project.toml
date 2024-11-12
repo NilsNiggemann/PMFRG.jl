@@ -1,0 +1,28 @@
+name = "PMFRGCore"
+uuid = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
+authors = ["Nils Niggemann <nils.niggemann@fu-berlin.de>"]
+version = "2.2.1"
+
+[deps]
+FixedPoint = "3325f569-5a18-4e7d-8356-246b69339eea"
+H5Zblosc = "c8ec2601-a99c-407f-b158-e79c03c2f5f7"
+HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SpinFRGLattices = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
+StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
+TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+
+[weakdeps]
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+
+[extensions]
+PMFRGCoreMPIExt = ["MPI"]
+
+[extras]
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[targets]
+test = ["Test", "MPI","Random"]

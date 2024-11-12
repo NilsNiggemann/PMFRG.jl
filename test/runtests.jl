@@ -1,17 +1,12 @@
-Obsacc = 1e-14
-include("UnitTests/UnitTests.jl")
+using Test
 
-using MPI
-@assert !isnothing(Base.get_extension(PMFRG, :PMFRGMPIExt)) "Perhaps you need `using MPI`?"
-include("../ext/PMFRGMPIExt/test/MPITest/mpi-tests.jl")
-include("RegressionTests/PMFRG.getXBubble.jl")
-
-@testset verbose = true "PMFRG tests" begin
-    testStateUnpacking()
-    testOneLoop(Obsacc)
-    testTwoLoop(Obsacc)
-    testParquet()
-    test_IO()
-    test_mpi()
-    test_getXBubble()
+@testset verbose = true "PMFRG" begin
+    include("Doctests/doctests.jl")
+    test_documentation()
+    @testset verbose = true "PMFRGCore" begin
+        include("../PMFRGCore.jl/test/runtests.jl")
+    end
+    @testset verbose = true "PMFRGSolve" begin
+        include("../PMFRGSolve.jl/test/runtests.jl")
+    end
 end

@@ -17,14 +17,54 @@ jobs:
         with:
           lfs: 'true'
       - uses: julia-actions/setup-julia@v1
-      - name: Install dependencies and Test
+      - name: Install dependencies and Test - PMFRGCore.jl
         run: |
-          julia -e 'using Pkg                                                   
-                    Pkg.activate(".")
-                    Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
-                    Pkg.test()'
-
-                                
+          export JULIA_PKG_PRECOMPILE_AUTO=0
+          julia -e 'macro pex(expr)
+                        quote
+                        println("Command: ", $(string(expr)))
+                        $expr
+                        println("Command: ", $(string(expr)), " terminated.")
+                        end
+                    end
+                    @pex using Pkg
+                    @pex Pkg.activate("./PMFRGCore.jl")
+                    @pex Pkg.add(url="https://github.com/NilsNiggemann/SpinFRGLattices.jl")
+                    @pex ENV["JULIA_PKG_PRECOMPILE_AUTO"]=1
+                    @pex Pkg.test()'
+      - name: Install dependencies and Test - PMFRGSolve.jl
+        run: |
+          export JULIA_PKG_PRECOMPILE_AUTO=0
+          julia -e 'macro pex(expr)
+                        quote
+                        println("Command: ", $(string(expr)))
+                        $expr
+                        println("Command: ", $(string(expr)), " terminated.")
+                        end
+                    end
+                    @pex using Pkg
+                    @pex Pkg.activate("./PMFRGSolve.jl")
+                    @pex Pkg.develop([(;url="https://github.com/NilsNiggemann/SpinFRGLattices.jl"),
+                                      (;path="./PMFRGCore.jl")])
+                    @pex ENV["JULIA_PKG_PRECOMPILE_AUTO"]=1
+                    @pex Pkg.test()'
+      - name: Install dependencies and Test - PMFRG.jl
+        run: |
+          export JULIA_PKG_PRECOMPILE_AUTO=0
+          julia -e 'macro pex(expr)
+                        quote
+                        println("Command: ", $(string(expr)))
+                        $expr
+                        println("Command: ", $(string(expr)), " terminated.")
+                        end
+                    end
+                    @pex using Pkg
+                    @pex Pkg.activate(".")
+                    @pex Pkg.develop([(;url="https://github.com/NilsNiggemann/SpinFRGLattices.jl"),
+                                      (;path="./PMFRGSolve.jl"),
+                                      (;path="./PMFRGCore.jl")])
+                    @pex ENV["JULIA_PKG_PRECOMPILE_AUTO"]=1
+                    @pex Pkg.test()'
       - name: Formatting Check
         run: |
           julia -e 'using Pkg

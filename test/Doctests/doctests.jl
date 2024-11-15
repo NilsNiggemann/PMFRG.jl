@@ -30,7 +30,7 @@ function test_documentation()
             @test !isnothing(section_text)
             @test contains(
                 section_text,
-                "ext/PMFRGMPIExt/test/MPITest/generate_data_example.mpi.jl",
+                "PMFRGSolve.jl/ext/PMFRGSolveMPIExt/test/MPITest/generate_data_example.mpi.jl",
             )
         end
 

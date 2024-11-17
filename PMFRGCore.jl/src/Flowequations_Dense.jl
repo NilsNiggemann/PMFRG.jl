@@ -1,3 +1,7 @@
+function rebuildStateStruct!(StateStruct::StateType, StateVector::AbstractVector, _)
+    unpackStateVector!(StateStruct, StateVector)
+end
+
 function getDeriv!(Deriv, State, setup, Lam)
     @timeit_debug "getDeriv!" begin
         @timeit_debug "setup" (; X, Buffs, Par, StateBuff, DerivBuff) = setup #use pre-allocated X and XTilde to reduce garbage collector time
@@ -13,7 +17,11 @@ function getDeriv!(Deriv, State, setup, Lam)
             Par = Par,
         )
 
-        @timeit_debug "unpackStateVector!" unpackStateVector!(Workspace.State, State)
+        @timeit_debug "rebuildStateStruct!" rebuildStateStruct!(
+            Workspace.State,
+            State,
+            setup,
+        )
         @timeit_debug "getDFint!" getDFint!(Workspace, Lam)
         @timeit_debug "get_Self_Energy!" get_Self_Energy!(Workspace, Lam)
 

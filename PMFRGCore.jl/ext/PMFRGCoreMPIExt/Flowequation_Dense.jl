@@ -1,6 +1,21 @@
-using PMFRGCore, MPI, TimerOutputs
+using PMFRGCore, MPI, TimerOutputs, PencilArrays
 include("mpi/MPI_Detail.jl")
 import .MPI_Detail
+
+function PMFRGCore.rebuildStateStruct!(
+    StateStruct::PMFRGCore.StateType,
+    PartialStateVector::PencilArray,
+    setup,
+)
+
+    (; StateMPIBuff) = setup
+    StateVector = StateMPIBuff.data
+    StateVector[range_local(PartialStateVector)[1]] = PartialStateVector
+    MPI.Allgatherv!(StateMPIBuff, MPI.COMM_WORLD)
+    PMFRGCore.unpackStateVector!(StateStruct, StateVector)
+end
+
+
 
 function PMFRGCore.getXBubble!(Workspace, Lam, ::PMFRGCore.UseMPI)
     (; X, Par) = Workspace

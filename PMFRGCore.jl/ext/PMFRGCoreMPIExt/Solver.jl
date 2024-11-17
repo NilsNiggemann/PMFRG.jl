@@ -1,5 +1,32 @@
 using PMFRGCore, MPI, PencilArrays
 
+function createGlobalStateVector(Par::PMFRGParams)
+
+    PMFRGCore.createStateVector(
+        PMFRGCore.getArrayGeometry(Par);
+        floattype = PMFRGCore._getFloatType(Par),
+    )
+end
+
+function PMFRGCore.InitializeState(Par::PMFRGParams, ::PMFRGCore.UseMPI)
+    StateGlobalTmp = createGlobalStateVector(Par)
+
+    Γc = PMFRGCore.getVc(StateGlobalTmp, PMFRGCore.getArrayGeometry(Par))
+
+    (; couplings) = Par.System
+    PMFRGCore.setToBareVertex!(Γc, couplings)
+
+    decomposition = Pencil((length(StateGlobalTmp),), (1,), MPI.COMM_WORLD)
+
+    floattype = PMFRGCore._getFloatType(Par)
+    State = PencilArray{floattype}(undef, decomposition)
+    State .= StateGlobalTmp[range_local(State)...]
+    return State
+
+end
+
+
+
 function createLocalStateDecomposed(total_length::Int)::PencilArray
 
     decomposition = Pencil((total_length,), (1,), MPI.COMM_WORLD)
@@ -52,11 +79,17 @@ end
 # to the output of AllocateSetup(...,::PMFRGCore.MultiThreaded)
 function PMFRGCore.AllocateSetup(Par::PMFRGCore.AbstractOneLoopParams, ::PMFRGCore.UseMPI)
 
-    globalState = PMFRGCore.createStateVector(getArrayGeometry(Par); floattype = floattype)
-    globalDeriv = similar(globalState)
-
-    return merge(
-        PMFRGCore.AllocateSetup(Par, PMFRGCore.MultiThreaded()),
-        (; globalState, globalDeriv),
+    StateMPIBuff = VBuffer(
+        let
+            StateVector = createGlobalStateVector(Par)
+            decomposition = Pencil((length(StateVector),), (1,), MPI.COMM_WORLD)
+            counts = map(
+                r -> length(range_remote(decomposition, r + 1)[1]),
+                decomposition.topology.ranks,
+            )
+            StateVector, counts
+        end...,
     )
+
+    return merge(PMFRGCore.AllocateSetup(Par, PMFRGCore.MultiThreaded()), (; StateMPIBuff))
 end

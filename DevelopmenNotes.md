@@ -67,8 +67,6 @@ For convenience, we have all 3 in the same repo.
     (leaving out OrdinaryDiffEq.*- kind of dependencies),
     
     
-
-
 ## Dependencies
 
 Since we want to iterate on the subpackages 
@@ -96,21 +94,57 @@ Maybe this is related to this **Point for discussion**:
 can't we just have PMFRGSolve.jl == PMFRG.jl?
 
 ## State of things
-Moving the tests step by step 
 1. Moved the OrdinaryDiffEq dependency 
    from PMFRGCore
    to PMFRGSolve
-2. Moving all the tests in PMFRGCore 
+2. Moved all the tests in PMFRGCore 
    that now fail because of the missing dependency
    to PMFRGSolve.
    The tests do need also some logic to be moved
    and necessary things to be imported
    (Still doing this)
-3. Moving the import of SciMLBase and DiffEqCallbacks 
+3. Moved the import of SciMLBase and DiffEqCallbacks 
    to the PMFRGSolve,
-   this creates a situation where some
+   this created a situation where some
    (but not all) 
-   function in FileIO needs to be moved 
+   function in FileIO needed to be moved 
    but it might not strictly necessary.
-   What is the cleanest way to do this?
+   Moved all most of the functions to PMFRGSolve,
+   even if it might not be the cleanest strategy.
    
+
+## Use of pencil arrays 
+Using PencilArrays.jl should allow to parallelize efficiently the solver logic.
+
+State object (SO) and Derivative buffer (DB) lifetime and manipulations:
+- `InitializeState`: creates and initializes the SO 
+- `launchPMFRG!`: feeds the SO as-is to `solve` as the initial state
+-  `solve`:
+  - creates DB which Similar to the SO (TODO: check)
+  - passes SO and DB to the derivative-computing functions
+  - passes SO (and DB? TODO: check) to the callback functions
+- the derivative-computing function:
+  - reassembles the full state information from the State Object,
+    rebuilding the `State` struct that is used from the callees to compute the derivative.
+    NOTE: at the moment, this is done with `unpackStateVector!`.
+    TODO: we can completely remove the State and Derivative types,
+    if we make sure all the functions are able to use the SO
+  - computes the derivative and plugs it into the DB
+- the callback functions:
+  - reassembles the full state information from the State Object,
+    rebuilding the `State` struct that is used from the callees to compute the derivative
+    TODO: we can completely remove the State and Derivative types,
+    if we make sure all the functions are able to use the SO
+
+ 
+### Things done and to do
+- DONE Create the state as a PencilArray and the necessary setup 
+       which involves creating temporary buffers
+- DONE Write the functions needed to merge the content 
+       of the State PencilArray in the State structure,
+       and to extract the necessary pieces
+       to the Deriv PencilArray.
+- TODO Check the compatibility of the new state objects 
+       with the callback functions 
+- TODO Do an end-to-end test with MPI where the results are actually checked
+       (at the moment we have either only smoke tests or unit tests)

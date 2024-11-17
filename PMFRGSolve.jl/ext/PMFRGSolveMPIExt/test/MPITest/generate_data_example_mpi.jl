@@ -11,7 +11,7 @@
 using SpinFRGLattices, PMFRGSolve, PMFRGCore
 using SpinFRGLattices.SquareLattice
 
-using MPI
+using MPI, PencilArrays
 
 MPI.Init()
 

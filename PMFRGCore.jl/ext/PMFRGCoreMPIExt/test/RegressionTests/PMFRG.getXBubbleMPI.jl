@@ -6,7 +6,7 @@
 
 using Test
 using HDF5
-using MPI
+using MPI, PencilArrays
 using PMFRGCore
 using SpinFRGLattices.SquareLattice
 

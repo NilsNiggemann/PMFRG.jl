@@ -3,7 +3,7 @@ Base.show(io::IO, f::Float64) = @printf(io, "%1.15f", f)
 _getFloatType(Par::PMFRGParams) = typeof(Par.NumericalParams.T)
 
 
-function InitializeState(Par::PMFRGParams)
+function InitializeState(Par::PMFRGParams, _::MultiThreaded = MultiThreaded())
     (; couplings) = Par.System
 
     floattype = _getFloatType(Par)

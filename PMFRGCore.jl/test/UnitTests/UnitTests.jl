@@ -3,7 +3,7 @@ using PMFRGCore, SpinFRGLattices, Test
 include("StateLib.jl")
 include("DimerTest.jl")
 
-include("SetupVsDerivCompatibility.jl")
+include("FunctionCompatTests.jl")
 
 include("TypeStability.jl")
 

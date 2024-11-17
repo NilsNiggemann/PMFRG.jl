@@ -10,6 +10,7 @@ function test_mpi_core()
             test_best_partition_triangle()
         end
 
+
         function run_mpi_script(script, n, testname)
             function print_header()
                 linelength = 79
@@ -46,6 +47,11 @@ function test_mpi_core()
                 "Ibcast! communication example - test_chunk_communication.jl",
             )
 
+            run_mpi_script(
+                joinpath(dir, "test_setup_functions.jl"),
+                2,
+                "Setup and compatibility tests - MPI version",
+            )
         end
     end
 end

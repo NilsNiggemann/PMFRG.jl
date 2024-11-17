@@ -52,13 +52,16 @@ function unpackStateVector(state::AbstractVector, array_geometry::NamedTuple)
     [f(state, array_geometry) for f in [getF_int, getGamma, getVa, getVb, getVc]]
 end
 
-function unpackStateVector!(State::StateType, state::AbstractVector)
+function unpackStateVector!(State::StateType, StateArr::AbstractVector)
     array_geometry = getArrayGeometry(State)
-    State.f_int .= getF_int(state, array_geometry)
-    State.γ .= getGamma(state, array_geometry)
-    State.Γ.a .= getVa(state, array_geometry)
-    State.Γ.b .= getVb(state, array_geometry)
-    State.Γ.c .= getVc(state, array_geometry)
+
+    funcs = (_getF_intRange, _getGammaRange, _getVaRange, _getVbRange, _getVcRange)
+    parts = (State.f_int, State.γ, State.Γ.a, State.Γ.b, State.Γ.c)
+
+    for (func, part) in zip(funcs, parts)
+        reshape(part, :) .= StateArr[func(array_geometry)]
+    end
+
     nothing
 end
 
@@ -82,13 +85,47 @@ end
 
 function repackStateVector!(Unrolled::AbstractVector{T}, State::StateType{T}) where {T}
     array_geometry = getArrayGeometry(State)
-    getF_int(Unrolled, array_geometry) .= State.f_int
-    getGamma(Unrolled, array_geometry) .= State.γ
-    getVa(Unrolled, array_geometry) .= State.Γ.a
-    getVb(Unrolled, array_geometry) .= State.Γ.b
-    getVc(Unrolled, array_geometry) .= State.Γ.c
+
+
+    funcs = (_getF_intRange, _getGammaRange, _getVaRange, _getVbRange, _getVcRange)
+    parts = (State.f_int, State.γ, State.Γ.a, State.Γ.b, State.Γ.c)
+
+
+    for (func, part) in zip(funcs, parts)
+        Unrolled[func(array_geometry)] .= reshape(part, :)
+    end
+
     nothing
 end
+
+function repackStateVector!(
+    Unrolled::AbstractVector{T},
+    r::Base.UnitRange,
+    State::StateType{T},
+) where {T}
+    array_geometry = getArrayGeometry(State)
+
+    funcs = (_getF_intRange, _getGammaRange, _getVaRange, _getVbRange, _getVcRange)
+    parts = (State.f_int, State.γ, State.Γ.a, State.Γ.b, State.Γ.c)
+
+    intersections = [intersect(r, f(array_geometry)) for f in funcs]
+
+    intersections_destination =
+        [intersection .- (r.start - 1) for intersection in intersections]
+    intersections_source = [
+        intersection .- (f(array_geometry).start - 1) for
+        (intersection, f) in zip(intersections, funcs)
+    ]
+
+    for (intersection_destination, part, intersection_source) in
+        zip(intersections_destination, parts, intersections_source)
+        Unrolled[intersection_destination] .= reshape(part, :)[intersection_source]
+    end
+
+    nothing
+end
+
+
 
 function repackStateVector(State::StateType{T}) where {T}
     array_geometry = getArrayGeometry(State)

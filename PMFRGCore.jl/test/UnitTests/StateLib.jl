@@ -153,9 +153,10 @@ function testStateUnpacking()
                 all_parts = unpackStateVector(state, array_geometry)
 
                 fs = [getF_int, getGamma, getVa, getVb, getVc]
-                @testset "equivalence to single functions" for (f, part) in
-                                                               zip(fs, all_parts)
-                    @test all(part .== f(state, array_geometry))
+                @testset "equivalence to single functions" begin
+                    @testset for (f, part) in zip(fs, all_parts)
+                        @test all(part .== f(state, array_geometry))
+                    end
                 end
 
                 @testset "view, no copy" begin
@@ -183,7 +184,7 @@ function testStateUnpacking()
                 end
             end
 
-            @testset "repackStateVector" verbose = true begin
+            @testset "repackStateVector and variants" verbose = true begin
                 S = PMFRGCore.StateType(
                     array_geometry.NUnique,
                     array_geometry.Ngamma,
@@ -211,16 +212,42 @@ function testStateUnpacking()
                     S.Γ.c[i] = v
                     v += 1
                 end
-                packed = repackStateVector(S)
 
-                all_parts = unpackStateVector(packed, array_geometry)
+                @testset verbose = true "repackStateVector" begin
+                    packed = repackStateVector(S)
+                    all_parts = unpackStateVector(packed, array_geometry)
 
-                fs = [getF_int, getGamma, getVa, getVb, getVc]
-                @testset "equivalence to single functions" for (f, part) in
-                                                               zip(fs, all_parts)
-                    @test all(part .== f(packed, array_geometry))
+                    fs = [getF_int, getGamma, getVa, getVb, getVc]
+                    @testset "equivalence to single functions" begin
+                        @testset for (f, part) in zip(fs, all_parts)
+                            @test all(part .== f(packed, array_geometry))
+                        end
+                    end
                 end
 
+                @testset "repackStateVector, with range" begin
+                    @testset for nparts = 1:5
+                        packed = repackStateVector(S)
+                        total_length = length(packed)
+                        chunk_length = total_length / nparts
+
+                        roundtoint(x) = Int(round(x))
+
+                        chunks = [
+                            range(
+                                start = roundtoint(chunk_length * (i - 1)) + 1,
+                                stop = roundtoint(chunk_length * i),
+                            ) for i = 1:nparts
+                        ]
+
+                        @testset verbose = true for range in chunks
+                            buff = zeros(length(range))
+                            repackStateVector!(buff, range, S)
+
+                            @test buff == packed[range]
+                        end
+                    end
+                end
 
             end
 

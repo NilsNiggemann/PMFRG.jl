@@ -28,7 +28,7 @@ function smoketest_function_compatibilities_MPI()
     @testset verbose = true "compat between funcs using/creating State/setup" begin
         test_state_init(par)
         test_state_setup_deriv_mpi(par)
-        #test_state_getObservables_mpi(par)
+        test_state_getObservables_mpi(par)
     end
 
 
@@ -60,7 +60,11 @@ end
 
 
 function test_state_getObservables_mpi(par)
-    @test false
+    @testset "getObservables can be called with the state allocated" begin
+        State = PMFRGCore.InitializeState(par, PMFRGCore.UseMPI())
+
+        @test isa(PMFRGCore.getObservables(PMFRGCore.Observables, State, 0.5, par), Any)
+    end
 end
 
 

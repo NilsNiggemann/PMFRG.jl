@@ -9,10 +9,8 @@ function PMFRGCore.rebuildStateStruct!(
 )
 
     (; StateMPIBuff) = setup
-    StateVector = StateMPIBuff.data
-    StateVector[range_local(PartialStateVector)[1]] = PartialStateVector
-    MPI.Allgatherv!(StateMPIBuff, MPI.COMM_WORLD)
-    PMFRGCore.unpackStateVector!(StateStruct, StateVector)
+    gatherState!(StateMPIBuff, PartialStateVector)
+    PMFRGCore.unpackStateVector!(StateStruct, StateMPIBuff.data)
 end
 
 
@@ -91,4 +89,9 @@ function PMFRGCore.getXBubble!(Workspace, Lam, ::PMFRGCore.UseMPI)
         @warn "MPI package used but not initialized" maxlog = 1
         PMFRGCore.getXBubblePartition!(X, State, Deriv, Par, Buffer, Lam, 1:N, 1:N, 1:N)
     end
+end
+
+function PMFRGCore.getChi(LocalState::PencilArray, Lam::Real, Par::PMFRGCore.PMFRGParams)
+    GlobalState = gatherState(LocalState, Par)
+    PMFRGCore.getChi(GlobalState, Lam, Par)
 end

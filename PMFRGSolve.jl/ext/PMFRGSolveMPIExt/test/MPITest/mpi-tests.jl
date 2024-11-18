@@ -1,4 +1,4 @@
-using MPI
+import MPI: mpiexec
 using Test
 
 function test_mpi_solve()
@@ -68,6 +68,8 @@ fi
                 2,
                 "Generate Data Example",
             )
+            run_mpi_script(joinpath(dir, "UnitTests.jl"), 1, "Unit/Acceptance Tests")
+
 
         end
     end

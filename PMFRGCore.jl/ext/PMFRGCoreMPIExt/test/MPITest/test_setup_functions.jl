@@ -21,14 +21,16 @@ function smoketest_function_compatibilities_MPI()
         lenIntw_acc = 60,
     )
 
-    @testset "Checking that PMFRGCoreMPIExt is loaded" begin
-        @test !isnothing(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt))
-    end
+    @testset verbose = true "MPI-related Smoke tests " begin
+        @testset "Checking that PMFRGCoreMPIExt is loaded" begin
+            @test !isnothing(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt))
+        end
 
-    @testset verbose = true "compat between funcs using/creating State/setup" begin
-        test_state_init(par)
-        test_state_setup_deriv_mpi(par)
-        test_state_getObservables_mpi(par)
+        @testset verbose = true "compat between funcs using/creating State/setup" begin
+            test_state_init(par)
+            test_state_setup_deriv_mpi(par)
+            test_state_getObservables_mpi(par)
+        end
     end
 
 

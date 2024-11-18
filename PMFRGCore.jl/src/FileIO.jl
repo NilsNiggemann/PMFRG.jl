@@ -60,8 +60,13 @@ EssentialParamFields() =
 """Saves important information about computation parameters so that they can be reconstructed"""
 function saveNumericalParams(Filename, Par::PMFRGParams, Group = "")
     Fields = EssentialParamFields()
+    absFilename = abspath(Filename)
     for F in Fields
-        h5write(Filename, joinGroup(Group, "Params/$F"), getfield(Par.NumericalParams, F))
+        h5write(
+            absFilename,
+            joinGroup(Group, "Params/$F"),
+            getfield(Par.NumericalParams, F),
+        )
     end
 end
 

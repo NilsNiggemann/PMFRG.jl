@@ -29,7 +29,6 @@ function AllocateSetup(
     ParallelizationScheme::AbstractParallelizationScheme = MultiThreaded(),
 )
     (; Npairs, NUnique) = Par.System
-    (; Ngamma) = Par.NumericalParams
     Par.Options.MinimalOutput || println("One Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
@@ -41,6 +40,7 @@ function AllocateSetup(
         _ = 1:Threads.nthreads()
     ])
 
+    (; Ngamma) = Par.NumericalParams
     StateBuff = StateType(NUnique, Ngamma, getVDims(Par), floattype)
     DerivBuff = StateType(NUnique, Ngamma, getVDims(Par), floattype)
 

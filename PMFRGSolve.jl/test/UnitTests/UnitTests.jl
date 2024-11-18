@@ -36,13 +36,13 @@ include("DimerTest.jl")
 include("IOTests.jl")
 
 
-function testOneLoopSolve(Obsacc = 1e-14)
+function testOneLoopSolve(Obsacc = 1e-14; kwargs...)
     @testset "OneLoop" verbose = true begin
         @testset "Dimer" verbose = true begin
-            test_DimerFRG(Obsacc = Obsacc)
+            test_DimerFRG(OneLoop(), Obsacc = Obsacc; kwargs...)
         end
         @testset "Squagome" verbose = true begin
-            test_SquagomeFRG(OneLoop(), Obsacc = Obsacc, tol = 1e-8)
+            test_SquagomeFRG(OneLoop(), Obsacc = Obsacc, tol = 1e-8; kwargs...)
         end
     end
 end

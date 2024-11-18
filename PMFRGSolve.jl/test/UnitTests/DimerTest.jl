@@ -1,18 +1,45 @@
 include("BubbleTest.jl")
 
 """Exectutes nontrivial symmetry in flow equations for Heisenberg dimer. Local and nonlocal b vertex are equal: Γb_11 = Γb_12!"""
-function test_runFRG(Method = OneLoop(), System = getPolymer(2))
+function test_runFRG(Method = OneLoop(), System = getPolymer(2); kwargs...)
     Par = BenchmarkingParams(Method, System)
-    test_runFRG(Par)
+    test_runFRG(Par; kwargs...)
 end
 
-function test_runFRG(Par::PMFRGCore.PMFRGParams; kwargs...)
-    tempFolder = "temp_PMFRG_test"
+function getPaths(tempFolder, ::MultiThreaded)
+    println("DEBUG: getPath Using MultiThreaded type")
     mainFile = joinpath(tempFolder, "temp_main.h5")
     CheckPoints = joinpath(tempFolder, "Checkpoints.h5")
 
-    SolP, ObsPt =
-        SolveFRG(Par, MainFile = mainFile, CheckpointDirectory = CheckPoints; kwargs...)
+    mainFile, CheckPoints
+end
+
+
+function getPaths(tempFolder, ::UseMPI)
+    println("DEBUG: getPath Using UseMPI type")
+
+    if MPI.Comm_rank(MPI.COMM_WORLD) == 0
+        mainFile = joinpath(tempFolder, "temp_main.h5")
+        CheckPoints = joinpath(tempFolder, "Checkpoints.h5")
+    else
+        mainFile = nothing
+        CheckPoints = nothing
+    end
+
+    mainFile, CheckPoints
+end
+
+function test_runFRG(Par::PMFRGCore.PMFRGParams; ParallelizationScheme, kwargs...)
+    tempFolder = "temp_PMFRG_test"
+
+    mainFile, CheckPoints = getPaths(tempFolder, ParallelizationScheme)
+
+    SolP, ObsPt = SolveFRG(
+        Par,
+        ParallelizationScheme,
+        MainFile = mainFile,
+        CheckpointDirectory = CheckPoints,
+    )
 
     println("cleaning up... deleting ", mainFile, " and ", CheckPoints)
     rm(tempFolder, recursive = true)
@@ -25,8 +52,14 @@ function test_runFRG(Par::PMFRGCore.PMFRGParams; kwargs...)
 end
 
 
-function test_DimerFRG(Method = OneLoop(); Obsacc = 1e-14, kwargs...)
-    γ, Γa, Γb, Γc, Obs, t, Par = test_runFRG(Method, getPolymer(2))
+function test_DimerFRG(
+    Method = OneLoop();
+    Obsacc = 1e-14,
+    ParallelizationScheme = MultiThreaded(),
+    kwargs...,
+)
+    γ, Γa, Γb, Γc, Obs, t, Par =
+        test_runFRG(Method, getPolymer(2); ParallelizationScheme, kwargs...)
     test_FRGResults(γ, Γa, Γb, Γc, Obs, t, Par; Obsacc = Obsacc, kwargs...)
 
     println("Testing whether local and nonlocal b vertex are equal on dimer Γb_11 = Γb_12")
@@ -34,9 +67,19 @@ function test_DimerFRG(Method = OneLoop(); Obsacc = 1e-14, kwargs...)
 
 end
 
-function test_SquagomeFRG(Method = OneLoop(); Obsacc = 1e-14, kwargs...)
+function test_SquagomeFRG(
+    Method = OneLoop();
+    Obsacc = 1e-14,
+    ParallelizationScheme = MultiThreaded(),
+    kwargs...,
+)
     SysFunc = SquareKagome.getMirrorSquareKagome
-    γ, Γa, Γb, Γc, Obs, t, Par = test_runFRG(Method, SysFunc(4, 1, 0.2))
+    γ, Γa, Γb, Γc, Obs, t, Par = test_runFRG(
+        Method,
+        SysFunc(4, 1, 0.2);
+        ParallelizationScheme = ParallelizationScheme,
+        kwargs...,
+    )
     test_FRGResults(
         γ,
         Γa,

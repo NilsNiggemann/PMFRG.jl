@@ -10,6 +10,7 @@ function AllocateSetup(
 )
 
     (; NUnique, Npairs) = Par.System
+
     Par.Options.MinimalOutput || println("Two Loop: T= ", Par.NumericalParams.T)
     ##Allocate Memory:
     X = BubbleType(Par)
@@ -22,7 +23,12 @@ function AllocateSetup(
     BubbleBuffers =
         getChannel([BubbleBufferType(floattype, Npairs) for _ = 1:Threads.nthreads()])
     Buffs = BufferTypeTwoLoop(PropsBuffers, VertexBuffers, BubbleBuffers)
-    return (; X, Y, Buffs, Par, ParallelizationScheme)
+
+    (; Ngamma) = Par.NumericalParams
+    StateBuff = StateType(NUnique, Ngamma, getVDims(Par), floattype)
+    DerivBuff = StateType(NUnique, Ngamma, getVDims(Par), floattype)
+
+    return (; X, Y, Buffs, Par, ParallelizationScheme, StateBuff, DerivBuff)
 end
 include("Buffers.jl")
 include("Bubbles.jl")

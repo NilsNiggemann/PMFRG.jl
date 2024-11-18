@@ -167,11 +167,12 @@ function saveObs(Filename::String, Obs::StructArray{ObsType}, Group::String) whe
     ) where {N,VT<:AbstractArray{T,N} where {T}}
         cat(VecOfArray..., dims = N + 1)
     end
+    AbsoluteFilename = abspath(Filename)
 
     Fields = fieldnames(ObsType)
     for F in Fields
         arr = convertToArray(getproperty(Obs, F))
-        h5write(Filename, PMFRGCore.joinGroup(Group, string(F)), arr)
+        h5write(AbsoluteFilename, PMFRGCore.joinGroup(Group, string(F)), arr)
     end
 end
 

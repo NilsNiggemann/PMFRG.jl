@@ -7,7 +7,6 @@ function test_runFRG(Method = OneLoop(), System = getPolymer(2); kwargs...)
 end
 
 function getPaths(tempFolder, ::MultiThreaded)
-    println("DEBUG: getPath Using MultiThreaded type")
     mainFile = joinpath(tempFolder, "temp_main.h5")
     CheckPoints = joinpath(tempFolder, "Checkpoints.h5")
 
@@ -16,7 +15,6 @@ end
 
 
 function getPaths(tempFolder, ::UseMPI)
-    println("DEBUG: getPath Using UseMPI type")
 
     if MPI.Comm_rank(MPI.COMM_WORLD) == 0
         mainFile = joinpath(tempFolder, "temp_main.h5")
@@ -41,8 +39,15 @@ function test_runFRG(Par::PMFRGCore.PMFRGParams; ParallelizationScheme, kwargs..
         CheckpointDirectory = CheckPoints,
     )
 
-    println("cleaning up... deleting ", mainFile, " and ", CheckPoints)
-    rm(tempFolder, recursive = true)
+    if !isnothing(mainFile)
+        println(
+            "cleaning up... deleting $tempFolder, including ",
+            mainFile,
+            " and ",
+            CheckPoints,
+        )
+        rm(tempFolder, recursive = true)
+    end
     args = PMFRGCore.getArrayGeometry(Par)
     γ = PMFRGCore.getGamma(SolP.u[end], args)
     Γa = PMFRGCore.getVa(SolP.u[end], args)

@@ -68,7 +68,7 @@ fi
                 2,
                 "Generate Data Example",
             )
-            run_mpi_script(joinpath(dir, "UnitTests.jl"), 1, "Unit/Acceptance Tests")
+            run_mpi_script(joinpath(dir, "UnitTests.jl"), 4, "Unit/Acceptance Tests")
 
 
         end

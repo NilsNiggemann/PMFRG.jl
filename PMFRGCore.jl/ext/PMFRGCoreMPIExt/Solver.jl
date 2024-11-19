@@ -91,5 +91,8 @@ function PMFRGCore.AllocateSetup(Par::PMFRGCore.AbstractOneLoopParams, ::PMFRGCo
         end...,
     )
 
-    return merge(PMFRGCore.AllocateSetup(Par, PMFRGCore.MultiThreaded()), (; StateMPIBuff))
+    return merge(
+        PMFRGCore.AllocateSetup(Par, PMFRGCore.MultiThreaded()),
+        (; StateMPIBuff, ParallelizationScheme = UseMPI()),
+    )
 end

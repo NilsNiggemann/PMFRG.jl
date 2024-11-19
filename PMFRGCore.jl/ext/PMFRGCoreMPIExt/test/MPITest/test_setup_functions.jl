@@ -5,27 +5,29 @@ using MPI, PencilArrays
 using PMFRGCore
 using SpinFRGLattices
 
-function smoketest_function_compatibilities_MPI()
-    par = Params(
-        getPolymer(2),
-        OneLoop(),
-        T = 0.5,
-        N = 10,
-        Ngamma = 10,
-        accuracy = 1e-3,
-        Lam_min = exp(-30),
-        Lam_max = 100.0,
-        usesymmetry = false,
-        MinimalOutput = true,
-        lenIntw = 60,
-        lenIntw_acc = 60,
-    )
 
+par = Params(
+    getPolymer(2),
+    OneLoop(),
+    T = 0.5,
+    N = 10,
+    Ngamma = 10,
+    accuracy = 1e-3,
+    Lam_min = exp(-30),
+    Lam_max = 100.0,
+    usesymmetry = false,
+    MinimalOutput = true,
+    lenIntw = 60,
+    lenIntw_acc = 60,
+)
+
+
+
+function smoketest_function_compatibilities_MPI()
     @testset verbose = true "MPI-related Smoke tests " begin
         @testset "Checking that PMFRGCoreMPIExt is loaded" begin
             @test !isnothing(Base.get_extension(PMFRGCore, :PMFRGCoreMPIExt))
         end
-
         @testset verbose = true "compat between funcs using/creating State/setup" begin
             test_state_init(par)
             test_state_setup_deriv_mpi(par)
@@ -71,5 +73,11 @@ end
 
 
 MPI.Init()
-smoketest_function_compatibilities_MPI()
+@testset verbose = true "Tests that need MPI to run" begin
+    @testset "type of ParallelizationScheme in setup with UseMPI is UseMPI" begin
+        setup = PMFRGCore.AllocateSetup(par, PMFRGCore.UseMPI())
+        @test isa(setup.ParallelizationScheme, PMFRGCore.UseMPI)
+    end
+    smoketest_function_compatibilities_MPI()
+end
 MPI.Finalize()

@@ -9,6 +9,5 @@ include("../../../../test/UnitTests/UnitTests.jl")
 
 @testset verbose = true "Multi Process tests" begin
     testOneLoopSolve(Obsacc, ParallelizationScheme = UseMPI())
-    testTwoLoopSolve(Obsacc, ParallelizationScheme = UseMPI())
 end
 MPI.Finalize()

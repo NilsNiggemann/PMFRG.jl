@@ -4,8 +4,8 @@ using Test
 function test_mpi_solve()
     @testset verbose = true "MPI tests" begin
         function run_mpi_script(script, n, testname)
+            linelength = 79
             function print_header()
-                linelength = 79
                 println("="^linelength)
                 title = " $testname "
                 subtitle = " \"$(basename(script))\" "
@@ -19,6 +19,8 @@ function test_mpi_solve()
                 println("="^linelength)
 
             end
+            print_footer() = println("="^linelength)
+
             function create_mpi_shell_wrapper()
                 # From: https://www.open-mpi.org/community/lists/users/2012/02/18362.php
                 mpi_shell_wrapper_text = """
@@ -58,6 +60,8 @@ fi
                                       $script`))
                 @test success(p)
             end
+            run(`rm $wrapper_path`)
+            print_footer()
         end
 
         @testset verbose = true "MPI tests - external executables" begin

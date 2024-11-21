@@ -1,7 +1,7 @@
 name = "PMFRGCore"
-uuid = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
-authors = ["Nils Niggemann <nils.niggemann@fu-berlin.de>"]
-version = "2.2.1"
+uuid = "307b9980-580b-4ffb-acf7-52430be9d54f"
+authors = ["Nils Niggemann <nils.niggemann@fu-berlin.de>","Michele Mesiti <michele.mesiti@kit.edu>"]
+version = "0.1.0"
 
 [deps]
 FixedPoint = "3325f569-5a18-4e7d-8356-246b69339eea"

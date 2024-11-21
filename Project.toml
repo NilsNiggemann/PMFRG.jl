@@ -1,30 +1,29 @@
-authors = ["Michele Mesiti <michele.mesiti@kit.edu>"]
 name = "PMFRG"
-uuid = "307b9980-580b-4ffb-acf7-52430be9d54f"
-version = "0.1.0"
+uuid = "37d616f8-0bcb-4e18-9a76-f5d18f52650d"
+authors = ["Nils Niggemann <nils.niggemann@fu-berlin.de>"]
+version = "2.3.0"
 
 [deps]
 DiffEqBase = "2b5f629d-d688-5b77-993f-72d75c75574e"
 DiffEqCallbacks = "459566f4-90b8-5000-8ac3-15dfb0a30def"
 H5Zblosc = "c8ec2601-a99c-407f-b158-e79c03c2f5f7"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
-PMFRGCore = "658c49e6-d26a-4ae0-a540-09812f09d5ba"
+PMFRGCore = "307b9980-580b-4ffb-acf7-52430be9d54f"
 PMFRGSolve = "8afc4f61-39e9-4661-bf82-e6695b8d2018"
 SciMLBase = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 SpinFRGLattices = "053fb7f8-31b7-4f68-aef8-4452b415dd8c"
+[weakdeps]
+MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
+PencilArrays = "0e08944d-e94e-41b1-9406-dcf66b6a9d2e"
 
 [extras]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 MPIPreferences = "3da0fdf6-3ccc-4f1b-acd9-58baa6c99267"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
+PencilArrays = "0e08944d-e94e-41b1-9406-dcf66b6a9d2e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-PencilArrays = "0e08944d-e94e-41b1-9406-dcf66b6a9d2e"
 
 [targets]
-test = ["Test", "MPI", "Dates", "Markdown", "PencilArrays", "Random", ]
-
-[weakdeps]
-MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
-PencilArrays = "0e08944d-e94e-41b1-9406-dcf66b6a9d2e"
+test = ["Test", "MPI", "Dates", "Markdown", "PencilArrays", "Random"]

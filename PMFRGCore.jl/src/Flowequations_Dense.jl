@@ -124,6 +124,7 @@ function get_Self_Energy!(Workspace::PMFRGWorkspace, Lam)
     @inline iS(x, nw) = iS_(Workspace.State.γ, x, Lam, nw, Par.NumericalParams.T) / 2
     compute1PartBubble!(Workspace.Deriv.γ, Workspace.State.Γ, iS, Par)
 end
+# @inline getXBubble!(Workspace::PMFRGWorkspace,Lam) = getXBubble!(Workspace,Lam,Val(Workspace.Par.System.NUnique)) 
 
 function getXBubble!(Workspace, Lam, ParallelizationScheme::MultiThreaded = MultiThreaded())
     (; N) = Workspace.Par.NumericalParams
@@ -165,14 +166,15 @@ function getXBubblePartition!(
         return SMatrix(BubbleProp)
     end
     @sync begin
-        for is in isrange, nw = -lenIntw:lenIntw-1 # Matsubara sum
+        for is in isrange, it in itrange
             Threads.@spawn begin
                 BubbleProp = take!(PropsBuffers)# get pre-allocated thread-safe buffers
                 Buffer = take!(VertexBuffers)
                 ns = np_vec[is]
-                sprop = getKataninProp!(BubbleProp, nw, nw + ns)
-                for it in itrange
-                    nt = np_vec[it]
+                nt = np_vec[it]
+                # Workspace.X.a .= Buffer.Va12[begin]
+                for nw = -lenIntw:lenIntw-1 # Matsubara sum
+                    sprop = getKataninProp!(BubbleProp, nw, nw + ns)
                     for iu in iurange
                         nu = np_vec[iu]
                         if (ns + nt + nu) % 2 == 0# skip unphysical bosonic frequency combinations
@@ -251,7 +253,7 @@ function addX!(
         Xb_sum = 0.0
         Xc_sum = 0.0
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
-            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort!
+            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
             ki, kj, m, xk =
                 S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij], S_xk[k_spl, Rij]
             Ptm = Props[xk, xk] * m
@@ -460,7 +462,7 @@ end
         Xb_sum = zero(T)
         Xc_sum = zero(T)
         @turbo unroll = 1 for k_spl = 1:Nsum[Rij]
-            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort!
+            #loop over all Nsum summation elements defined in geometry. This inner loop is responsible for most of the computational effort! 
             ki, kj, m = S_ki[k_spl, Rij], S_kj[k_spl, Rij], S_m[k_spl, Rij]
 
             mConv = convert(T, m)
